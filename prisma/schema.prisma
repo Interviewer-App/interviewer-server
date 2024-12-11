@@ -1,0 +1,104 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid()) // Unique identifier
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     // Enum for RBAC
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  candidate Candidate?
+  admin     Admin?
+}
+
+model Candidate {
+  id        String   @id @default(cuid())
+  userId    String   @unique // Links to the User model
+  user      User     @relation(fields: [userId], references: [id])
+  profile   Profile?
+  skills    Skill[]  // Candidate's skills
+  appliedJobs AppliedJob[]
+}
+
+model Admin {
+  id        String   @id @default(cuid())
+  userId    String   @unique // Links to the User model
+  user      User     @relation(fields: [userId], references: [id])
+  company   Company? // Links to the Company model
+      // Jobs posted by the admin
+}
+
+model Profile {
+  id           String   @id @default(cuid())
+  candidateId  String   @unique
+  candidate    Candidate @relation(fields: [candidateId], references: [id])
+  bio          String?
+  resume       String? // URL to uploaded resume
+}
+
+model Skill {
+  id           String   @id @default(cuid())
+  candidateId  String
+  candidate    Candidate @relation(fields: [candidateId], references: [id])
+  name         String
+  level        SkillLevel
+}
+
+model Job {
+  id        String   @id @default(cuid())
+  title     String
+  description String
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+  appliedJobs AppliedJob[]
+}
+
+model Company {
+  id      String   @id @default(cuid())
+  name    String
+  adminId String   @unique
+  admin   Admin    @relation(fields: [adminId], references: [id])
+  jobs    Job[]
+}
+
+model AppliedJob {
+  id          String   @id @default(cuid())
+  candidateId String
+  jobId       String
+  candidate   Candidate @relation(fields: [candidateId], references: [id])
+  job         Job       @relation(fields: [jobId], references: [id])
+  status      ApplicationStatus
+}
+
+enum Role {
+  ADMIN
+  CLIENT
+}
+
+enum SkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  EXPERT
+}
+
+enum ApplicationStatus {
+  APPLIED
+  INTERVIEW
+  REJECTED
+  HIRED
+}
