@@ -46,17 +46,7 @@ export class InterviewService {
         }
     }
 
-    private prismaErrorHandler(error: any, method: string, identifier: string) {
-        if (error.code === "P2002") {
-            this.logger.error(
-                `${method}: Conflict: Duplicate entry for companyId ${identifier}`
-            );
-            throw new InternalServerErrorException(
-                "Duplicate entry: A record with this company ID already exists."
-            );
-        }
-        this.logger.error(`${method}: Prisma error: ${error.message}`);
-    }
+    
 
     async findAll() {
 
@@ -106,5 +96,40 @@ export class InterviewService {
             throw new InternalServerErrorException('Server error');
         }
 
+    }
+
+
+      async remove(id: string) {
+    
+        try {
+          const deletedInterview = await this.prisma.interview.delete({
+            where: {id:id},
+            select:{
+              id: true,
+            }
+          });
+          
+          this.logger.warn(`DELETE: ${JSON.stringify(deletedInterview)}`);
+          return {message: "Interview deleted"}
+          
+        } catch (error) {
+          this.prismaErrorHandler(error, "DELETE", id);
+          this.logger.error(`DELETE: error: ${error}`);
+          throw new InternalServerErrorException('Server error');
+        }
+    
+    
+      }
+
+      private prismaErrorHandler(error: any, method: string, identifier: string) {
+        if (error.code === "P2002") {
+            this.logger.error(
+                `${method}: Conflict: Duplicate entry for companyId ${identifier}`
+            );
+            throw new InternalServerErrorException(
+                "Duplicate entry: A record with this company ID already exists."
+            );
+        }
+        this.logger.error(`${method}: Prisma error: ${error.message}`);
     }
 }
