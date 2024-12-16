@@ -6,10 +6,10 @@ import { RegisterUserDto } from "src/auth/dto/register-user.dto";
 
 export class CreateUserDto extends RegisterUserDto {
     @ApiProperty({
-        description: "User Role (admin, user)",
+        description: "User Role (CAMPANY, CANDIDATE, ADMIN)",
         default: "user",
         type: "string",
-        example: "user",
+        example: "CANDIDATE",
     })
     @IsString()
     @IsOptional()

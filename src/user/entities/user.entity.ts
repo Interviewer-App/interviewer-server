@@ -54,11 +54,11 @@ export class User {
 
 
     @ApiProperty({
-        description: "User Role (admin, user)",
+        description: "User Role (CAMPANY, CANDIDATE, ADMIN)",
         nullable: false,
         required: true,
         type: "string",
-        example: "user",
+        example: "CANDIDATE",
     })
     role: Role;
     

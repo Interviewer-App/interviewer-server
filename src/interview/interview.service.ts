@@ -14,9 +14,9 @@ export class InterviewService {
 
 
     async create(dto: CreateInterviewDto) {
-        
+
         this.logger.log(`POST: interview/create: New interview started`);
-    
+
         try {
             // Creating a new interview in the database
             const interview = await this.prisma.interview.create({
@@ -24,7 +24,7 @@ export class InterviewService {
                     companyId: dto.companyId,
                     title: dto.title,
                     description: dto.description || null,
-                    questions:  dto.questions,
+                    questions: dto.questions,
                     duration: dto.duration,
                     status: 'DRAFT',
                 },
@@ -59,26 +59,52 @@ export class InterviewService {
     }
 
     async findAll() {
-    
+
         try {
-          const users = await this.prisma.interview.findMany({
-            select: {
-              id: true,
-              companyId: true,
-              title:true,
-              description:true,
-              questions:true,
-              duration:true,
-              status:true,
-              createdAt: true,
-              updatedAt: true,
-            }
-          });
-          return users;
+            const interviews = await this.prisma.interview.findMany({
+                select: {
+                    id: true,
+                    companyId: true,
+                    title: true,
+                    description: true,
+                    questions: true,
+                    duration: true,
+                    status: true,
+                    createdAt: true,
+                    updatedAt: true,
+                }
+            });
+            return interviews;
         } catch (error) {
-          this.logger.error(`GET: error: ${error}`);
-          throw new InternalServerErrorException('Server error');
+            this.logger.error(`GET: error: ${error}`);
+            throw new InternalServerErrorException('Server error');
         }
-            
-      }
+
+    }
+
+
+    async findAllByCompanyId(companyId: string) {
+
+        try {
+            const interviews = await this.prisma.interview.findMany({
+                where: { companyId: companyId },
+                select: {
+                    id: true,
+                    companyId: true,
+                    title: true,
+                    description: true,
+                    questions: true,
+                    duration: true,
+                    status: true,
+                    createdAt: true,
+                    updatedAt: true,
+                }
+            });
+            return interviews;
+        } catch (error) {
+            this.logger.error(`GET: error: ${error}`);
+            throw new InternalServerErrorException('Server error');
+        }
+
+    }
 }

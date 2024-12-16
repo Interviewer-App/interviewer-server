@@ -69,7 +69,7 @@ export class RegisterUserDto {
     // image: string;
     
     @ApiProperty({
-        description: "User Role (admin, user)",
+        description: "User Role (CAMPANY, CANDIDATE, ADMIN)",
         nullable: false,
         required: true,
         type: "string",
