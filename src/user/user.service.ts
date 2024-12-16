@@ -42,14 +42,12 @@ export class UserService {
 
       const newuser = await this.prisma.user.create({
         data: {
-          ...dto,
+          email:dto.email,
           password:hashedPassword,
-          name: dto.name,
           role: dto.role 
         },
         select: {
           id: true,
-          name: true,
           email: true,
           role: true,
           createdAt: true,
@@ -71,7 +69,6 @@ export class UserService {
       const users = await this.prisma.user.findMany({
         select: {
           id: true,
-          name: true,
           email: true,
           role: true,
           createdAt: true,
@@ -97,7 +94,6 @@ export class UserService {
         where: whereData,
         select: {
           id: true,
-          name: true,
           email: true,
           role: true,
           createdAt: true,
@@ -138,7 +134,6 @@ export class UserService {
         data: newUserData,
         select: {
           id: true,
-          name: true,
           email: true,
           role: true,
           createdAt: true,
@@ -166,7 +161,6 @@ export class UserService {
         select:{
           id: true,
           email: true,
-          name: true,
         }
       });
       

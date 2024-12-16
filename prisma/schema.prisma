@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,92 +7,182 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(cuid()) // Unique identifier
-  email     String   @unique
-  password  String
-  name      String
-  role      Role     // Enum for RBAC
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// model User {
+//   id            String     @id @default(cuid())
+//   email         String     @unique
+//   password      String
+//   name          String
+//   role          Role       @default(CLIENT)
+//   createdAt     DateTime   @default(now())
+//   updatedAt     DateTime   @updatedAt
+//   emailVerified DateTime?
+//   image         String?
+//   Admin         Admin?
+//   Candidate     Candidate?
+// }
 
-  candidate Candidate?
-  admin     Admin?
-}
+// model Profile {
+//   id          String    @id @default(cuid())
+//   candidateId String    @unique
+//   bio         String?
+//   resume      String?
+//   Candidate   Candidate @relation(fields: [candidateId], references: [id])
+// }
 
-model Candidate {
-  id        String   @id @default(cuid())
-  userId    String   @unique // Links to the User model
-  user      User     @relation(fields: [userId], references: [id])
-  profile   Profile?
-  skills    Skill[]  // Candidate's skills
-  appliedJobs AppliedJob[]
-}
+// model Company {
+//   id      String @id @default(cuid())
+//   name    String
+//   adminId String @unique
+//   Admin   Admin  @relation(fields: [adminId], references: [id])
+//   Job     Job[]
+// }
 
-model Admin {
-  id        String   @id @default(cuid())
-  userId    String   @unique // Links to the User model
-  user      User     @relation(fields: [userId], references: [id])
-  company   Company? // Links to the Company model
-      // Jobs posted by the admin
-}
+// model Admin {
+//   id      String   @id
+//   userId  String   @unique
+//   User    User     @relation(fields: [userId], references: [id])
+//   Company Company?
+// }
 
-model Profile {
-  id           String   @id @default(cuid())
-  candidateId  String   @unique
-  candidate    Candidate @relation(fields: [candidateId], references: [id])
-  bio          String?
-  resume       String? // URL to uploaded resume
-}
+// model AppliedJob {
+//   id          String            @id
+//   candidateId String
+//   jobId       String
+//   status      ApplicationStatus
+//   Candidate   Candidate         @relation(fields: [candidateId], references: [id])
+//   Job         Job               @relation(fields: [jobId], references: [id])
+// }
 
-model Skill {
-  id           String   @id @default(cuid())
-  candidateId  String
-  candidate    Candidate @relation(fields: [candidateId], references: [id])
-  name         String
-  level        SkillLevel
-}
+// model Candidate {
+//   id         String       @id
+//   userId     String       @unique
+//   AppliedJob AppliedJob[]
+//   User       User         @relation(fields: [userId], references: [id])
+//   Profile    Profile?
+//   Skill      Skill[]
+// }
 
-model Job {
-  id        String   @id @default(cuid())
-  title     String
-  description String
-  companyId String
-  company   Company  @relation(fields: [companyId], references: [id])
-  appliedJobs AppliedJob[]
-}
+// model Job {
+//   id          String       @id
+//   title       String
+//   description String
+//   companyId   String
+//   AppliedJob  AppliedJob[]
+//   Company     Company      @relation(fields: [companyId], references: [id])
+// }
 
-model Company {
-  id      String   @id @default(cuid())
-  name    String
-  adminId String   @unique
-  admin   Admin    @relation(fields: [adminId], references: [id])
-  jobs    Job[]
-}
+// model Skill {
+//   id          String     @id
+//   candidateId String
+//   name        String
+//   level       SkillLevel
+//   Candidate   Candidate  @relation(fields: [candidateId], references: [id])
+// }
 
-model AppliedJob {
-  id          String   @id @default(cuid())
-  candidateId String
-  jobId       String
-  candidate   Candidate @relation(fields: [candidateId], references: [id])
-  job         Job       @relation(fields: [jobId], references: [id])
-  status      ApplicationStatus
-}
+// enum Role {
+//   ADMIN
+//   CLIENT
+// }
+
+// enum SkillLevel {
+//   BEGINNER
+//   INTERMEDIATE
+//   EXPERT
+// }
+
+// enum ApplicationStatus {
+//   APPLIED
+//   INTERVIEW
+//   REJECTED
+//   HIRED
+// }
 
 enum Role {
   ADMIN
-  CLIENT
+  CANDIDATE
+  COMPANY
 }
 
-enum SkillLevel {
-  BEGINNER
-  INTERMEDIATE
-  EXPERT
+enum SubscriptionTier {
+  FREE
+  BASIC
+  PROFESSIONAL
+  ENTERPRISE
 }
 
-enum ApplicationStatus {
-  APPLIED
-  INTERVIEW
-  REJECTED
-  HIRED
+enum InterviewStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  role      Role @default(CANDIDATE)
+  profile   Profile?
+  company   Company?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  InterviewSession InterviewSession[]
+}
+
+model Profile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  firstName String
+  lastName  String
+  skills    String[]
+  resumeUrl String?
+}
+
+model Company {
+  id           String        @id @default(cuid())
+  userId       String        @unique
+  user         User          @relation(fields: [userId], references: [id])
+  name         String
+  description  String?
+  interviews   Interview[]
+  subscription Subscription?
+}
+
+model Subscription {
+  id        String           @id @default(cuid())
+  companyId String           @unique
+  company   Company          @relation(fields: [companyId], references: [id])
+  tier      SubscriptionTier @default(FREE)
+  startDate DateTime         @default(now())
+  endDate   DateTime
+  isActive  Boolean          @default(true)
+}
+
+model Interview {
+  id          String             @id @default(cuid())
+  companyId   String
+  company     Company            @relation(fields: [companyId], references: [id])
+  title       String
+  description String?
+  questions   Json
+  duration    Int // in minutes
+  status      InterviewStatus    @default(DRAFT)
+  sessions    InterviewSession[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+}
+
+model InterviewSession {
+  id          String    @id @default(cuid())
+  interviewId String
+  interview   Interview @relation(fields: [interviewId], references: [id])
+  candidateId String
+  candidate   User      @relation(fields: [candidateId], references: [id])
+  responses   Json?
+  status      String    @default("PENDING")
+  startTime   DateTime?
+  endTime     DateTime?
+  score       Float?
+  aiAnalysis  Json?
 }

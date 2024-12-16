@@ -22,7 +22,7 @@ export class UserController {
   @ApiResponse({status: 400, description: 'Bad request'})
   @ApiResponse({status: 401, description: 'Unauthorized'})
   @ApiResponse({status: 500, description: 'Server error'})             //Swagger
-  @Auth(Role.ADMIN)
+  @Auth(Role.ADMIN, Role.COMPANY)
   create(@Body() createUserDto: CreateUserDto) {
     return this.userService.create(createUserDto);
   }
@@ -49,7 +49,7 @@ export class UserController {
   @ApiResponse({status: 200, description: 'Ok', type: User})
   @ApiResponse({status: 401, description: 'Unauthorized'})             
   @ApiResponse({status: 500, description: 'Server error'})             //Swagger
-  @Auth(Role.ADMIN, Role.CLIENT)
+  @Auth(Role.ADMIN, Role.COMPANY, Role.CANDIDATE)
   findOne(@Param('id') id: string, @GetUser() user: User) {
     return this.userService.findOne("id", id, user);
   }
@@ -62,7 +62,7 @@ export class UserController {
   @ApiResponse({status: 200, description: 'Ok', type: User})
   @ApiResponse({status: 401, description: 'Unauthorized'})
   @ApiResponse({status: 500, description: 'Server error'})             //Swagger
-  @Auth(Role.ADMIN, Role.CLIENT)
+  @Auth(Role.ADMIN, Role.COMPANY, Role.CANDIDATE)
   findOneByEmail(@Param('email') email: string, @GetUser() user: User) {
     return this.userService.findOne("email", email, user);
   }
@@ -77,7 +77,7 @@ export class UserController {
   @ApiResponse({status: 400, description: 'Bad request'})             
   @ApiResponse({status: 401, description: 'Unauthorized'})             
   @ApiResponse({status: 500, description: 'Server error'})             //Swagger
-  @Auth(Role.ADMIN, Role.CLIENT)
+  @Auth(Role.ADMIN, Role.COMPANY,Role.CANDIDATE)
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto, @GetUser() user: User) {
     return this.userService.update("id", id, updateUserDto, user);
   }
@@ -91,7 +91,7 @@ export class UserController {
   @ApiResponse({status: 400, description: 'Bad request'})             
   @ApiResponse({status: 401, description: 'Unauthorized'})             
   @ApiResponse({status: 500, description: 'Server error'})             //Swagger
-  @Auth(Role.ADMIN, Role.CLIENT)
+  @Auth(Role.ADMIN, Role.COMPANY,Role.CANDIDATE)
   updateByEmail(@Param('email') email: string, @Body() updateUserDto: UpdateUserDto, @GetUser() user: User) {
     return this.userService.update("email", email, updateUserDto, user);
   }
@@ -105,7 +105,7 @@ export class UserController {
   @ApiResponse({status: 400, description: 'Bad request'})             
   @ApiResponse({status: 401, description: 'Unauthorized'})             
   @ApiResponse({status: 500, description: 'Server error'})             //Swagger
-  @Auth(Role.ADMIN, Role.CLIENT)
+  @Auth(Role.ADMIN, Role.COMPANY, Role.CANDIDATE)
   remove(@Param('id') id: string, @GetUser() user: User) {
     return this.userService.remove("id", id, user);
   }
@@ -119,7 +119,7 @@ export class UserController {
   @ApiResponse({status: 400, description: 'Bad request'})             
   @ApiResponse({status: 401, description: 'Unauthorized'})             
   @ApiResponse({status: 500, description: 'Server error'})             //Swagger
-  @Auth(Role.ADMIN, Role.CLIENT)
+  @Auth(Role.ADMIN, Role.CANDIDATE,Role.COMPANY)
   removeByEmail(@Param('email') email: string, @GetUser() user: User) {
     return this.userService.remove("email", email, user);
   }

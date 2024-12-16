@@ -8,6 +8,7 @@ import { JwtPayload } from './interfaces/jwt-payload.interface';
 
 import { PrismaService } from 'src/prisma/prisma.service';
 import { User } from 'src/user/entities/user.entity';
+import { Role } from '@prisma/client';
 
 
 @Injectable()
@@ -23,9 +24,13 @@ export class AuthService {
 
 
   async registerUser(dto: RegisterUserDto): Promise<any> {
+    debugger
     this.logger.log(`POST: user/register: Register user started`);
     // Check if password and passwordConfirmation match
     if (dto.password !== dto.passwordconf) throw new BadRequestException('Passwords do not match');
+
+    if (dto.role && !Role[dto.role]) throw new BadRequestException('Invalid role');
+
 
     //Data to lower case
     dto.email = dto.email.toLowerCase().trim();
@@ -36,30 +41,63 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
     try {
-      
+      const userData = {
+        email: dto.email,
+        password: hashedPassword,
+        role: dto.role,
+      };
       // const {passwordconf , ...newUserData} = dto
       // newUserData.password = hashedPassword;
 
       const newuser = await this.prisma.user.create({
         data: {
-          ...dto,
-          password:hashedPassword,
-          name: dto.name,
-          role: dto.role 
+          ...userData,
+          ...(dto.role === Role.COMPANY && {
+            company: {
+              create: {
+                name:  'Default Company Name', // Ensure company name is provided
+                description: 'Default Company Name',
+              },
+            },
+          }),
+          ...(dto.role === Role.CANDIDATE && {
+            profile: {
+              create: {
+                firstName: 'First',
+                lastName:  'Last',
+                skills:  [],
+                resumeUrl:  null,
+              },
+            },
+          }),
         },
         select: {
           id: true,
-          name: true,
           email: true,
           role: true,
           createdAt: true,
-        }
+          company: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          profile: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
       });
+  
 
       return {
         user: newuser,
         token: this.getJwtToken({
           id: newuser.id,
+          role: newuser.role
         })
       };
       
@@ -85,7 +123,6 @@ export class AuthService {
         },
         select: {
           id: true,
-          name: true,
           email: true,
           password: true,
           role: true,
@@ -112,6 +149,7 @@ export class AuthService {
       user,
       token: this.getJwtToken({
         id: user.id,
+        role: user.role
       })
     };
   }
@@ -120,7 +158,7 @@ export class AuthService {
   async refreshToken(user: User){
     return {
       user: user,
-      token: this.getJwtToken({id: user.id})
+      token: this.getJwtToken({id: user.id, role:user.role})
     };
 
 

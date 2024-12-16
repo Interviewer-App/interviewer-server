@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Res, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Res, HttpStatus ,Logger, Req,UseGuards} from '@nestjs/common';
 
 import { RegisterUserDto } from './dto/register-user.dto';
 import { AuthService } from './auth.service';
@@ -8,6 +8,7 @@ import { Auth, GetUser } from './decorators';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { LoginUserDto } from './dto/login-user.dto';
 import { User } from 'src/user/entities/user.entity';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -21,8 +22,9 @@ export class AuthController {
   })
   @ApiResponse({status: 201, description: 'Ok', type: LoginResponse})          
   @ApiResponse({status: 400, description: 'Bad request'})
-  @ApiResponse({status: 500, description: 'Server error'})             //Swagger
+  @ApiResponse({status: 500, description: 'Server error'})           
   register(@Body() createUserDto: RegisterUserDto) {
+    Logger.log(`Register`);
     return this.authService.registerUser(createUserDto);
   }
 
@@ -33,10 +35,23 @@ export class AuthController {
   })
   @ApiResponse({status: 200, description: 'Ok', type: LoginResponse})
   @ApiResponse({status: 400, description: 'Bad request'})     
-  @ApiResponse({status: 500, description: 'Server error'})             //Swagger
+  @ApiResponse({status: 500, description: 'Server error'})             
   async login(@Res() response, @Body() loginUserDto: LoginUserDto) {
     const data = await this.authService.loginUser(loginUserDto.email, loginUserDto.password);
     response.status(HttpStatus.OK).send(data);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  @ApiOperation({
+    summary: 'GET PROFILE',
+    description: 'Get user profile details.'
+  })
+  @ApiResponse({status: 200, description: 'Ok', type: LoginResponse})
+  @ApiResponse({status: 400, description: 'Bad request'})     
+  @ApiResponse({status: 500, description: 'Server error'})    
+  async getProfile(@Req() req: any) {
+    return req.user; // User details from JWT payload
   }
 
   @Get('refresh-token')
@@ -53,6 +68,7 @@ export class AuthController {
   ){
     return this.authService.refreshToken(user);
   }
+
 
 
 

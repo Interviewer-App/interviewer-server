@@ -13,14 +13,14 @@ export class User {
     id: string;
     
     
-    @ApiProperty({
-        description: "Name",
-        nullable: false,
-        required: true,
-        type: "string",
-        example: "John Sample",
-    })
-    name: string;
+    // @ApiProperty({
+    //     description: "Name",
+    //     nullable: false,
+    //     required: true,
+    //     type: "string",
+    //     example: "John Sample",
+    // })
+    // name: string;
 
     
     @ApiProperty({
@@ -62,14 +62,14 @@ export class User {
     })
     role: Role;
     
-    @ApiProperty({
-        description: "Image URL",
-        nullable: true,
-        required: false,
-        type: "string",
-        example: "https://picsum.photos/200",
-    })    
-    image?: string;
+    // @ApiProperty({
+    //     description: "Image URL",
+    //     nullable: true,
+    //     required: false,
+    //     type: "string",
+    //     example: "https://picsum.photos/200",
+    // })    
+    // image?: string;
 
     
     

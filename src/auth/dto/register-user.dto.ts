@@ -1,4 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
+import { Role } from "@prisma/client";
 
 import { IsEmail, IsOptional, IsString, Matches, MaxLength, MinLength, NotContains } from "class-validator";
 
@@ -56,17 +57,26 @@ export class RegisterUserDto {
     passwordconf: string;
     
 
+    // @ApiProperty({
+    //     description: "User Avatar Image",
+    //     nullable: true,
+    //     required: false,
+    //     type: "string",
+    //     example: "https://picsum.photos/200/300",
+    // })
+    // @IsString()
+    // @IsOptional()
+    // image: string;
+    
     @ApiProperty({
-        description: "User Avatar Image",
-        nullable: true,
-        required: false,
+        description: "User Role (admin, user)",
+        nullable: false,
+        required: true,
         type: "string",
-        example: "https://picsum.photos/200/300",
+        example: "COMPANY",
     })
     @IsString()
     @IsOptional()
-    image: string;
-    
-    role?: any; // Optional field
+    role?: Role;
 
 }
