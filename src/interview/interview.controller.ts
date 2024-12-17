@@ -5,6 +5,7 @@ import { Auth, GetUser } from 'src/auth/decorators';
 import { Interview } from './entities/interview.entity';
 import { CreateInterviewDto } from './dto/create-interview.dto';
 import { Role } from '@prisma/client';
+import { UpdateInterviewDto } from './dto/update-interview.dto';
 
 @ApiBearerAuth()
 @ApiTags('Interview')
@@ -24,6 +25,20 @@ export class InterviewController {
     @Auth(Role.ADMIN, Role.COMPANY)
     create(@Body() createInterviewDto: CreateInterviewDto) {
         return this.interviewService.create(createInterviewDto);
+    }
+
+    @Patch(':id')
+      @ApiOperation({
+        summary: 'UPDATE INTERVIEW BY ID',
+        description: 'Private endpoint to update INTERVIEW data by Id. <ul><li>The "user" role is permitted to update only their own information.</li><li>The "admin" role has the privilege to update information of any user</li><li>Only the "admin" role can update the "role" field</li></ul>'
+      })
+      @ApiResponse({status: 200, description: 'Ok', type: Interview})
+      @ApiResponse({status: 400, description: 'Bad request'})             
+      @ApiResponse({status: 401, description: 'Unauthorized'})             
+      @ApiResponse({status: 500, description: 'Server error'})             //Swagger
+      @Auth(Role.ADMIN, Role.COMPANY,Role.CANDIDATE)
+      update(@Param('id') id: string, @Body() updateUserDto: UpdateInterviewDto) {
+        return this.interviewService.update( id, updateUserDto);
     }
 
     @Get()

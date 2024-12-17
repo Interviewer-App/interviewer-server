@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, InternalServerErrorException, Logger, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateInterviewDto } from './dto/create-interview.dto';
+import { UpdateInterviewDto } from './dto/update-interview.dto';
 
 
 @Injectable()
@@ -26,7 +27,7 @@ export class InterviewService {
                     description: dto.description || null,
                     questions: dto.questions,
                     duration: dto.duration,
-                    status: 'DRAFT',
+                    status: dto.status,
                 },
             });
 
@@ -46,6 +47,39 @@ export class InterviewService {
         }
     }
 
+    async update(id:string, dto: UpdateInterviewDto) {
+
+        this.logger.log(`POST: interview/update: Interview update started`);
+
+        try {
+            // Creating a new interview in the database
+            const interview = await this.prisma.interview.update({
+                where:{id:id},
+                data: {
+                    companyId: dto.companyId,
+                    title: dto.title,
+                    description: dto.description || null,
+                    questions: dto.questions,
+                    duration: dto.duration,
+                    status: dto.status,
+                },
+            });
+
+            this.logger.log(
+                `POST: interview/update: Interview ${interview.id} updaated successfully`
+            );
+
+            return {
+                message: "Interview updated successfully",
+                interview,
+            };
+        } catch (error) {
+            // Custom Prisma error handler
+            this.prismaErrorHandler(error, "POST", dto.companyId);
+            this.logger.error(`POST: interview/create: Error: ${error.message}`);
+            throw new InternalServerErrorException("Server error occurred");
+        }
+    }
     
 
     async findAll() {

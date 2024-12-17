@@ -83,6 +83,6 @@ export class CreateInterviewDto {
         example: "DRAFT",
     })
     @IsString()
-    status:  "DRAFT" | "PUBLISHED" | "COMPLETED";
+    status:  "DRAFT" | "ACTIVE" | "COMPLETED" | 'ARCHIVED';
 
 };
