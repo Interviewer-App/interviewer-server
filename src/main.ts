@@ -35,7 +35,16 @@ export async function bootstrap() {
 
 
   //Enable CORS
-  app.enableCors();
+  app.enableCors(
+    {
+      origin: [
+        'http://localhost:3000',
+        '*',
+      ],
+      methods: ['GET','HEAD','PUT','PATCH','POST','DELETE','OPTIONS'],
+      credentials: true,
+    }
+  );
 
 
   await app.listen(3333);
