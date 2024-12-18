@@ -66,6 +66,18 @@ export class AiService {
                 );
             }
 
+            const createdQuestions = await Promise.all(
+              questions.map(async (q) => {
+                  return await this.prisma.question.create({
+                      data: {
+                          interviewId: id,
+                          question: q.question,
+                          type: q.type.toUpperCase() === 'OPEN-ENDED' ? 'OPEN_ENDED' : 'CODING',
+                      },
+                  });
+              })
+            );
+
             const interview = await this.prisma.interview.update({
                 where: { id: id },
                 data: {
