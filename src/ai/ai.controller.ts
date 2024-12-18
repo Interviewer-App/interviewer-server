@@ -31,8 +31,8 @@ export class AiController {
 
     @Post('analiyze-question')
     @ApiOperation({
-        summary: 'GENERATE QUESTIONS',
-        description: 'Private endpoint to generate questions.'
+        summary: 'ANALYZE ANSWERS',
+        description: 'Private endpoint to analyze answers.'
     })
     @ApiResponse({ status: 201, description: 'Created', isArray: true })
     @ApiResponse({ status: 400, description: 'Bad request' })

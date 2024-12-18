@@ -118,14 +118,14 @@ enum InterviewStatus {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  role      Role @default(CANDIDATE)
-  profile   Profile?
-  company   Company?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String             @id @default(cuid())
+  email            String             @unique
+  password         String
+  role             Role               @default(CANDIDATE)
+  profile          Profile?
+  company          Company?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
   InterviewSession InterviewSession[]
 }
 
@@ -171,6 +171,7 @@ model Interview {
   sessions    InterviewSession[]
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
+  Question    Question[]
 }
 
 model InterviewSession {
@@ -185,4 +186,19 @@ model InterviewSession {
   endTime     DateTime?
   score       Float?
   aiAnalysis  Json?
+}
+
+model Question {
+  id          String       @id @default(cuid())
+  interviewId String
+  interview   Interview    @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  question    String
+  type        QuestionType
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+enum QuestionType {
+  OPEN_ENDED
+  CODING
 }
