@@ -36,7 +36,7 @@ export class UserController {
   @ApiResponse({status: 401, description: 'Unauthorized'})
   @ApiResponse({status: 403, description: 'Forbidden' })
   @ApiResponse({status: 500, description: 'Server error'})             //Swagger
-  @Auth(Role.ADMIN)
+  @Auth(Role.ADMIN, Role.COMPANY)
   findAll() {
     return this.userService.findAll();
   }

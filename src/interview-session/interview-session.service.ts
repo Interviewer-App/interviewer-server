@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException, Logger } from "@nestjs/common";
+import { Injectable, InternalServerErrorException, Logger, NotFoundException } from "@nestjs/common";
 import { CreateInterviewSessionDto } from './dto/create-interview-session.dto';
 import { UpdateInterviewSessionDto } from './dto/update-interview-session.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -20,14 +20,14 @@ export class InterviewSessionService {
       // Creating a new interview in the database
       const interviewSession = await this.prisma.interviewSession.create({
         data: {
-          interviewId:dto.interviewId,
-          candidateId:dto.candidateId,
-          responses:dto.responses,
-          status:dto.status,
-          startTime:dto.startTime,
-          endTime:dto.endTime,
-          score:dto.score,
-          aiAnalysis:dto.aiAnalysis
+          interviewId: dto.interviewId,
+          candidateId: dto.candidateId,
+          responses: dto.responses,
+          status: dto.status,
+          startTime: dto.startTime,
+          endTime: dto.endTime,
+          score: dto.score,
+          aiAnalysis: dto.aiAnalysis
         },
       });
 
@@ -51,6 +51,48 @@ export class InterviewSessionService {
     } catch (error) {
       // Custom Prisma error handler
       this.prismaErrorHandler(error, "POST", dto.interviewId);
+      this.logger.error(`POST: interview/create: Error: ${error.message}`);
+      throw new InternalServerErrorException("Server error occurred");
+    }
+  }
+
+  async update(id: string, dto: UpdateInterviewSessionDto) {
+
+    this.logger.log(`POST: interviewsession/update: Interview Session update started`);
+
+    const interviewSession = await this.prisma.interviewSession.findUnique({
+      where: { id },
+    });
+    if (!interviewSession) {
+      throw new NotFoundException(`Interview session with id ${id} not found`);
+    }
+    
+
+    try {
+      // Creating a new interview in the database
+      const interviewSession = await this.prisma.interviewSession.update({
+        where: { id},
+        data: {
+          responses: dto.responses,
+          status: dto.status,
+          startTime: dto.startTime,
+          endTime: dto.endTime,
+          score: dto.score,
+          aiAnalysis: dto.aiAnalysis
+        },
+      });
+
+      this.logger.log(
+        `POST: interview/update: Interview ${interviewSession.id} updaated successfully`
+      );
+
+      return {
+        message: "Interview updated successfully",
+        interviewSession,
+      };
+    } catch (error) {
+      // Custom Prisma error handler
+      this.prismaErrorHandler(error, "POST", id);
       this.logger.error(`POST: interview/create: Error: ${error.message}`);
       throw new InternalServerErrorException("Server error occurred");
     }

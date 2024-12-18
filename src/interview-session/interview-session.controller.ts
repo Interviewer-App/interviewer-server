@@ -6,6 +6,7 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagg
 import { Interview } from "../interview/entities/interview.entity";
 import { Auth } from "../auth/decorators";
 import { Role } from "@prisma/client";
+import { InterviewSession } from './entities/interview-session.entity';
 
 @ApiBearerAuth()
 @ApiTags('Interview-Session')
@@ -14,18 +15,31 @@ export class InterviewSessionController {
   constructor(private readonly interviewSessionService: InterviewSessionService) {}
 
   @Post()
-  @Post()
   @ApiOperation({
     summary: 'CREATE INTERVIEW-SESSION',
     description: 'Private endpoint to Create a new Interview-Sessions. It is allowed only by "company" users'
   })
-  @ApiResponse({ status: 201, description: 'Created', type: Interview })
+  @ApiResponse({ status: 201, description: 'Created', type: InterviewSession })
   @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
   @Auth(Role.COMPANY)
   create(@Body() createInterviewSessionDto: CreateInterviewSessionDto) {
     return this.interviewSessionService.create(createInterviewSessionDto);
+  }
+
+  @Patch(':id')
+  @ApiOperation({
+    summary: 'UPDATE INTERVIEW-SESSION',
+    description: 'Private endpoint to update a new Interview-Sessions. It is allowed only by "company" users'
+  })
+  @ApiResponse({ status: 200, description: 'Updated', type: InterviewSession })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
+  @Auth(Role.COMPANY)
+  update(@Param('id') id: string , @Body() updateInterviewSessionDto: UpdateInterviewSessionDto) {
+    return this.interviewSessionService.update(id , updateInterviewSessionDto);
   }
 
   // @Get()
