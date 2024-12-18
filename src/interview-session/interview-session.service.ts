@@ -98,6 +98,29 @@ export class InterviewSessionService {
     }
   }
 
+  async findByInterviewId(interviewId: string) {
+    try {
+      const interviewSessions = await this.prisma.interviewSession.findMany({
+        where: { interviewId: interviewId },
+        select: {
+          id: true,
+          interviewId: true,
+          candidateId: true,
+          responses: true,
+          status: true,
+          startTime: true,
+          endTime: true,
+          score: true,
+          aiAnalysis: true,
+        }
+      });
+      return interviewSessions;
+    } catch (error) {
+      this.logger.error(`GET: error: ${error}`);
+      throw new InternalServerErrorException('Server error');
+    }
+  }
+
   // findAll() {
   //   return `This action returns all interviewSession`;
   // }
