@@ -1,4 +1,11 @@
-import { BadRequestException, Injectable, InternalServerErrorException, Logger, UnauthorizedException } from '@nestjs/common';
+import {
+    BadRequestException,
+    Injectable,
+    InternalServerErrorException,
+    Logger,
+    NotFoundException,
+    UnauthorizedException
+} from "@nestjs/common";
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateInterviewDto } from './dto/create-interview.dto';
 import { UpdateInterviewDto } from './dto/update-interview.dto';
@@ -19,6 +26,12 @@ export class InterviewService {
         this.logger.log(`POST: interview/create: New interview started`);
 
         try {
+            const company = await this.prisma.company.findUnique({
+                where: { id: dto.companyId },
+            });
+            if (!company) {
+                throw new NotFoundException(`Company with id ${dto.companyId} not found`);
+            }
             // Creating a new interview in the database
             const interview = await this.prisma.interview.create({
                 data: {
@@ -40,6 +53,9 @@ export class InterviewService {
                 interview,
             };
         } catch (error) {
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
             // Custom Prisma error handler
             this.prismaErrorHandler(error, "POST", dto.companyId);
             this.logger.error(`POST: interview/create: Error: ${error.message}`);
@@ -52,6 +68,12 @@ export class InterviewService {
         this.logger.log(`POST: interview/update: Interview update started`);
 
         try {
+            const interviewExist = await this.prisma.interview.findUnique({
+                where: { id: id },
+            });
+            if (!interviewExist) {
+                throw new NotFoundException(`Interview with id ${id} not found`);
+            }
             // Creating a new interview in the database
             const interview = await this.prisma.interview.update({
                 where:{id:id},
@@ -74,6 +96,9 @@ export class InterviewService {
                 interview,
             };
         } catch (error) {
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
             // Custom Prisma error handler
             this.prismaErrorHandler(error, "POST", dto.companyId);
             this.logger.error(`POST: interview/create: Error: ${error.message}`);
@@ -124,8 +149,16 @@ export class InterviewService {
                     updatedAt: true,
                 }
             });
+
+            if (!interviews || interviews.length === 0) {
+                this.logger.warn(`GET: No interviews found for company ID: ${companyId}`);
+                throw new NotFoundException(`No interviews found for company ID: ${companyId}`);
+            }
             return interviews;
         } catch (error) {
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
             this.logger.error(`GET: error: ${error}`);
             throw new InternalServerErrorException('Server error');
         }
@@ -136,20 +169,29 @@ export class InterviewService {
       async remove(id: string) {
     
         try {
-          const deletedInterview = await this.prisma.interview.delete({
-            where: {id:id},
-            select:{
-              id: true,
+            const interviewExist = await this.prisma.interview.findUnique({
+                where: { id: id },
+            });
+            if (!interviewExist) {
+                throw new NotFoundException(`Interview with id ${id} not found`);
             }
-          });
-          
-          this.logger.warn(`DELETE: ${JSON.stringify(deletedInterview)}`);
-          return {message: "Interview deleted"}
-          
+            const deletedInterview = await this.prisma.interview.delete({
+                where: {id:id},
+                select:{
+                  id: true,
+                }
+            });
+
+            this.logger.warn(`DELETE: ${JSON.stringify(deletedInterview)}`);
+            return {message: "Interview deleted"}
+
         } catch (error) {
-          this.prismaErrorHandler(error, "DELETE", id);
-          this.logger.error(`DELETE: error: ${error}`);
-          throw new InternalServerErrorException('Server error');
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
+            this.prismaErrorHandler(error, "DELETE", id);
+            this.logger.error(`DELETE: error: ${error}`);
+            throw new InternalServerErrorException('Server error');
         }
     
     

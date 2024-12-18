@@ -1,4 +1,11 @@
-import { BadRequestException, Injectable, InternalServerErrorException, Logger, UnauthorizedException } from '@nestjs/common';
+import {
+    BadRequestException,
+    Injectable,
+    InternalServerErrorException,
+    Logger,
+    NotFoundException,
+    UnauthorizedException
+} from "@nestjs/common";
 import { OpenAI } from 'openai';
 import { GenerateQuestionsDto } from './dto/generate-questions.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -33,6 +40,14 @@ export class AiService {
         };
 
         try {
+            const existingInterview = await this.prisma.interview.findUnique({
+                where: { id: id },
+            });
+
+            if (!existingInterview) {
+                this.logger.warn(`Interview with ID ${id} not found`);
+                throw new NotFoundException(`Interview with ID ${id} not found`);
+            }
             const prompt = `Generate 5 interview questions for a ${dto.skillLevel} ${dto.jobRole} role. Provide the question, specify the type: 'open-ended' or 'coding' and estimate time for the answering each question. Format the response as JSON.`;
 
             //   const response = await this.openai.chat.completions.create({
@@ -94,6 +109,9 @@ export class AiService {
                 interview,
             };
         } catch (error) {
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
             this.logger.error(
                 `POST: interview/generate-and-add-questions: Error occurred: ${error.message}`
             );
