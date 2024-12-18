@@ -2,6 +2,7 @@ import { Injectable, InternalServerErrorException, Logger, NotFoundException } f
 import { CreateInterviewSessionDto } from './dto/create-interview-session.dto';
 import { UpdateInterviewSessionDto } from './dto/update-interview-session.dto';
 import { PrismaService } from '../prisma/prisma.service';
+import { arrayNotEmpty, isNotEmpty } from "class-validator";
 
 @Injectable()
 export class InterviewSessionService {
@@ -17,6 +18,18 @@ export class InterviewSessionService {
     this.logger.log(`POST: interview/create: New interview started`);
 
     try {
+      const interview = await this.prisma.interview.findUnique({
+        where: { id: dto.interviewId },
+      });
+      if (!interview) {
+        throw new NotFoundException(`Interview with id ${dto.interviewId} not found`);
+      }
+      const candidate = await this.prisma.user.findUnique({
+        where: { id: dto.candidateId },
+      });
+      if (!candidate) {
+        throw new NotFoundException(`Candidate with id ${dto.candidateId} not found`);
+      }
       // Creating a new interview in the database
       const interviewSession = await this.prisma.interviewSession.create({
         data: {
@@ -50,6 +63,9 @@ export class InterviewSessionService {
       };
     } catch (error) {
       // Custom Prisma error handler
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
       this.prismaErrorHandler(error, "POST", dto.interviewId);
       this.logger.error(`POST: interview/create: Error: ${error.message}`);
       throw new InternalServerErrorException("Server error occurred");
@@ -114,8 +130,15 @@ export class InterviewSessionService {
           aiAnalysis: true,
         }
       });
+      if (!interviewSessions || interviewSessions.length === 0) {
+        this.logger.warn(`GET: No sessions found for interview ID: ${interviewId}`);
+        throw new NotFoundException(`No sessions found for interview ID: ${interviewId}`);
+      }
       return interviewSessions;
     } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
       this.logger.error(`GET: error: ${error}`);
       throw new InternalServerErrorException('Server error');
     }
