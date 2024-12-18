@@ -62,7 +62,7 @@ export class CreateInterviewDto {
     })
     
     @IsNotEmpty()
-    questions: Array<{ question: string; type: string }>;;
+    questions: Array<{ question: string; type: string }>;
 
     @ApiProperty({
         description: "Duration of the interview in minutes",

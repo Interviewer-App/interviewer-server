@@ -8,6 +8,7 @@ import { UserModule } from './user/user.module';
 import { AppService } from './app.service';
 import { AiModule } from './ai/ai.module';
 import { InterviewModule } from './interview/interview.module';
+import { InterviewSessionModule } from './interview-session/interview-session.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { InterviewModule } from './interview/interview.module';
     UserModule,
     AiModule,
     InterviewModule,
+    InterviewSessionModule,
   ],
   controllers:[AppController],
   providers:[AppService]
