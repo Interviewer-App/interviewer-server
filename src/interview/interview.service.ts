@@ -197,6 +197,34 @@ export class InterviewService {
     
       }
 
+      async findQuestionsByInterviewId(interviewId: string) {
+          try {
+              const questions = await this.prisma.question.findMany({
+                  where: { interviewId: interviewId },
+                  select: {
+                      id: true,
+                      interviewId: true,
+                      question: true,
+                      type: true,
+                      createdAt: true,
+                      updatedAt: true,
+                  }
+              });
+
+              if (!questions || questions.length === 0) {
+                  this.logger.warn(`GET: No questions found for interview ID: ${interviewId}`);
+                  throw new NotFoundException(`No questions found for interview ID: ${interviewId}`);
+              }
+              return questions;
+          } catch (error) {
+              if (error instanceof NotFoundException) {
+                  throw error;
+              }
+              this.logger.error(`GET: error: ${error}`);
+              throw new InternalServerErrorException('Server error');
+          }
+      }
+
       private prismaErrorHandler(error: any, method: string, identifier: string) {
         if (error.code === "P2002") {
             this.logger.error(
