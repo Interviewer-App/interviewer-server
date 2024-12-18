@@ -31,15 +31,17 @@ export class InterviewSessionService {
         },
       });
 
-      // const interview = await this.prisma.interview.update({
-      //   where: { id: dto.interviewId },
-      //   data: {
-      //     sessions: interviewSession,
-      //   },
-      // });
+      await this.prisma.interview.update({
+        where: { id: dto.interviewId },
+        data: {
+          sessions: {
+            connect: { id: interviewSession.id },
+          },
+        },
+      });
 
       this.logger.log(
-        `POST: interview-sessiom/create: Interview Session ${interviewSession.id} created successfully`
+        `POST: interview-session/create: Interview Session ${interviewSession.id} created successfully`
       );
 
       return {
