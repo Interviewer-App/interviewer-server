@@ -14,7 +14,7 @@ export class AiController {
     constructor(private readonly aiService: AiService) { }
 
 
-    @Post('generate-questions/:id')
+    @Post('generate-questions/:interviewId')
     @ApiOperation({
         summary: 'GENERATE QUESTIONS',
         description: 'Private endpoint to generate questions.'
@@ -24,7 +24,7 @@ export class AiController {
     @ApiResponse({ status: 401, description: 'Unauthorized' })
     @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
     @Auth(Role.COMPANY)
-    generateQuestions(@Param('id') id: string, @Body() GenerateQuestionsDto: GenerateQuestionsDto) {
+    generateQuestions(@Param('interviewId') id: string, @Body() GenerateQuestionsDto: GenerateQuestionsDto) {
         return this.aiService.generateQuestions(id,GenerateQuestionsDto);
     }
 
