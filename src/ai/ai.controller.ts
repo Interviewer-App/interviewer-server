@@ -5,6 +5,7 @@ import { Auth, GetUser } from 'src/auth/decorators';
 import { Role } from '@prisma/client';
 import { GenerateQuestionsDto } from './dto/generate-questions.dto';
 import { AnalyzeQuestionDto } from './dto/analyze-question.dto';
+import { AnalyzeCandidateDto } from "./dto/analyze-candidate.dto";
 
 
 @ApiBearerAuth()
@@ -41,6 +42,20 @@ export class AiController {
     @Auth(Role.COMPANY)
     analyzeQuestion(@Body() AnalyzeQuestionDto: AnalyzeQuestionDto) {
         return this.aiService.analyzeResponse(AnalyzeQuestionDto);
+    }
+
+    @Post('analiyze-candidate')
+    @ApiOperation({
+        summary: 'ANALYZE CANDIDATES RELEVENT FOR THE POSITION',
+        description: 'Private endpoint to analyze candidate and get summary with relevance to the position.'
+    })
+    @ApiResponse({ status: 201, description: 'Created'})
+    @ApiResponse({ status: 400, description: 'Bad request' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
+    @Auth(Role.COMPANY)
+    analyzeCandidate(@Body() AnalyzecandidateDto: AnalyzeCandidateDto) {
+        return this.aiService.analyzeCandidate(AnalyzecandidateDto);
     }
 
 }
