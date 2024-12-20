@@ -156,9 +156,33 @@ export class InterviewSessionService {
   //   return `This action updates a #${id} interviewSession`;
   // }
   //
-  // remove(id: number) {
-  //   return `This action removes a #${id} interviewSession`;
-  // }
+  async remove(id: string) {
+    try {
+      const interviewSessionExist = await this.prisma.interviewSession.findUnique({
+        where: { id: id },
+      });
+      if (!interviewSessionExist) {
+        throw new NotFoundException(`Interview session with id ${id} not found`);
+      }
+      const deletedInterviewSession = await this.prisma.interviewSession.delete({
+        where: {id:id},
+        select:{
+          id: true,
+        }
+      });
+
+      this.logger.warn(`DELETE: ${JSON.stringify(deletedInterviewSession)}`);
+      return {message: "Interview Session deleted"}
+
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.prismaErrorHandler(error, "DELETE", id);
+      this.logger.error(`DELETE: error: ${error}`);
+      throw new InternalServerErrorException('Server error');
+    }
+  }
 
   private prismaErrorHandler(error: any, method: string, identifier: string) {
     if (error.code === "P2002") {

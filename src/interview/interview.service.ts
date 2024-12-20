@@ -9,6 +9,7 @@ import {
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateInterviewDto } from './dto/create-interview.dto';
 import { UpdateInterviewDto } from './dto/update-interview.dto';
+import { UpdateQuestionDto } from "./dto/update-question.dto";
 
 
 @Injectable()
@@ -225,6 +226,37 @@ export class InterviewService {
           }
       }
 
+    async removeQuestionByQuestionId(questionId: string) {
+
+        try {
+            const questionExist = await this.prisma.question.findUnique({
+                where: { id: questionId },
+            });
+            if (!questionExist) {
+                throw new NotFoundException(`Question with id ${questionId} not found`);
+            }
+            const deletedQuestion = await this.prisma.question.delete({
+                where: {id:questionId},
+                select:{
+                    id: true,
+                }
+            });
+
+            this.logger.warn(`DELETE: ${JSON.stringify(deletedQuestion)}`);
+            return {message: `Question with id ${questionId} deleted`}
+
+        } catch (error) {
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
+            this.prismaErrorHandler(error, "DELETE", questionId);
+            this.logger.error(`DELETE: error: ${error}`);
+            throw new InternalServerErrorException('Server error');
+        }
+
+
+    }
+
       private prismaErrorHandler(error: any, method: string, identifier: string) {
         if (error.code === "P2002") {
             this.logger.error(
@@ -235,5 +267,42 @@ export class InterviewService {
             );
         }
         this.logger.error(`${method}: Prisma error: ${error.message}`);
+    }
+
+    async updateQuestionById(questionId: string, dto: UpdateQuestionDto) {
+        this.logger.log(`POST: question/update: Question update started`);
+
+        try {
+            const questionExist = await this.prisma.question.findUnique({
+                where: { id: questionId },
+            });
+            if (!questionExist) {
+                throw new NotFoundException(`Question with id ${questionId} not found`);
+            }
+            const question = await this.prisma.question.update({
+                where:{id:questionId},
+                data: {
+                    question:dto.question,
+                    type:dto.type.toUpperCase() === 'OPEN_ENDED' ? 'OPEN_ENDED' : 'CODING',
+                },
+            });
+
+            this.logger.log(
+              `POST: question/update: Question ${question.id} updated successfully`
+            );
+
+            return {
+                message: `Question for ID ${question.id} updated successfully`,
+                question,
+            };
+        } catch (error) {
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
+            // Custom Prisma error handler
+            this.prismaErrorHandler(error, "PATCH", questionId);
+            this.logger.error(`POST: question/update: Error: ${error.message}`);
+            throw new InternalServerErrorException("Server error occurred");
+        }
     }
 }

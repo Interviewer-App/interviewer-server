@@ -60,6 +60,22 @@ export class InterviewSessionController {
   findByInterviewId(@Param('interviewId') interviewId: string) {
     return this.interviewSessionService.findByInterviewId(interviewId);
   }
+
+  @Delete(':id')
+  @ApiOperation({
+    summary: 'DELETE INTERVIEW SESSION BY INTERVIEW SESSION ID',
+    description: 'Private endpoint to delete interview session by passed ID. It is allowed only by "admin" users'
+  })
+  @ApiResponse({ status: 201, description: 'Deleted'})
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
+  @Auth(Role.COMPANY)
+  remove(@Param('id') id: string) {
+    return this.interviewSessionService.remove(id);
+  }
+
+
   //
   // @Patch(':id')
   // update(@Param('id') id: string, @Body() updateInterviewSessionDto: UpdateInterviewSessionDto) {

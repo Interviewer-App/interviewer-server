@@ -6,6 +6,7 @@ import { Interview } from './entities/interview.entity';
 import { CreateInterviewDto } from './dto/create-interview.dto';
 import { Role } from '@prisma/client';
 import { UpdateInterviewDto } from './dto/update-interview.dto';
+import { UpdateQuestionDto } from "./dto/update-question.dto";
 
 @ApiBearerAuth()
 @ApiTags('Interview')
@@ -96,5 +97,33 @@ export class InterviewController {
     @Auth(Role.COMPANY)
     findQuestionsByInterviewId(@Param('interviewId') interviewId: string) {
         return this.interviewService.findQuestionsByInterviewId(interviewId);
+    }
+
+    @Delete('questions/:questionId')
+    @ApiOperation({
+        summary: '  DELETE QUESTIONS BY QUESTION ID',
+        description: 'Private endpoint to delete questions by question id. It is allowed only by "admin" users'
+    })
+    @ApiResponse({ status: 201, description: 'Deleted'})
+    @ApiResponse({ status: 400, description: 'Bad request' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
+    @Auth(Role.COMPANY)
+    removeQuestionByQuestionId(@Param('questionId') questionId: string) {
+        return this.interviewService.removeQuestionByQuestionId(questionId);
+    }
+
+    @Patch('questions/:questionId')
+    @ApiOperation({
+        summary: 'UPDATE INTERVIEW BY ID',
+        description: 'Private endpoint to update QUESTION data by questionId.'
+    })
+    @ApiResponse({status: 200, description: 'Ok', type: UpdateQuestionDto})
+    @ApiResponse({status: 400, description: 'Bad request'})
+    @ApiResponse({status: 401, description: 'Unauthorized'})
+    @ApiResponse({status: 500, description: 'Server error'})             //Swagger
+    @Auth(Role.COMPANY)
+    updateQuestionById(@Param('questionId') questionId: string, @Body() updateQuestionDto: UpdateQuestionDto) {
+        return this.interviewService.updateQuestionById( questionId, updateQuestionDto);
     }
 }
