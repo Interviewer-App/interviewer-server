@@ -253,8 +253,6 @@ export class InterviewService {
             this.logger.error(`DELETE: error: ${error}`);
             throw new InternalServerErrorException('Server error');
         }
-
-
     }
 
       private prismaErrorHandler(error: any, method: string, identifier: string) {
@@ -303,6 +301,30 @@ export class InterviewService {
             this.prismaErrorHandler(error, "PATCH", questionId);
             this.logger.error(`POST: question/update: Error: ${error.message}`);
             throw new InternalServerErrorException("Server error occurred");
+        }
+    }
+
+    async removeQuestionByInterviewId(interviewId: string) {
+        try {
+            const deletedQuestions = await this.prisma.question.deleteMany({
+                where: {interviewId:interviewId},
+            });
+
+            if (!deletedQuestions || deletedQuestions.count === 0) {
+                this.logger.warn(`GET: No questions found for interview ID: ${interviewId}`);
+                throw new NotFoundException(`No questions found for interview ID: ${interviewId}`);
+            }
+
+            this.logger.warn(`DELETE: ${JSON.stringify(deletedQuestions)}`);
+            return {message: `Question with associated with Interview id ${interviewId} deleted`}
+
+        } catch (error) {
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
+            this.prismaErrorHandler(error, "DELETE", interviewId);
+            this.logger.error(`DELETE: error: ${error}`);
+            throw new InternalServerErrorException('Server error');
         }
     }
 }

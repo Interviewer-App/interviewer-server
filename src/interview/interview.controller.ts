@@ -99,7 +99,7 @@ export class InterviewController {
         return this.interviewService.findQuestionsByInterviewId(interviewId);
     }
 
-    @Delete('questions/:questionId')
+    @Delete('question/:questionId')
     @ApiOperation({
         summary: '  DELETE QUESTIONS BY QUESTION ID',
         description: 'Private endpoint to delete questions by question id. It is allowed only by "admin" users'
@@ -113,7 +113,7 @@ export class InterviewController {
         return this.interviewService.removeQuestionByQuestionId(questionId);
     }
 
-    @Patch('questions/:questionId')
+    @Patch('question/:questionId')
     @ApiOperation({
         summary: 'UPDATE INTERVIEW BY ID',
         description: 'Private endpoint to update QUESTION data by questionId.'
@@ -125,5 +125,19 @@ export class InterviewController {
     @Auth(Role.COMPANY)
     updateQuestionById(@Param('questionId') questionId: string, @Body() updateQuestionDto: UpdateQuestionDto) {
         return this.interviewService.updateQuestionById( questionId, updateQuestionDto);
+    }
+
+    @Delete('questions/:interviewId')
+    @ApiOperation({
+        summary: '  DELETE ALL QUESTIONS ASSOCIATED WITH INTERVIEW BY INTERVIEW ID',
+        description: 'Private endpoint to delete all questions associated withinterview by interview id. It is allowed only by "company" users'
+    })
+    @ApiResponse({ status: 201, description: 'Deleted'})
+    @ApiResponse({ status: 400, description: 'Bad request' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
+    @Auth(Role.COMPANY)
+    removeQuestionByInterviewId(@Param('interviewId') interviewId: string) {
+        return this.interviewService.removeQuestionByInterviewId(interviewId);
     }
 }
