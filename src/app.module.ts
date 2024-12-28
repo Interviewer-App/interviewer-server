@@ -9,6 +9,7 @@ import { AppService } from './app.service';
 import { AiModule } from './ai/ai.module';
 import { InterviewModule } from './interview/interview.module';
 import { InterviewSessionModule } from './interview-session/interview-session.module';
+import { KafkaModule } from './kafka/kafka.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { InterviewSessionModule } from './interview-session/interview-session.mo
     AiModule,
     InterviewModule,
     InterviewSessionModule,
+    KafkaModule,
   ],
   controllers:[AppController],
   providers:[AppService]

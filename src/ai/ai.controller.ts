@@ -1,7 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Controller, Post, Body, Param } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AiService } from './ai.service';
-import { Auth, GetUser } from 'src/auth/decorators';
+import { Auth } from 'src/auth/decorators';
 import { Role } from '@prisma/client';
 import { GenerateQuestionsDto } from './dto/generate-questions.dto';
 import { AnalyzeQuestionDto } from './dto/analyze-question.dto';

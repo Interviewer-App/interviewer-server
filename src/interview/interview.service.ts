@@ -9,7 +9,8 @@ import {
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateInterviewDto } from './dto/create-interview.dto';
 import { UpdateInterviewDto } from './dto/update-interview.dto';
-import { UpdateQuestionDto } from "./dto/update-question.dto";
+import { UpdateQuestionDto } from './dto/update-question.dto';
+import { ProducerService } from '../kafka/producer/producer.service';
 
 
 @Injectable()
@@ -18,6 +19,7 @@ export class InterviewService {
 
     constructor(
         private prisma: PrismaService,
+
 
     ) { }
 
@@ -91,6 +93,8 @@ export class InterviewService {
             this.logger.log(
                 `POST: interview/update: Interview ${interview.id} updaated successfully`
             );
+
+
 
             return {
                 message: "Interview updated successfully",
