@@ -96,7 +96,6 @@ datasource db {
 //   REJECTED
 //   HIRED
 // }
-
 enum Role {
   ADMIN
   CANDIDATE
@@ -202,3 +201,340 @@ enum QuestionType {
   OPEN_ENDED
   CODING
 }
+
+//new schema
+
+// enum Role {
+//   CANDIDATE
+//   ADMIN
+//   INTERVIEWER
+// }
+//
+// enum CandidateStatus {
+//   OFFERED
+//   REJECTED
+//   APPLIED
+//   INTERVIEWSCHEDULED
+// }
+//
+// enum InterviewFormat {
+//   TECHNICAL
+//   BEHAVIORAL
+// }
+//
+// model User {
+//   userID      Int          @id @default(autoincrement())
+//   firstName   String
+//   lastName    String
+//   username    String       @unique
+//   date        DateTime     @default(now())
+//   gender      String
+//   contactNo   String
+//   email       String       @unique
+//   password    String
+//   role        Role         @default(CANDIDATE)
+//   admin       Admin?
+//   candidate   Candidate?
+//   interviewer Interviewer?
+//   createdAt   DateTime     @default(now())
+//   updatedAt   DateTime     @updatedAt
+// }
+//
+// model Candidate {
+//   profileID       Int             @id @default(autoincrement())
+//   userID          Int             @unique
+//   user            User            @relation(fields: [userID], references: [userID])
+//   skillHighlights String
+//   experience      String
+//   availability    String
+//   status          CandidateStatus @default(APPLIED)
+//   resumeURL       String
+//   createdAt       DateTime        @default(now())
+//   updatedAt       DateTime        @updatedAt
+//
+//   interviews            CandidateOnInterviews[]
+//   sessions              InterviewSession[]
+//   interviewResponses    InterviewResponses[]
+//   candidateOnComparison ComparisonOnCandidate[]
+//   score                 score?
+// }
+//
+// model Admin {
+//   adminID    Int      @id @default(autoincrement())
+//   userID     Int      @unique
+//   user       User     @relation(fields: [userID], references: [userID])
+//   companyID  Int
+//   company    Company  @relation(fields: [companyID], references: [companyID])
+//   permitions String
+//   logs       String
+//   createdAt  DateTime @default(now())
+//   updatedAt  DateTime @updatedAt
+// }
+//
+// model Interviewer {
+//   interviewerID       Int                       @id @default(autoincrement())
+//   userID              Int                       @unique
+//   user                User                      @relation(fields: [userID], references: [userID])
+//   companyID           Int
+//   company             Company                   @relation(fields: [companyID], references: [companyID])
+//   interviewFormat     InterviewFormat           @default(TECHNICAL)
+//   createdAt           DateTime                  @default(now())
+//   updatedAt           DateTime                  @updatedAt
+//   interviews          InterviewerOnInterviews[]
+//   interviewerFeedback InterviewerOnFeedback[]
+//   skillAssesment      SkillAssessment[]
+// }
+//
+// model Company {
+//   companyID          Int      @id @default(autoincrement())
+//   userID             Int
+//   companyName        String
+//   companyDescription String?
+//   websiteURL         String?
+//   createdAt          DateTime @default(now())
+//   updatedAt          DateTime @updatedAt
+//
+//   admin       Admin[]
+//   interviewer Interviewer[]
+//   interviews  Interviews[]
+// }
+//
+// model Interviews {
+//   interviewID    Int      @id @default(autoincrement())
+//   jobDescription String
+//   requiredSkills String
+//   companyID      Int
+//   // interviewerID  Int
+//   scheduledDate  DateTime
+//   scheduledAt    DateTime
+//   status         status
+//   createdAt      DateTime @default(now())
+//   updatedAt      DateTime @updatedAt
+//
+//   company           Company                   @relation(fields: [companyID], references: [companyID])
+//   interviewSessions InterviewSession[]
+//   interviewers      InterviewerOnInterviews[]
+//   candidates        CandidateOnInterviews[]
+// }
+//
+// model InterviewerOnInterviews {
+//   interviewer   Interviewer @relation(fields: [interviewerId], references: [interviewerID])
+//   interviewerId Int
+//   interview     Interviews  @relation(fields: [interviewId], references: [interviewID])
+//   interviewId   Int
+//   // assignedAt DateTime @default(now())
+//   // assignedBy String
+//
+//   @@id([interviewerId, interviewId])
+// }
+//
+// model CandidateOnInterviews {
+//   candidate   Candidate  @relation(fields: [candidateId], references: [profileID])
+//   candidateId Int
+//   interview   Interviews @relation(fields: [interviewId], references: [interviewID])
+//   interviewId Int
+//   // assignedAt  DateTime   @default(now())
+//   // assignedBy  String
+//
+//   @@id([candidateId, interviewId])
+// }
+//
+// enum status {
+//   PENDING
+//   COMPLETED
+// }
+//
+// model InterviewSession {
+//   sessionId          Int                  @id @default(autoincrement())
+//   candidateId        Int
+//   candidate          Candidate            @relation(fields: [candidateId], references: [profileID])
+//   assesmentId        Int
+//   feedbackId         Int
+//   interviewCategory  interviewCategory
+//   interviewId        Int
+//   interview          Interviews           @relation(fields: [interviewId], references: [interviewID])
+//   scheduledDate      DateTime
+//   scheduledAt        DateTime
+//   completedDate      DateTime
+//   interviewStatus    interviewStatus
+//   score              score?
+//   reviewedBy         String
+//   createdAt          DateTime             @default(now())
+//   updatedAt          DateTime             @updatedAt
+//   scheduling         Scheduling?
+//   questions          Question[]
+//   interviewResponses InterviewResponses[]
+//   interviewFeedback  InterviewFeedback[]
+// }
+//
+// model Scheduling {
+//   scheduleID                Int      @id @default(autoincrement())
+//   sessionID                 Int      @unique
+//   date                      DateTime
+//   time                      DateTime
+//   reminderSentToInterviewer Boolean
+//   reminderSentToCandidate   Boolean
+//   notificationStatus        String
+//   createdAt                 DateTime @default(now())
+//   updatedAt                 DateTime @updatedAt
+//
+//   interviewSession InterviewSession @relation(fields: [sessionID], references: [sessionId])
+// }
+//
+// enum interviewCategory {
+//   Technical
+//   Behavioural
+// }
+//
+// enum interviewStatus {
+//   toBeConducted
+//   completed
+// }
+//
+// model SkillAssessment {
+//   assessmentID       Int                  @id @default(autoincrement())
+//   interviewerID      Int
+//   interviewer        Interviewer          @relation(fields: [interviewerID], references: [interviewerID])
+//   candidateID        Int
+//   // candidate   Candidate  @relation(fields: [candidateID], references: [candidateID])
+//   interviewID        Int
+//   // interview   Interview  @relation(fields: [interviewID], references: [interviewID])
+//   skillName          String
+//   skillScore         String
+//   skillMeterStatus   String
+//   createdAt          DateTime             @default(now())
+//   updatedAt          DateTime             @updatedAt
+//   interviewResponses InterviewResponses[]
+// }
+//
+// model CandidateComparison {
+//   comparisonID          Int                     @id @default(autoincrement())
+//   interviewID           Int
+//   // interview   Interview  @relation(fields: [interviewID], references: [interviewID])
+//   interviewerID         Int
+//   // interviewer Interviewer @relation(fields: [interviewerID], references: [interviewerID])
+//   candidateID           Int
+//   // candidate   Candidate  @relation(fields: [candidateID], references: [candidateID])
+//   candidateID1          Int
+//   candidateID2          Int
+//   comparisonResult      String
+//   createdAt             DateTime                @default(now())
+//   updatedAt             DateTime                @updatedAt
+//   interviewResponses    InterviewResponses[]
+//   // score Score[]
+//   candidateOnComparison ComparisonOnCandidate[]
+// }
+//
+// model ComparisonOnCandidate {
+//   candidateId         Int
+//   comparisonId        Int
+//   candidate           Candidate           @relation(fields: [candidateId], references: [profileID])
+//   candidateComparison CandidateComparison @relation(fields: [comparisonId], references: [comparisonID])
+//
+//   @@id([candidateId, comparisonId])
+// }
+//
+// model Question {
+//   questionID         Int                  @id @default(autoincrement())
+//   sessionID          Int
+//   questionCategory   String
+//   questionText       String
+//   aiContext          String
+//   diffcultyLevel     String
+//   type               String
+//   createdAt          DateTime
+//   updatedAt          DateTime
+//   usageFrequency     Int
+//   interviewSession   InterviewSession     @relation(fields: [sessionID], references: [sessionId])
+//   interviewResponses InterviewResponses[]
+// }
+//
+// model ReviewHistory {
+//   reviewID           Int                  @id @default(autoincrement())
+//   interviewID        Int
+//   interviewerID      Int
+//   reviewComments     String
+//   cretaedAt          DateTime
+//   updatedAt          DateTime
+//   interviewResponses InterviewResponses[]
+// }
+//
+// model InterviewResponses {
+//   responseID               Int                         @id @default(autoincrement())
+//   sessionID                Int
+//   questionID               Int
+//   candidateID              Int
+//   responseText             String
+//   responseTime             DateTime
+//   languageDetected         String
+//   sentimentAnalysis        String
+//   keywordExtracted         String
+//   createdAt                DateTime
+//   updatedAt                DateTime
+//   comparisonID             Int
+//   assessmentID             Int
+//   reviewID                 Int
+//   interviewFeedback        InterviewResponseFeedback[]
+//   question                 Question                    @relation(fields: [questionID], references: [questionID])
+//   interviewSession         InterviewSession            @relation(fields: [sessionID], references: [sessionId])
+//   candidateProfiles        Candidate                   @relation(fields: [candidateID], references: [profileID])
+//   interviewMultimediaTable InterviewMultimediaTable[]
+//   candidatecomparison      CandidateComparison         @relation(fields: [comparisonID], references: [comparisonID])
+//   skillassessments         SkillAssessment             @relation(fields: [assessmentID], references: [assessmentID])
+//   reviewHistory            ReviewHistory               @relation(fields: [reviewID], references: [reviewID])
+// }
+//
+// model InterviewFeedback {
+//   feedbackID          Int                         @id @default(autoincrement())
+//   interviewID         Int
+//   interviewerID       Int
+//   sessionId           Int
+//   interviewSesssion   InterviewSession            @relation(fields: [sessionId], references: [sessionId])
+//   skillScore          String
+//   skillMeterStatus    String
+//   createdAt           DateTime
+//   updatedAt           DateTime
+//   InterviewResponses  InterviewResponseFeedback[]
+//   interviewerFeedback InterviewerOnFeedback[]
+// }
+//
+// model InterviewerOnFeedback {
+//   feedbackID        Int
+//   interviewerID     Int
+//   interviewFeedback InterviewFeedback @relation(fields: [feedbackID], references: [feedbackID])
+//   interviewer       Interviewer       @relation(fields: [interviewerID], references: [interviewerID])
+//
+//   @@id([feedbackID, interviewerID])
+// }
+//
+// model InterviewResponseFeedback {
+//   feedbackID         Int
+//   responseID         Int
+//   interviewFeedback  InterviewFeedback  @relation(fields: [feedbackID], references: [feedbackID])
+//   interviewResponses InterviewResponses @relation(fields: [responseID], references: [responseID])
+//
+//   @@id([feedbackID, responseID])
+// }
+//
+// model score {
+//   scoreID     Int    @id @default(autoincrement())
+//   sessionID   Int    @unique
+//   candidateID Int    @unique
+//   score       String
+//   createdAt   String
+//   updatedAt   String
+//
+//   session   InterviewSession @relation(fields: [sessionID], references: [sessionId])
+//   candidate Candidate        @relation(fields: [candidateID], references: [profileID])
+// }
+//
+// model InterviewMultimediaTable {
+//   multimediaId       Int                @id @default(autoincrement())
+//   responseID         Int
+//   voiceRecordingURL  String
+//   videoRecordingURL  String
+//   textToSpeechOutput String
+//   createdAt          DateTime
+//   updatedAt          DateTime
+//   interviewResponses InterviewResponses @relation(fields: [responseID], references: [responseID])
+// }
