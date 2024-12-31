@@ -8,11 +8,11 @@ import { KafkaModule } from '../kafka/kafka.module';
 
 @Module({
   controllers: [InterviewSessionController],
-  providers: [InterviewSessionService, InterviewSessionCreateConsumer],
+  providers: [InterviewSessionService],
   imports:[
     AuthModule,
     PrismaModule,
-    KafkaModule
+    // KafkaModule
   ]
 })
 export class InterviewSessionModule {}

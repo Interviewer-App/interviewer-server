@@ -11,7 +11,7 @@ import { KafkaModule } from '../kafka/kafka.module';
   imports: [
       AuthModule,
       PrismaModule,
-      KafkaModule
+      // KafkaModule
     ],
     exports: []
 })

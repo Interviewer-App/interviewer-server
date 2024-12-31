@@ -61,11 +61,11 @@ export class AuthService {
             },
           }),
           ...(dto.role === Role.CANDIDATE && {
-            profile: {
+            candidate: {
               create: {
                 firstName: 'First',
                 lastName:  'Last',
-                skills:  [],
+                skillHighlights: '',
                 resumeUrl:  null,
               },
             },

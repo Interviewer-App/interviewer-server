@@ -30,7 +30,7 @@ export class InterviewService {
 
         try {
             const company = await this.prisma.company.findUnique({
-                where: { id: dto.companyId },
+                where: { companyID: dto.companyId },
             });
             if (!company) {
                 throw new NotFoundException(`Company with id ${dto.companyId} not found`);
@@ -259,7 +259,7 @@ export class InterviewService {
         }
     }
 
-      private prismaErrorHandler(error: any, method: string, identifier: string) {
+      private prismaErrorHandler(error: any, method: string, identifier: string|number) {
         if (error.code === "P2002") {
             this.logger.error(
                 `${method}: Conflict: Duplicate entry for companyId ${identifier}`
