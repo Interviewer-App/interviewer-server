@@ -10,7 +10,7 @@ export class User {
         type: "string",
         example: "2313w49-0db7-4v79-aacc-52624343bf2t",
     })
-    id: string;
+    userID: string;
     
     
     // @ApiProperty({

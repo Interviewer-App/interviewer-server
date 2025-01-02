@@ -15,7 +15,18 @@ export class RegisterUserDto {
     })
     @IsString()
     @MinLength(3)
-    name: string;
+    firstname: string;
+
+    @ApiProperty({
+        description: "Name",
+        nullable: false,
+        required: true,
+        type: "string",
+        example: "John Sample",
+    })
+    @IsString()
+    @MinLength(3)
+    lastname: string;
 
     
     @ApiProperty({
@@ -79,4 +90,38 @@ export class RegisterUserDto {
     @IsOptional()
     role?: Role;
 
+
+    @ApiProperty({
+        description: "user provider account type",
+        nullable: false,
+        required: true,
+        type: "string",
+        // example: "Google",
+    })
+    @IsString()
+    @IsOptional()
+    provider?: string;
+
+    @ApiProperty({
+        description: "user provider account type",
+        nullable: false,
+        required: true,
+        type: "string",
+        // example: "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",
+    })
+    @IsString()
+    @IsOptional()
+    providerAccountId?: string;
+
+
+    @ApiProperty({
+        description: "Company Name",
+        nullable: false,
+        required: true,
+        type: "string",
+        example: "Coullax",
+    })
+    @IsString()
+    @IsOptional()
+    companyname?: string;
 }

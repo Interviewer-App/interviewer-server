@@ -180,27 +180,29 @@ enum InterviewFormat {
 }
 
 model User {
-  userID      Int          @id @default(autoincrement())
-  firstName   String?
-  lastName    String?
-  username    String?
-  dob         DateTime?    @default(now())
-  gender      String?
-  contactNo   String?
-  email       String       @unique
-  password    String
-  role        Role         @default(CANDIDATE)
-  admin       Admin?
-  candidate   Candidate?
-  company     Company?
-  interviewer Interviewer?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  userID            String     @id @default(cuid())
+  firstName         String?
+  lastName          String?
+  username          String?
+  dob               DateTime?    @default(now())
+  gender            String?
+  contactNo         String?
+  email             String       @unique
+  password          String?
+  provider          String?
+  providerAccountId String?
+  role              Role         @default(CANDIDATE)
+  admin             Admin?
+  candidate         Candidate?
+  company           Company?
+  interviewer       Interviewer?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
 }
 
 model Candidate {
-  profileID       Int             @id @default(autoincrement())
-  userID          Int             @unique
+  profileID       String          @id @default(cuid())
+  userID          String           @unique
   user            User            @relation(fields: [userID], references: [userID])
   skillHighlights String
   experience      String
@@ -214,8 +216,8 @@ model Candidate {
 }
 
 model Admin {
-  adminID    Int      @id @default(autoincrement())
-  userID     Int      @unique
+  adminID    String     @id @default(cuid())
+  userID     String      @unique
   user       User     @relation(fields: [userID], references: [userID])
   // companyID  Int
   // company    Company  @relation(fields: [companyID], references: [companyID])
@@ -226,10 +228,10 @@ model Admin {
 }
 
 model Interviewer {
-  interviewerID   Int             @id @default(autoincrement())
-  userID          Int             @unique
+  interviewerID   String     @id @default(cuid())
+  userID          String             @unique
   user            User            @relation(fields: [userID], references: [userID])
-  companyID       Int
+  companyID       String
   company         Company         @relation(fields: [companyID], references: [companyID])
   interviewFormat InterviewFormat @default(TECHNICAL)
   createdAt       DateTime        @default(now())
@@ -237,8 +239,8 @@ model Interviewer {
 }
 
 model Company {
-  companyID          Int           @id @default(autoincrement())
-  userID             Int           @unique
+  companyID          String     @id @default(cuid())
+  userID             String           @unique
   companyName        String
   companyDescription String?
   websiteURL         String?
@@ -251,7 +253,7 @@ model Company {
 
 model Interview {
   id          String             @id @default(cuid())
-  companyId   Int
+  companyId   String
   company     Company            @relation(fields: [companyId], references: [companyID])
   title       String
   description String?
@@ -268,7 +270,7 @@ model InterviewSession {
   id          String    @id @default(cuid())
   interviewId String
   interview   Interview @relation(fields: [interviewId], references: [id])
-  candidateId Int
+  candidateId String
   candidate   Candidate @relation(fields: [candidateId], references: [userID])
   responses   Json?
   status      String    @default("PENDING")

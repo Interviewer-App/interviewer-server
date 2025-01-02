@@ -26,7 +26,7 @@ export class InterviewSessionService {
         throw new NotFoundException(`Interview with id ${dto.interviewId} not found`);
       }
       const candidate = await this.prisma.user.findUnique({
-        where: { id: dto.candidateId },
+        where: { userID: dto.candidateId },
       });
       if (!candidate) {
         throw new NotFoundException(`Candidate with id ${dto.candidateId} not found`);

@@ -9,6 +9,7 @@ import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { User } from 'src/user/entities/user.entity';
 import { Role } from '@prisma/client';
+import { first, last } from 'rxjs';
 
 
 @Injectable()
@@ -42,64 +43,132 @@ export class AuthService {
 
     try {
       const userData = {
+        firstName: dto.firstname,
+        lastName: dto.lastname,
         email: dto.email,
         password: hashedPassword,
         role: dto.role,
       };
       // const {passwordconf , ...newUserData} = dto
       // newUserData.password = hashedPassword;
+      if(dto.providerAccountId){
 
-      const newuser = await this.prisma.user.create({
-        data: {
-          ...userData,
-          ...(dto.role === Role.COMPANY && {
+        const newuser = await this.prisma.user.create({
+          data: {
+            firstName: dto.firstname,
+            lastName: dto.lastname,
+            email: dto.email,
+            providerAccountId: dto.providerAccountId,
+            provider: dto.provider,
+            ...(dto.role === Role.COMPANY && {
+              company: {
+                create: {
+                  companyName:  dto.companyname, // Ensure company name is provided
+                },
+              },
+            }),
+            ...(dto.role === Role.CANDIDATE && {
+              candidate: {
+                create: {
+                  
+                  // firstName: 'First',
+                  // lastName:  'Last',
+                  // skillHighlights: '',
+                  resumeUrl: null,
+                  experience: '', // Add appropriate value
+                  availability: '', // Add appropriate value
+                  resumeURL: '', // Add appropriate value
+                  skillHighlights: '', // Example field, replace with actual required fields
+                },
+              },
+            }),
+          },
+          select: {
+            userID: true,
+            email: true,
+            role: true,
+            createdAt: true,
             company: {
-              create: {
-                name:  'Default Company Name', // Ensure company name is provided
-                description: 'Default Company Name',
+              select: {
+                companyID: true,
+                companyName: true,
               },
             },
-          }),
-          ...(dto.role === Role.CANDIDATE && {
             candidate: {
-              create: {
-                firstName: 'First',
-                lastName:  'Last',
-                skillHighlights: '',
-                resumeUrl:  null,
+              select: {
+                profileID: true,
+                user: true,
               },
             },
-          }),
-        },
-        select: {
-          id: true,
-          email: true,
-          role: true,
-          createdAt: true,
-          company: {
-            select: {
-              id: true,
-              name: true,
-            },
           },
-          profile: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-            },
-          },
-        },
-      });
+        });
+    
   
+        return {
+          user: newuser,
+          token: this.getJwtToken({
+            id: newuser.userID.toString(),
+            role: newuser.role
+          })
+        };
 
-      return {
-        user: newuser,
-        token: this.getJwtToken({
-          id: newuser.id,
-          role: newuser.role
-        })
-      };
+      }else{
+
+        const newuser = await this.prisma.user.create({
+          data: {
+            ...userData,
+            ...(dto.role === Role.COMPANY && {
+              company: {
+                create: {
+                  companyName:  dto.companyname, // Ensure company name is provided
+                },
+              },
+            }),
+            ...(dto.role === Role.CANDIDATE && {
+              candidate: {
+                create: {
+                  
+                  resumeUrl: null,
+                  experience: '', // Add appropriate value
+                  availability: '', // Add appropriate value
+                  resumeURL: '', // Add appropriate value
+                  skillHighlights: '', // Example field, replace with actual required fields
+                },
+              },
+            }),
+          },
+          select: {
+            userID: true,
+            email: true,
+            role: true,
+            createdAt: true,
+            company: {
+              select: {
+                companyID: true,
+                companyName: true,
+              },
+            },
+            candidate: {
+              select: {
+                profileID: true,
+                user: true,
+              },
+            },
+          },
+        });
+    
+  
+        return {
+          user: newuser,
+          token: this.getJwtToken({
+            id: newuser.userID.toString(),
+            role: newuser.role
+          })
+        };
+
+      }
+
+
       
     } catch (error) {
       if (error.code === 'P2002') {
@@ -122,7 +191,7 @@ export class AuthService {
           email
         },
         select: {
-          id: true,
+          userID: true,
           email: true,
           password: true,
           role: true,
@@ -148,7 +217,7 @@ export class AuthService {
     return {
       user,
       token: this.getJwtToken({
-        id: user.id,
+        id: user.userID,
         role: user.role
       })
     };
@@ -158,7 +227,7 @@ export class AuthService {
   async refreshToken(user: User){
     return {
       user: user,
-      token: this.getJwtToken({id: user.id, role:user.role})
+      token: this.getJwtToken({id: user.userID, role:user.role})
     };
 
 
