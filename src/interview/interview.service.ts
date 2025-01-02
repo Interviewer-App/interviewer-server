@@ -9,7 +9,6 @@ import {
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateInterviewDto } from './dto/create-interview.dto';
 import { UpdateInterviewDto } from './dto/update-interview.dto';
-import { UpdateQuestionDto } from './dto/update-question.dto';
 import { ProducerService } from '../kafka/producer/producer.service';
 
 
@@ -30,25 +29,25 @@ export class InterviewService {
 
         try {
             const company = await this.prisma.company.findUnique({
-                where: { companyID: dto.companyId },
+                where: { companyID: dto.companyID },
             });
             if (!company) {
-                throw new NotFoundException(`Company with id ${dto.companyId} not found`);
+                throw new NotFoundException(`Company with id ${dto.companyID} not found`);
             }
             // Creating a new interview in the database
             const interview = await this.prisma.interview.create({
                 data: {
-                    companyId: dto.companyId,
-                    title: dto.title,
-                    description: dto.description || null,
-                    questions: dto.questions,
-                    duration: dto.duration,
+                    companyID: dto.companyID,
+                    jobDescription: dto.jobDescription,
+                    requiredSkills: dto.requiredSkills || null,
+                    scheduledDate: dto.scheduledDate,
+                    scheduledAt: dto.scheduledAt,
                     status: dto.status,
                 },
             });
 
             this.logger.log(
-                `POST: interview/create: Interview ${interview.id} created successfully`
+                `POST: interview/create: Interview ${interview.interviewID} created successfully`
             );
 
             return {
@@ -60,7 +59,7 @@ export class InterviewService {
                 throw error;
             }
             // Custom Prisma error handler
-            this.prismaErrorHandler(error, "POST", dto.companyId);
+            this.prismaErrorHandler(error, "POST", dto.companyID);
             this.logger.error(`POST: interview/create: Error: ${error.message}`);
             throw new InternalServerErrorException("Server error occurred");
         }
@@ -72,26 +71,26 @@ export class InterviewService {
 
         try {
             const interviewExist = await this.prisma.interview.findUnique({
-                where: { id: id },
+                where: { interviewID: id },
             });
             if (!interviewExist) {
                 throw new NotFoundException(`Interview with id ${id} not found`);
             }
             // Creating a new interview in the database
             const interview = await this.prisma.interview.update({
-                where:{id:id},
+                where:{interviewID:id},
                 data: {
-                    companyId: dto.companyId,
-                    title: dto.title,
-                    description: dto.description || null,
-                    questions: dto.questions,
-                    duration: dto.duration,
+                    companyID: dto.companyID,
+                    jobDescription: dto.jobDescription,
+                    requiredSkills: dto.requiredSkills || null,
+                    scheduledDate: dto.scheduledDate,
+                    scheduledAt: dto.scheduledAt,
                     status: dto.status,
                 },
             });
 
             this.logger.log(
-                `POST: interview/update: Interview ${interview.id} updaated successfully`
+                `POST: interview/update: Interview ${interview.interviewID} updaated successfully`
             );
 
 
@@ -105,7 +104,7 @@ export class InterviewService {
                 throw error;
             }
             // Custom Prisma error handler
-            this.prismaErrorHandler(error, "POST", dto.companyId);
+            this.prismaErrorHandler(error, "POST", dto.companyID);
             this.logger.error(`POST: interview/create: Error: ${error.message}`);
             throw new InternalServerErrorException("Server error occurred");
         }
@@ -117,13 +116,16 @@ export class InterviewService {
         try {
             const interviews = await this.prisma.interview.findMany({
                 select: {
-                    id: true,
-                    companyId: true,
-                    title: true,
-                    description: true,
-                    questions: true,
-                    duration: true,
+                    interviewID: true,
+                    companyID: true,
+                    jobDescription: true,
+                    requiredSkills: true,
+                    scheduledDate: true,
+                    scheduledAt: true,
                     status: true,
+                    interviewers: true,
+                    candidates: true,
+                    interviewSessions: true,
                     createdAt: true,
                     updatedAt: true,
                 }
@@ -141,15 +143,18 @@ export class InterviewService {
 
         try {
             const interviews = await this.prisma.interview.findMany({
-                where: { companyId: companyId },
+                where: { companyID: companyId },
                 select: {
-                    id: true,
-                    companyId: true,
-                    title: true,
-                    description: true,
-                    questions: true,
-                    duration: true,
+                    interviewID: true,
+                    companyID: true,
+                    jobDescription: true,
+                    requiredSkills: true,
+                    scheduledDate: true,
+                    scheduledAt: true,
                     status: true,
+                    interviewers: true,
+                    candidates: true,
+                    interviewSessions: true,
                     createdAt: true,
                     updatedAt: true,
                 }
@@ -175,15 +180,15 @@ export class InterviewService {
     
         try {
             const interviewExist = await this.prisma.interview.findUnique({
-                where: { id: id },
+                where: { interviewID: id },
             });
             if (!interviewExist) {
                 throw new NotFoundException(`Interview with id ${id} not found`);
             }
             const deletedInterview = await this.prisma.interview.delete({
-                where: {id:id},
+                where: {interviewID:id},
                 select:{
-                  id: true,
+                  interviewID: true,
                 }
             });
 
@@ -202,63 +207,6 @@ export class InterviewService {
     
       }
 
-      async findQuestionsByInterviewId(interviewId: string) {
-          try {
-              const questions = await this.prisma.question.findMany({
-                  where: { interviewId: interviewId },
-                  select: {
-                      id: true,
-                      interviewId: true,
-                      question: true,
-                      type: true,
-                      createdAt: true,
-                      updatedAt: true,
-                  }
-              });
-
-              if (!questions || questions.length === 0) {
-                  this.logger.warn(`GET: No questions found for interview ID: ${interviewId}`);
-                  throw new NotFoundException(`No questions found for interview ID: ${interviewId}`);
-              }
-              return questions;
-          } catch (error) {
-              if (error instanceof NotFoundException) {
-                  throw error;
-              }
-              this.logger.error(`GET: error: ${error}`);
-              throw new InternalServerErrorException('Server error');
-          }
-      }
-
-    async removeQuestionByQuestionId(questionId: string) {
-
-        try {
-            const questionExist = await this.prisma.question.findUnique({
-                where: { id: questionId },
-            });
-            if (!questionExist) {
-                throw new NotFoundException(`Question with id ${questionId} not found`);
-            }
-            const deletedQuestion = await this.prisma.question.delete({
-                where: {id:questionId},
-                select:{
-                    id: true,
-                }
-            });
-
-            this.logger.warn(`DELETE: ${JSON.stringify(deletedQuestion)}`);
-            return {message: `Question with id ${questionId} deleted`}
-
-        } catch (error) {
-            if (error instanceof NotFoundException) {
-                throw error;
-            }
-            this.prismaErrorHandler(error, "DELETE", questionId);
-            this.logger.error(`DELETE: error: ${error}`);
-            throw new InternalServerErrorException('Server error');
-        }
-    }
-
       private prismaErrorHandler(error: any, method: string, identifier: string|number) {
         if (error.code === "P2002") {
             this.logger.error(
@@ -271,64 +219,4 @@ export class InterviewService {
         this.logger.error(`${method}: Prisma error: ${error.message}`);
     }
 
-    async updateQuestionById(questionId: string, dto: UpdateQuestionDto) {
-        this.logger.log(`POST: question/update: Question update started`);
-
-        try {
-            const questionExist = await this.prisma.question.findUnique({
-                where: { id: questionId },
-            });
-            if (!questionExist) {
-                throw new NotFoundException(`Question with id ${questionId} not found`);
-            }
-            const question = await this.prisma.question.update({
-                where:{id:questionId},
-                data: {
-                    question:dto.question,
-                    type:dto.type.toUpperCase() === 'OPEN_ENDED' ? 'OPEN_ENDED' : 'CODING',
-                },
-            });
-
-            this.logger.log(
-              `POST: question/update: Question ${question.id} updated successfully`
-            );
-
-            return {
-                message: `Question for ID ${question.id} updated successfully`,
-                question,
-            };
-        } catch (error) {
-            if (error instanceof NotFoundException) {
-                throw error;
-            }
-            // Custom Prisma error handler
-            this.prismaErrorHandler(error, "PATCH", questionId);
-            this.logger.error(`POST: question/update: Error: ${error.message}`);
-            throw new InternalServerErrorException("Server error occurred");
-        }
-    }
-
-    async removeQuestionByInterviewId(interviewId: string) {
-        try {
-            const deletedQuestions = await this.prisma.question.deleteMany({
-                where: {interviewId:interviewId},
-            });
-
-            if (!deletedQuestions || deletedQuestions.count === 0) {
-                this.logger.warn(`GET: No questions found for interview ID: ${interviewId}`);
-                throw new NotFoundException(`No questions found for interview ID: ${interviewId}`);
-            }
-
-            this.logger.warn(`DELETE: ${JSON.stringify(deletedQuestions)}`);
-            return {message: `Question with associated with Interview id ${interviewId} deleted`}
-
-        } catch (error) {
-            if (error instanceof NotFoundException) {
-                throw error;
-            }
-            this.prismaErrorHandler(error, "DELETE", interviewId);
-            this.logger.error(`DELETE: error: ${error}`);
-            throw new InternalServerErrorException('Server error');
-        }
-    }
 }

@@ -180,7 +180,7 @@ enum InterviewFormat {
 }
 
 model User {
-  userID            String     @id @default(cuid())
+  userID            String       @id @default(cuid())
   firstName         String?
   lastName          String?
   username          String?
@@ -202,7 +202,7 @@ model User {
 
 model Candidate {
   profileID       String          @id @default(cuid())
-  userID          String           @unique
+  userID          String          @unique
   user            User            @relation(fields: [userID], references: [userID])
   skillHighlights String
   experience      String
@@ -212,12 +212,13 @@ model Candidate {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
-  sessions InterviewSession[]
+  sessions   InterviewSession[]
+  interviews CandidateOnInterviews[]
 }
 
 model Admin {
-  adminID    String     @id @default(cuid())
-  userID     String      @unique
+  adminID    String   @id @default(cuid())
+  userID     String   @unique
   user       User     @relation(fields: [userID], references: [userID])
   // companyID  Int
   // company    Company  @relation(fields: [companyID], references: [companyID])
@@ -228,19 +229,20 @@ model Admin {
 }
 
 model Interviewer {
-  interviewerID   String     @id @default(cuid())
-  userID          String             @unique
-  user            User            @relation(fields: [userID], references: [userID])
-  companyID       String
-  company         Company         @relation(fields: [companyID], references: [companyID])
-  interviewFormat InterviewFormat @default(TECHNICAL)
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  interviewerID           String                    @id @default(cuid())
+  userID                  String                    @unique
+  user                    User                      @relation(fields: [userID], references: [userID])
+  companyID               String
+  company                 Company                   @relation(fields: [companyID], references: [companyID])
+  interviewFormat         InterviewFormat           @default(TECHNICAL)
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  InterviewerOnInterviews InterviewerOnInterviews[]
 }
 
 model Company {
-  companyID          String     @id @default(cuid())
-  userID             String           @unique
+  companyID          String        @id @default(cuid())
+  userID             String        @unique
   companyName        String
   companyDescription String?
   websiteURL         String?
@@ -251,48 +253,168 @@ model Company {
   interviews         Interview[]
 }
 
+// model Interview {
+//   id          String             @id @default(cuid())
+//   companyId   String
+//   company     Company            @relation(fields: [companyId], references: [companyID])
+//   title       String
+//   description String?
+//   questions   Json
+//   duration    Int // in minutes
+//   status      InterviewStatus    @default(DRAFT)
+//   sessions    InterviewSession[]
+//   createdAt   DateTime           @default(now())
+//   updatedAt   DateTime           @updatedAt
+//   Question    Question[]
+// }
+
 model Interview {
-  id          String             @id @default(cuid())
-  companyId   String
-  company     Company            @relation(fields: [companyId], references: [companyID])
-  title       String
-  description String?
-  questions   Json
-  duration    Int // in minutes
-  status      InterviewStatus    @default(DRAFT)
-  sessions    InterviewSession[]
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
-  Question    Question[]
+  interviewID    String   @id @default(cuid())
+  jobDescription String?
+  requiredSkills String?
+  companyID      String
+  scheduledDate  DateTime
+  scheduledAt    DateTime
+  status         status
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  company           Company                   @relation(fields: [companyID], references: [companyID])
+  interviewSessions InterviewSession[]
+  interviewers      InterviewerOnInterviews[]
+  candidates        CandidateOnInterviews[]
 }
+
+model InterviewerOnInterviews {
+  interviewer   Interviewer @relation(fields: [interviewerId], references: [interviewerID])
+  interviewerId String
+  interview     Interview   @relation(fields: [interviewId], references: [interviewID])
+  interviewId   String
+  // assignedAt DateTime @default(now())
+  // assignedBy String
+
+  @@id([interviewerId, interviewId])
+}
+
+model CandidateOnInterviews {
+  candidate   Candidate @relation(fields: [candidateId], references: [profileID])
+  candidateId String
+  interview   Interview @relation(fields: [interviewId], references: [interviewID])
+  interviewId String
+  // assignedAt  DateTime   @default(now())
+  // assignedBy  String
+
+  @@id([candidateId, interviewId])
+}
+
+enum status {
+  PENDING
+  COMPLETED
+  ARCHIVED
+  ACTIVE
+  DRAFT
+}
+
+// model InterviewSession {
+//   id          String    @id @default(cuid())
+//   interviewId String
+//   interview   Interview @relation(fields: [interviewId], references: [id])
+//   candidateId String
+//   candidate   Candidate @relation(fields: [candidateId], references: [userID])
+//   responses   Json?
+//   status      String    @default("PENDING")
+//   startTime   DateTime?
+//   endTime     DateTime?
+//   score       Float?
+//   aiAnalysis  Json?
+// }
 
 model InterviewSession {
-  id          String    @id @default(cuid())
-  interviewId String
-  interview   Interview @relation(fields: [interviewId], references: [id])
-  candidateId String
-  candidate   Candidate @relation(fields: [candidateId], references: [userID])
-  responses   Json?
-  status      String    @default("PENDING")
-  startTime   DateTime?
-  endTime     DateTime?
-  score       Float?
-  aiAnalysis  Json?
+  sessionId         String            @id @default(cuid())
+  candidateId       String
+  candidate         Candidate         @relation(fields: [candidateId], references: [profileID])
+  assesmentId       String?
+  feedbackId        String?
+  interviewCategory interviewCategory
+  interviewId       String
+  interview         Interview         @relation(fields: [interviewId], references: [interviewID])
+  scheduledDate     DateTime
+  scheduledAt       DateTime
+  completedDate     DateTime?
+  interviewStatus   interviewStatus
+  score             score?
+  reviewedBy        String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  scheduling        Scheduling?
+  questions         Question[]
+  // interviewResponses InterviewResponses[]
+  // interviewFeedback  InterviewFeedback[]
 }
 
+model Scheduling {
+  scheduleID                String   @id @default(cuid())
+  sessionID                 String   @unique
+  date                      DateTime
+  time                      DateTime
+  reminderSentToInterviewer Boolean?
+  reminderSentToCandidate   Boolean?
+  notificationStatus        String?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  interviewSession InterviewSession @relation(fields: [sessionID], references: [sessionId])
+}
+
+enum interviewCategory {
+  Technical
+  Behavioural
+}
+
+enum interviewStatus {
+  toBeConducted
+  completed
+}
+
+// model Question {
+//   id          String       @id @default(cuid())
+//   interviewId String
+//   interview   Interview    @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+//   question    String
+//   type        QuestionType
+//   createdAt   DateTime     @default(now())
+//   updatedAt   DateTime     @updatedAt
+// }
 model Question {
-  id          String       @id @default(cuid())
-  interviewId String
-  interview   Interview    @relation(fields: [interviewId], references: [id], onDelete: Cascade)
-  question    String
-  type        QuestionType
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  questionID       String           @id @default(cuid())
+  sessionID        String
+  questionCategory String?
+  questionText     String
+  aiContext        String?
+  diffcultyLevel   String?
+  type             QuestionType
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  usageFrequency   Int?
+  interviewSession InterviewSession @relation(fields: [sessionID], references: [sessionId])
+  // interviewResponses InterviewResponses[]
 }
 
 enum QuestionType {
   OPEN_ENDED
   CODING
+}
+
+model score {
+  scoreID   String  @id @default(cuid())
+  sessionID String  @unique
+  // candidateID String @unique
+  score     String
+  createdAt String?
+  updatedAt String?
+
+  session InterviewSession @relation(fields: [sessionID], references: [sessionId])
+  // candidate Candidate        @relation(fields: [candidateID], references: [profileID])
 }
 
 //new schema

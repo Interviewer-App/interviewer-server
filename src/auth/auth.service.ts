@@ -70,11 +70,6 @@ export class AuthService {
             ...(dto.role === Role.CANDIDATE && {
               candidate: {
                 create: {
-                  
-                  // firstName: 'First',
-                  // lastName:  'Last',
-                  // skillHighlights: '',
-                  resumeUrl: null,
                   experience: '', // Add appropriate value
                   availability: '', // Add appropriate value
                   resumeURL: '', // Add appropriate value
@@ -127,8 +122,7 @@ export class AuthService {
             ...(dto.role === Role.CANDIDATE && {
               candidate: {
                 create: {
-                  
-                  resumeUrl: null,
+
                   experience: '', // Add appropriate value
                   availability: '', // Add appropriate value
                   resumeURL: '', // Add appropriate value

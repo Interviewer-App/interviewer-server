@@ -7,6 +7,7 @@ import { Interview } from "../interview/entities/interview.entity";
 import { Auth } from "../auth/decorators";
 import { Role } from "@prisma/client";
 import { InterviewSession } from './entities/interview-session.entity';
+import { UpdateQuestionDto } from "./dto/update-question.dto";
 
 @ApiBearerAuth()
 @ApiTags('Interview-Session')
@@ -73,6 +74,62 @@ export class InterviewSessionController {
   @Auth(Role.COMPANY)
   remove(@Param('id') id: string) {
     return this.interviewSessionService.remove(id);
+  }
+
+  @Get('/questions/:sessionId')
+  @ApiOperation({
+    summary: 'GET ALL QUESTIONS FOR THE INTERVIEW SESSION BY SESSION ID',
+    description: 'Private endpoint to Get all Interview Session questions by interview id. It is allowed only by "company" users'
+  })
+  @ApiResponse({ status: 201, description: 'Created' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
+  @Auth(Role.COMPANY)
+  findQuestionsBySessionId(@Param('sessionId') sessionId: string) {
+    return this.interviewSessionService.findQuestionsBySessionId(sessionId);
+  }
+
+  @Delete('question/:questionId')
+  @ApiOperation({
+    summary: '  DELETE QUESTIONS BY QUESTION ID',
+    description: 'Private endpoint to delete questions by question id. It is allowed only by "admin" users'
+  })
+  @ApiResponse({ status: 201, description: 'Deleted'})
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
+  @Auth(Role.COMPANY)
+  removeQuestionByQuestionId(@Param('questionId') questionId: string) {
+    return this.interviewSessionService.removeQuestionByQuestionId(questionId);
+  }
+
+  @Patch('question/:questionId')
+  @ApiOperation({
+    summary: 'UPDATE QUESTION BY ID',
+    description: 'Private endpoint to update QUESTION data by questionId.'
+  })
+  @ApiResponse({status: 200, description: 'Ok', type: UpdateQuestionDto})
+  @ApiResponse({status: 400, description: 'Bad request'})
+  @ApiResponse({status: 401, description: 'Unauthorized'})
+  @ApiResponse({status: 500, description: 'Server error'})             //Swagger
+  @Auth(Role.COMPANY)
+  updateQuestionById(@Param('questionId') questionId: string, @Body() updateQuestionDto: UpdateQuestionDto) {
+    return this.interviewSessionService.updateQuestionById( questionId, updateQuestionDto);
+  }
+
+  @Delete('questions/:sessionId')
+  @ApiOperation({
+    summary: '  DELETE ALL QUESTIONS ASSOCIATED WITH INTERVIEW SESSION BY SESSION ID',
+    description: 'Private endpoint to delete all questions associated with interview session by session id. It is allowed only by "company" users'
+  })
+  @ApiResponse({ status: 201, description: 'Deleted'})
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
+  @Auth(Role.COMPANY)
+  removeQuestionByInterviewId(@Param('sessionId') sessionId: string) {
+    return this.interviewSessionService.removeQuestionBySessionId(sessionId);
   }
 
 

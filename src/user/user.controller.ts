@@ -51,7 +51,7 @@ export class UserController {
   @ApiResponse({status: 500, description: 'Server error'})             //Swagger
   @Auth(Role.ADMIN, Role.COMPANY, Role.CANDIDATE)
   findOne(@Param('id') id: string, @GetUser() user: User) {
-    return this.userService.findOne("id", id, user);
+    return this.userService.findOne('userID', id, user);
   }
 
   @Get('email/:email')
@@ -64,7 +64,7 @@ export class UserController {
   @ApiResponse({status: 500, description: 'Server error'})             //Swagger
   @Auth(Role.ADMIN, Role.COMPANY, Role.CANDIDATE)
   findOneByEmail(@Param('email') email: string, @GetUser() user: User) {
-    return this.userService.findOne("email", email, user);
+    return this.userService.findOne('email', email, user);
   }
 
 
@@ -79,7 +79,7 @@ export class UserController {
   @ApiResponse({status: 500, description: 'Server error'})             //Swagger
   @Auth(Role.ADMIN, Role.COMPANY,Role.CANDIDATE)
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto, @GetUser() user: User) {
-    return this.userService.update("id", id, updateUserDto, user);
+    return this.userService.update('userID', id, updateUserDto, user);
   }
   
   @Patch('email/:email')
@@ -107,7 +107,7 @@ export class UserController {
   @ApiResponse({status: 500, description: 'Server error'})             //Swagger
   @Auth(Role.ADMIN, Role.COMPANY, Role.CANDIDATE)
   remove(@Param('id') id: string, @GetUser() user: User) {
-    return this.userService.remove("id", id, user);
+    return this.userService.remove('userID', id, user);
   }
   
   @Delete('email/:email')
