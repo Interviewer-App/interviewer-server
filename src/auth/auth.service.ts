@@ -25,7 +25,7 @@ export class AuthService {
 
 
   async registerUser(dto: RegisterUserDto): Promise<any> {
-    debugger
+
     this.logger.log(`POST: user/register: Register user started`);
     // Check if password and passwordConfirmation match
     if (dto.password !== dto.passwordconf) throw new BadRequestException('Passwords do not match');
@@ -36,6 +36,15 @@ export class AuthService {
     //Data to lower case
     dto.email = dto.email.toLowerCase().trim();
     // dto.name = dto.name.toLowerCase();
+
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (existingUser) {
+      this.logger.warn(`POST: user/register: User already exists: ${dto.email}`);
+      throw new BadRequestException('User with this email already exists');
+    }
 
 
     //Hash the password
@@ -223,6 +232,26 @@ export class AuthService {
     };
   }
 
+
+  async userAvailability(email: string): Promise<any> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { email },
+        select:{
+          provider: true,
+        }
+      });
+
+      if (user){
+        return  {user}
+      }else {
+        return  {user: null}
+      }
+    }catch (error) {
+      this.logger.error(`POST: auth/login: error: ${error}`);
+      throw new BadRequestException('Wrong credentials');
+    }
+  }
 
   async refreshToken(user: User){
     return {

@@ -69,7 +69,19 @@ export class AuthController {
     return this.authService.refreshToken(user);
   }
 
-
+  @Get('check-user-availability/:email')
+  @ApiOperation({
+    summary: 'User availability check',
+    description: 'public endpoint allowed for check user availability. If user is available, it returns true, otherwise false.'
+  })
+  @ApiResponse({status: 201, description: 'Ok', type: LoginResponse})
+  @ApiResponse({status: 400, description: 'Bad request'})
+  @ApiResponse({status: 500, description: 'Server error'})                //Swagger
+  userAvailabilityCheck(
+    @Param('email') email: string
+  ){
+    return this.authService.userAvailability(email);
+  }
 
 
 }
