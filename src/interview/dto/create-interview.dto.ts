@@ -24,9 +24,8 @@ export class CreateInterviewDto {
         type: "string",
         example: "cm4quxjjs0003vuuc0arunrlf",
     })
-    @IsString()
     @IsNotEmpty()
-    companyId: string;
+    companyId: number;
 
     @ApiProperty({
         description: "Title of the interview",

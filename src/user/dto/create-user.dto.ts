@@ -14,5 +14,13 @@ export class CreateUserDto extends RegisterUserDto {
     @IsString()
     @IsOptional()
     role?: Role;
+    @ApiProperty({
+        description: "Username for the account",
+        default: "user",
+        type: "string",
+        example: "John",
+    })
+    @IsString()
+    userName: string;
 
 }

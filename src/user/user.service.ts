@@ -43,11 +43,12 @@ export class UserService {
       const newuser = await this.prisma.user.create({
         data: {
           email:dto.email,
+          username:dto.userName,
           password:hashedPassword,
           role: dto.role 
         },
         select: {
-          id: true,
+          userID: true,
           email: true,
           role: true,
           createdAt: true,
@@ -68,7 +69,7 @@ export class UserService {
     try {
       const users = await this.prisma.user.findMany({
         select: {
-          id: true,
+          userID: true,
           email: true,
           role: true,
           createdAt: true,
@@ -87,13 +88,20 @@ export class UserService {
         
     if (value !== user[field] && user.role !== 'ADMIN') throw new UnauthorizedException('Unauthorized');
     
-    const whereData = field === 'id' ? {id: value} : {email: value};
-    
+    // const whereData = field === 'id' ? {userID: value} : {email: value};
+    let whereData;
+    if (field === 'id') {
+      whereData = { userID: value };  // Only use userID when field is 'id'
+    } else if (field === 'email') {
+      whereData = { email: value };   // Only use email when field is 'email'
+    } else {
+      throw new BadRequestException('Invalid field');
+    }
     try {
       const user = await this.prisma.user.findUniqueOrThrow({
         where: whereData,
         select: {
-          id: true,
+          userID: true,
           email: true,
           role: true,
           createdAt: true,
@@ -115,7 +123,15 @@ export class UserService {
 
     if (value !== user[field] && user.role !== 'ADMIN') throw new UnauthorizedException('Unauthorized');
     
-    const whereData = field === 'id' ? {id: value} : {email: value};
+    // const whereData = field === 'id' ? { userID: value } : { email: value };
+    let whereData;
+    if (field === 'id') {
+      whereData = { userID: value };  // Only use userID when field is 'id'
+    } else if (field === 'email') {
+      whereData = { email: value };   // Only use email when field is 'email'
+    } else {
+      throw new BadRequestException('Invalid field');
+    }
     
     if (user.role !== 'ADMIN') delete dto.role;
 
@@ -133,7 +149,7 @@ export class UserService {
         where: whereData,
         data: newUserData,
         select: {
-          id: true,
+          userID: true,
           email: true,
           role: true,
           createdAt: true,
@@ -153,13 +169,21 @@ export class UserService {
   async remove(field: string, value: string, user: User) {
     if (value !== user[field] && user.role !== 'ADMIN') throw new UnauthorizedException('Unauthorized');
 
-    const whereData = field === 'id' ? {id: value} : {email: value};
+    // const whereData = field === 'id' ? {userID: value} : {email: value};
+    let whereData;
+    if (field === 'id') {
+      whereData = { userID: value };  // Only use userID when field is 'id'
+    } else if (field === 'email') {
+      whereData = { email: value };   // Only use email when field is 'email'
+    } else {
+      throw new BadRequestException('Invalid field');
+    }
 
     try {
       const deletedUser = await this.prisma.user.delete({
         where: whereData,
         select:{
-          id: true,
+          userID: true,
           email: true,
         }
       });

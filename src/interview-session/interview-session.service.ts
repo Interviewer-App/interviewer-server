@@ -3,7 +3,7 @@ import { CreateInterviewSessionDto } from './dto/create-interview-session.dto';
 import { UpdateInterviewSessionDto } from './dto/update-interview-session.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { arrayNotEmpty, isNotEmpty } from "class-validator";
-import { ProducerService } from '../kafka/producer/producer.service';
+// import { ProducerService } from '../kafka/producer/producer.service';
 
 @Injectable()
 export class InterviewSessionService {
@@ -12,7 +12,7 @@ export class InterviewSessionService {
 
   constructor(
     private prisma: PrismaService,
-    private readonly _kafka: ProducerService,
+    // private readonly _kafka: ProducerService,
   ) { }
 
   async create(dto: CreateInterviewSessionDto) {
@@ -59,10 +59,10 @@ export class InterviewSessionService {
       );
 
 
-      this._kafka.produce({
-        topic: 'new-interview-session',
-        messages:[{value:'this is interview session created'}]
-      })
+      // this._kafka.produce({
+      //   topic: 'new-interview-session',
+      //   messages:[{value:'this is interview session created'}]
+      // })
 
       return {
         message: "Interview session created successfully",
@@ -108,10 +108,10 @@ export class InterviewSessionService {
       this.logger.log(
         `POST: interview/update: Interview ${interviewSession.id} updaated successfully`
       );
-      this._kafka.produce({
-        topic: 'update-interview-session',
-        messages:[{value:'this is interview session updated'}]
-      })
+      // this._kafka.produce({
+      //   topic: 'update-interview-session',
+      //   messages:[{value:'this is interview session updated'}]
+      // })
 
       return {
         message: "Interview updated successfully",

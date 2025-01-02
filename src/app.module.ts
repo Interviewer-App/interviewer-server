@@ -22,7 +22,7 @@ import { KafkaModule } from './kafka/kafka.module';
     AiModule,
     InterviewModule,
     InterviewSessionModule,
-    KafkaModule,
+    // KafkaModule,
   ],
   controllers:[AppController],
   providers:[AppService]
