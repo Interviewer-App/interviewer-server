@@ -22,7 +22,7 @@ export class UserController {
   @ApiResponse({status: 400, description: 'Bad request'})
   @ApiResponse({status: 401, description: 'Unauthorized'})
   @ApiResponse({status: 500, description: 'Server error'})             //Swagger
-  @Auth(Role.ADMIN, Role.COMPANY)
+  // @Auth(Role.ADMIN, Role.COMPANY)
   create(@Body() createUserDto: CreateUserDto) {
     return this.userService.create(createUserDto);
   }

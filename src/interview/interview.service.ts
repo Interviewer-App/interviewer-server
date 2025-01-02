@@ -137,7 +137,7 @@ export class InterviewService {
     }
 
 
-    async findAllByCompanyId(companyId: string) {
+    async findAllByCompanyId(companyId: number) {
 
         try {
             const interviews = await this.prisma.interview.findMany({

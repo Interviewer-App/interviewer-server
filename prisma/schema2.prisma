@@ -18,7 +18,7 @@ enum InterviewFormat {
 }
 
 model User {
-  userID      Int          @id @default(autoincrement())
+  userID      String       @id @default(cuid())
   firstName   String?
   lastName    String?
   username    String       @unique
@@ -37,8 +37,8 @@ model User {
 }
 
 model Candidate {
-  profileID       Int             @id @default(autoincrement())
-  userID          Int             @unique
+  profileID       String          @id @default(cuid())
+  userID          String          @unique
   user            User            @relation(fields: [userID], references: [userID])
   skillHighlights String
   experience      String
@@ -56,8 +56,8 @@ model Candidate {
 }
 
 model Admin {
-  adminID    Int      @id @default(autoincrement())
-  userID     Int      @unique
+  adminID    String   @id @default(cuid())
+  userID     String   @unique
   user       User     @relation(fields: [userID], references: [userID])
   // companyID  Int
   // company    Company  @relation(fields: [companyID], references: [companyID])
@@ -68,10 +68,10 @@ model Admin {
 }
 
 model Interviewer {
-  interviewerID       Int                       @id @default(autoincrement())
-  userID              Int                       @unique
+  interviewerID       String                    @id @default(cuid())
+  userID              String                    @unique
   user                User                      @relation(fields: [userID], references: [userID])
-  companyID           Int
+  companyID           String
   company             Company                   @relation(fields: [companyID], references: [companyID])
   interviewFormat     InterviewFormat           @default(TECHNICAL)
   createdAt           DateTime                  @default(now())
@@ -82,8 +82,8 @@ model Interviewer {
 }
 
 model Company {
-  companyID          Int           @id @default(autoincrement())
-  userID             Int           @unique
+  companyID          String        @id @default(cuid())
+  userID             String        @unique
   companyName        String
   companyDescription String?
   websiteURL         String?
@@ -95,10 +95,10 @@ model Company {
 }
 
 model Interviews {
-  interviewID    Int      @id @default(autoincrement())
+  interviewID    String   @id @default(cuid())
   jobDescription String
   requiredSkills String
-  companyID      Int
+  companyID      String
   // interviewerID  Int
   scheduledDate  DateTime
   scheduledAt    DateTime
@@ -114,9 +114,9 @@ model Interviews {
 
 model InterviewerOnInterviews {
   interviewer   Interviewer @relation(fields: [interviewerId], references: [interviewerID])
-  interviewerId Int
+  interviewerId String
   interview     Interviews  @relation(fields: [interviewId], references: [interviewID])
-  interviewId   Int
+  interviewId   String
   // assignedAt DateTime @default(now())
   // assignedBy String
 
@@ -125,9 +125,9 @@ model InterviewerOnInterviews {
 
 model CandidateOnInterviews {
   candidate   Candidate  @relation(fields: [candidateId], references: [profileID])
-  candidateId Int
+  candidateId String
   interview   Interviews @relation(fields: [interviewId], references: [interviewID])
-  interviewId Int
+  interviewId String
   // assignedAt  DateTime   @default(now())
   // assignedBy  String
 
@@ -140,13 +140,13 @@ enum status {
 }
 
 model InterviewSession {
-  sessionId          Int                  @id @default(autoincrement())
-  candidateId        Int
+  sessionId          String               @id @default(cuid())
+  candidateId        String
   candidate          Candidate            @relation(fields: [candidateId], references: [profileID])
   assesmentId        Int
   feedbackId         Int
   interviewCategory  interviewCategory
-  interviewId        Int
+  interviewId        String
   interview          Interviews           @relation(fields: [interviewId], references: [interviewID])
   scheduledDate      DateTime
   scheduledAt        DateTime
@@ -163,8 +163,8 @@ model InterviewSession {
 }
 
 model Scheduling {
-  scheduleID                Int      @id @default(autoincrement())
-  sessionID                 Int      @unique
+  scheduleID                String   @id @default(cuid())
+  sessionID                 String   @unique
   date                      DateTime
   time                      DateTime
   reminderSentToInterviewer Boolean
@@ -187,8 +187,8 @@ enum interviewStatus {
 }
 
 model SkillAssessment {
-  assessmentID       Int                  @id @default(autoincrement())
-  interviewerID      Int
+  assessmentID       String               @id @default(cuid())
+  interviewerID      String
   interviewer        Interviewer          @relation(fields: [interviewerID], references: [interviewerID])
   candidateID        Int
   // candidate   Candidate  @relation(fields: [candidateID], references: [candidateID])
@@ -203,12 +203,12 @@ model SkillAssessment {
 }
 
 model CandidateComparison {
-  comparisonID          Int                     @id @default(autoincrement())
-  interviewID           Int
+  comparisonID          String                  @id @default(cuid())
+  interviewID           String
   // interview   Interview  @relation(fields: [interviewID], references: [interviewID])
-  interviewerID         Int
+  interviewerID         String
   // interviewer Interviewer @relation(fields: [interviewerID], references: [interviewerID])
-  candidateID           Int
+  candidateID           String
   // candidate   Candidate  @relation(fields: [candidateID], references: [candidateID])
   candidateID1          Int
   candidateID2          Int
@@ -221,8 +221,8 @@ model CandidateComparison {
 }
 
 model ComparisonOnCandidate {
-  candidateId         Int
-  comparisonId        Int
+  candidateId         String
+  comparisonId        String
   candidate           Candidate           @relation(fields: [candidateId], references: [profileID])
   candidateComparison CandidateComparison @relation(fields: [comparisonId], references: [comparisonID])
 
@@ -230,8 +230,8 @@ model ComparisonOnCandidate {
 }
 
 model Question {
-  questionID         Int                  @id @default(autoincrement())
-  sessionID          Int
+  questionID         String               @id @default(cuid())
+  sessionID          String
   questionCategory   String
   questionText       String
   aiContext          String
@@ -245,9 +245,9 @@ model Question {
 }
 
 model ReviewHistory {
-  reviewID           Int                  @id @default(autoincrement())
-  interviewID        Int
-  interviewerID      Int
+  reviewID           String               @id @default(cuid())
+  interviewID        String
+  interviewerID      String
   reviewComments     String
   cretaedAt          DateTime
   updatedAt          DateTime
@@ -255,10 +255,10 @@ model ReviewHistory {
 }
 
 model InterviewResponses {
-  responseID               Int                         @id @default(autoincrement())
-  sessionID                Int
-  questionID               Int
-  candidateID              Int
+  responseID               String                      @id @default(cuid())
+  sessionID                String
+  questionID               String
+  candidateID              String
   responseText             String
   responseTime             DateTime
   languageDetected         String
@@ -266,9 +266,9 @@ model InterviewResponses {
   keywordExtracted         String
   createdAt                DateTime
   updatedAt                DateTime
-  comparisonID             Int
-  assessmentID             Int
-  reviewID                 Int
+  comparisonID             String
+  assessmentID             String
+  reviewID                 String
   interviewFeedback        InterviewResponseFeedback[]
   question                 Question                    @relation(fields: [questionID], references: [questionID])
   interviewSession         InterviewSession            @relation(fields: [sessionID], references: [sessionId])
@@ -280,10 +280,10 @@ model InterviewResponses {
 }
 
 model InterviewFeedback {
-  feedbackID          Int                         @id @default(autoincrement())
-  interviewID         Int
-  interviewerID       Int
-  sessionId           Int
+  feedbackID          String                      @id @default(cuid())
+  interviewID         String
+  interviewerID       String
+  sessionId           String
   interviewSesssion   InterviewSession            @relation(fields: [sessionId], references: [sessionId])
   skillScore          String
   skillMeterStatus    String
@@ -294,8 +294,8 @@ model InterviewFeedback {
 }
 
 model InterviewerOnFeedback {
-  feedbackID        Int
-  interviewerID     Int
+  feedbackID        String
+  interviewerID     String
   interviewFeedback InterviewFeedback @relation(fields: [feedbackID], references: [feedbackID])
   interviewer       Interviewer       @relation(fields: [interviewerID], references: [interviewerID])
 
@@ -303,8 +303,8 @@ model InterviewerOnFeedback {
 }
 
 model InterviewResponseFeedback {
-  feedbackID         Int
-  responseID         Int
+  feedbackID         String
+  responseID         String
   interviewFeedback  InterviewFeedback  @relation(fields: [feedbackID], references: [feedbackID])
   interviewResponses InterviewResponses @relation(fields: [responseID], references: [responseID])
 
@@ -312,9 +312,9 @@ model InterviewResponseFeedback {
 }
 
 model score {
-  scoreID     Int    @id @default(autoincrement())
-  sessionID   Int    @unique
-  candidateID Int    @unique
+  scoreID     String @id @default(cuid())
+  sessionID   String @unique
+  candidateID String @unique
   score       String
   createdAt   String
   updatedAt   String
@@ -324,8 +324,8 @@ model score {
 }
 
 model InterviewMultimediaTable {
-  multimediaId       Int                @id @default(autoincrement())
-  responseID         Int
+  multimediaId       String             @id @default(cuid())
+  responseID         String
   voiceRecordingURL  String
   videoRecordingURL  String
   textToSpeechOutput String
