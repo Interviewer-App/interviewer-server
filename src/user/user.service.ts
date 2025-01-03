@@ -90,7 +90,7 @@ export class UserService {
     
     // const whereData = field === 'id' ? {userID: value} : {email: value};
     let whereData;
-    if (field === 'id') {
+    if (field === 'userID') {
       whereData = { userID: value };  // Only use userID when field is 'id'
     } else if (field === 'email') {
       whereData = { email: value };   // Only use email when field is 'email'
@@ -125,7 +125,7 @@ export class UserService {
     
     // const whereData = field === 'id' ? { userID: value } : { email: value };
     let whereData;
-    if (field === 'id') {
+    if (field === 'userID') {
       whereData = { userID: value };  // Only use userID when field is 'id'
     } else if (field === 'email') {
       whereData = { email: value };   // Only use email when field is 'email'
@@ -171,7 +171,7 @@ export class UserService {
 
     // const whereData = field === 'id' ? {userID: value} : {email: value};
     let whereData;
-    if (field === 'id') {
+    if (field === 'userID') {
       whereData = { userID: value };  // Only use userID when field is 'id'
     } else if (field === 'email') {
       whereData = { email: value };   // Only use email when field is 'email'

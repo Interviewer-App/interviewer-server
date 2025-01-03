@@ -62,6 +62,7 @@ export class AuthService {
       // const {passwordconf , ...newUserData} = dto
       // newUserData.password = hashedPassword;
 
+
         const newuser = await this.prisma.user.create({
           data: {
             ...userData,

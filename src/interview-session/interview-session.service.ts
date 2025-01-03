@@ -3,6 +3,7 @@ import { CreateInterviewSessionDto } from './dto/create-interview-session.dto';
 import { UpdateInterviewSessionDto } from './dto/update-interview-session.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { arrayNotEmpty, isNotEmpty } from "class-validator";
+import { UpdateQuestionDto } from "./dto/update-question.dto";
 // import { ProducerService } from '../kafka/producer/producer.service';
 
 @Injectable()
@@ -20,13 +21,13 @@ export class InterviewSessionService {
 
     try {
       const interview = await this.prisma.interview.findUnique({
-        where: { id: dto.interviewId },
+        where: { interviewID: dto.interviewId },
       });
       if (!interview) {
         throw new NotFoundException(`Interview with id ${dto.interviewId} not found`);
       }
-      const candidate = await this.prisma.user.findUnique({
-        where: { userID: dto.candidateId },
+      const candidate = await this.prisma.candidate.findUnique({
+        where: { profileID: dto.candidateId },
       });
       if (!candidate) {
         throw new NotFoundException(`Candidate with id ${dto.candidateId} not found`);
@@ -36,26 +37,24 @@ export class InterviewSessionService {
         data: {
           interviewId: dto.interviewId,
           candidateId: dto.candidateId,
-          responses: dto.responses,
-          status: dto.status,
-          startTime: dto.startTime,
-          endTime: dto.endTime,
-          score: dto.score,
-          aiAnalysis: dto.aiAnalysis
+          scheduledDate: dto.scheduledDate,
+          scheduledAt: dto.scheduledAt,
+          interviewCategory: dto.interviewCategory,
+          interviewStatus: dto.interviewStatus
         },
       });
 
       await this.prisma.interview.update({
-        where: { id: dto.interviewId },
+        where: { interviewID: dto.interviewId },
         data: {
-          sessions: {
-            connect: { id: interviewSession.id },
+          interviewSessions: {
+            connect: { sessionId: interviewSession.sessionId },
           },
         },
       });
 
       this.logger.log(
-        `POST: interview-session/create: Interview Session ${interviewSession.id} created successfully`
+        `POST: interview-session/create: Interview Session ${interviewSession.sessionId} created successfully`
       );
 
 
@@ -84,7 +83,7 @@ export class InterviewSessionService {
     this.logger.log(`POST: interviewsession/update: Interview Session update started`);
 
     const interviewSession = await this.prisma.interviewSession.findUnique({
-      where: { id },
+      where: { sessionId:id },
     });
     if (!interviewSession) {
       throw new NotFoundException(`Interview session with id ${id} not found`);
@@ -94,19 +93,17 @@ export class InterviewSessionService {
     try {
       // Creating a new interview in the database
       const interviewSession = await this.prisma.interviewSession.update({
-        where: { id},
+        where: { sessionId:id },
         data: {
-          responses: dto.responses,
-          status: dto.status,
-          startTime: dto.startTime,
-          endTime: dto.endTime,
-          score: dto.score,
-          aiAnalysis: dto.aiAnalysis
+          scheduledDate: dto.scheduledDate,
+          scheduledAt: dto.scheduledAt,
+          interviewCategory: dto.interviewCategory,
+          interviewStatus: dto.interviewStatus
         },
       });
 
       this.logger.log(
-        `POST: interview/update: Interview ${interviewSession.id} updaated successfully`
+        `POST: interview/update: Interview ${interviewSession.sessionId} updaated successfully`
       );
       // this._kafka.produce({
       //   topic: 'update-interview-session',
@@ -114,7 +111,7 @@ export class InterviewSessionService {
       // })
 
       return {
-        message: "Interview updated successfully",
+        message: "Interview session updated successfully",
         interviewSession,
       };
     } catch (error) {
@@ -130,17 +127,27 @@ export class InterviewSessionService {
       const interviewSessions = await this.prisma.interviewSession.findMany({
         where: { interviewId: interviewId },
         select: {
-          id: true,
+          sessionId: true,
           interviewId: true,
           candidateId: true,
-          responses: true,
-          status: true,
-          startTime: true,
-          endTime: true,
+          assesmentId: true,
+          feedbackId: true,
+          interviewCategory: true,
+          scheduledDate: true,
+          scheduledAt: true,
+          completedDate: true,
+          interviewStatus: true,
           score: true,
-          aiAnalysis: true,
+          reviewedBy: true,
+          createdAt: true,
+          updatedAt: true,
+          candidate: true,
+          interview: true,
+          scheduling: true,
+          questions: true
         }
       });
+
       if (!interviewSessions || interviewSessions.length === 0) {
         this.logger.warn(`GET: No sessions found for interview ID: ${interviewId}`);
         throw new NotFoundException(`No sessions found for interview ID: ${interviewId}`);
@@ -170,15 +177,15 @@ export class InterviewSessionService {
   async remove(id: string) {
     try {
       const interviewSessionExist = await this.prisma.interviewSession.findUnique({
-        where: { id: id },
+        where: { sessionId: id },
       });
       if (!interviewSessionExist) {
         throw new NotFoundException(`Interview session with id ${id} not found`);
       }
       const deletedInterviewSession = await this.prisma.interviewSession.delete({
-        where: {id:id},
+        where: {sessionId:id},
         select:{
-          id: true,
+          sessionId: true,
         }
       });
 
@@ -194,6 +201,126 @@ export class InterviewSessionService {
       throw new InternalServerErrorException('Server error');
     }
   }
+
+    async findQuestionsBySessionId(sessionId: string) {
+        try {
+            const questions = await this.prisma.question.findMany({
+                where: { sessionID: sessionId },
+                select: {
+                    questionID: true,
+                    sessionID: true,
+                    questionText: true,
+                    type: true,
+                    createdAt: true,
+                    updatedAt: true,
+                }
+            });
+
+            if (!questions || questions.length === 0) {
+                this.logger.warn(`GET: No questions found for session ID: ${sessionId}`);
+                throw new NotFoundException(`No questions found for session ID: ${sessionId}`);
+            }
+            return questions;
+        } catch (error) {
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
+            this.logger.error(`GET: error: ${error}`);
+            throw new InternalServerErrorException('Server error');
+        }
+    }
+
+  async removeQuestionByQuestionId(questionId: string) {
+
+      try {
+          const questionExist = await this.prisma.question.findUnique({
+              where: { questionID: questionId },
+          });
+          if (!questionExist) {
+              throw new NotFoundException(`Question with id ${questionId} not found`);
+          }
+          const deletedQuestion = await this.prisma.question.delete({
+              where: {questionID:questionId},
+              select:{
+                  questionID: true,
+              }
+          });
+
+          this.logger.warn(`DELETE: ${JSON.stringify(deletedQuestion)}`);
+          return {message: `Question with id ${questionId} deleted`}
+
+      } catch (error) {
+          if (error instanceof NotFoundException) {
+              throw error;
+          }
+          this.prismaErrorHandler(error, "DELETE", questionId);
+          this.logger.error(`DELETE: error: ${error}`);
+          throw new InternalServerErrorException('Server error');
+      }
+  }
+
+  async updateQuestionById(questionId: string, dto: UpdateQuestionDto) {
+      this.logger.log(`POST: question/update: Question update started`);
+
+      try {
+          const questionExist = await this.prisma.question.findUnique({
+              where: { questionID: questionId },
+          });
+          if (!questionExist) {
+              throw new NotFoundException(`Question with id ${questionId} not found`);
+          }
+          const question = await this.prisma.question.update({
+              where:{questionID:questionId},
+              data: {
+                  questionText:dto.question,
+                  type:dto.type.toUpperCase() === 'OPEN_ENDED' ? 'OPEN_ENDED' : 'CODING',
+              },
+          });
+
+          this.logger.log(
+            `POST: question/update: Question ${question.questionID} updated successfully`
+          );
+
+          return {
+              message: `Question for ID ${question.questionID} updated successfully`,
+              question,
+          };
+      } catch (error) {
+          if (error instanceof NotFoundException) {
+              throw error;
+          }
+          // Custom Prisma error handler
+          this.prismaErrorHandler(error, "PATCH", questionId);
+          this.logger.error(`POST: question/update: Error: ${error.message}`);
+          throw new InternalServerErrorException("Server error occurred");
+      }
+  }
+
+  async removeQuestionBySessionId(sessionId: string) {
+      try {
+          const deletedQuestions = await this.prisma.question.deleteMany({
+              where: {sessionID:sessionId},
+          });
+
+          if (!deletedQuestions || deletedQuestions.count === 0) {
+              this.logger.warn(`GET: No questions found for session ID: ${sessionId}`);
+              throw new NotFoundException(`No questions found for session ID: ${sessionId}`);
+          }
+
+          this.logger.warn(`DELETE: ${JSON.stringify(deletedQuestions)}`);
+          return {message: `Question with associated with Session id ${sessionId} deleted`}
+
+      } catch (error) {
+          if (error instanceof NotFoundException) {
+              throw error;
+          }
+          this.prismaErrorHandler(error, "DELETE", sessionId);
+          this.logger.error(`DELETE: error: ${error}`);
+          throw new InternalServerErrorException('Server error');
+      }
+  }
+
+
 
   private prismaErrorHandler(error: any, method: string, identifier: string) {
     if (error.code === "P2002") {

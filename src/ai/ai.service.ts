@@ -29,7 +29,7 @@ export class AiService {
   async generateQuestions(
     id: string,
     dto: GenerateQuestionsDto,
-  ): Promise<{ message: string; interview: any }> {
+  ): Promise<{ message: string }> {
     this.logger.log(`POST: interview/generate-and-add-questions: Started`);
     const model = this.genAI.getGenerativeModel({
       model: 'gemini-2.0-flash-exp',
@@ -43,8 +43,8 @@ export class AiService {
     };
 
     try {
-      const existingInterview = await this.prisma.interview.findUnique({
-        where: { id: id },
+      const existingInterview = await this.prisma.interviewSession.findUnique({
+        where: { sessionId: id },
       });
 
       if (!existingInterview) {
@@ -91,29 +91,34 @@ export class AiService {
         questions.map(async (q) => {
           return this.prisma.question.create({
             data: {
-              interviewId: id,
-              question: q.question,
-              type:
-                q.type.toUpperCase() === 'OPEN-ENDED' ? 'OPEN_ENDED' : 'CODING',
+              questionText: q.question,
+              type: q.type.toUpperCase() === 'OPEN-ENDED' ? 'OPEN_ENDED' : 'CODING',
+              aiContext: `Generated for ${dto.jobRole}`,
+              usageFrequency: 0,
+              interviewSession: {
+                connect: {
+                  sessionId: id,
+                },
+              },
             },
           });
         }),
       );
 
-      const interview = await this.prisma.interview.update({
-        where: { id: id },
-        data: {
-          questions: questions,
-        },
-      });
+
+      // const interviewSession = await this.prisma.interviewSession.update({
+      //   where: { sessionId: id },
+      //   data: {
+      //     questions: questions,
+      //   },
+      // });
 
       this.logger.log(
-        `POST: interview/generate-and-add-questions: Interview ${interview.id} updated successfully`,
+        `POST: interview/generate-and-add-questions: Interview session ${id} updated successfully`,
       );
 
       return {
-        message: 'Questions generated and added successfully',
-        interview,
+        message: `Questions generated and added to Interview session ${id} successfully`,
       };
     } catch (error) {
       if (error instanceof NotFoundException) {
