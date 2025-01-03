@@ -153,23 +153,31 @@ export class AuthService {
       throw new BadRequestException('Wrong credentials');
     }
 
-    // Compare the provided password with the hashed password
-    const passwordMatch = await bcrypt.compare(password, user.password);
-
-    if (!passwordMatch) {
+    if(user.provider === 'google' || user.provider === 'github') {
       throw new BadRequestException('Wrong credentials');
+    } else {
+      const passwordMatch = await bcrypt.compare(password, user.password);
+      if (!passwordMatch) {
+        throw new BadRequestException('Wrong credentials');
+      }
+
+      delete user.password;
+
+      this.logger.log(`POST: auth/login: Usuario aceptado: ${user.email}`);
+      return {
+        user,
+        token: this.getJwtToken({
+          id: user.userID,
+          role: user.role
+        })
+      };
+
     }
+
+
+
     
-    delete user.password;
-    
-    this.logger.log(`POST: auth/login: Usuario aceptado: ${user.email}`);
-    return {
-      user,
-      token: this.getJwtToken({
-        id: user.userID,
-        role: user.role
-      })
-    };
+
   }
 
   async providerRegisterUser(dto: ProviderUserDto): Promise<any> {
