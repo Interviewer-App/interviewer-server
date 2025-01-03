@@ -212,8 +212,9 @@ model Candidate {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
-  sessions   InterviewSession[]
-  interviews CandidateOnInterviews[]
+  sessions           InterviewSession[]
+  interviews         CandidateOnInterviews[]
+  interviewResponses Answer[]
 }
 
 model Admin {
@@ -330,25 +331,25 @@ enum status {
 // }
 
 model InterviewSession {
-  sessionId         String            @id @default(cuid())
-  candidateId       String
-  candidate         Candidate         @relation(fields: [candidateId], references: [profileID])
-  assesmentId       String?
-  feedbackId        String?
-  interviewCategory interviewCategory
-  interviewId       String
-  interview         Interview         @relation(fields: [interviewId], references: [interviewID])
-  scheduledDate     DateTime
-  scheduledAt       DateTime
-  completedDate     DateTime?
-  interviewStatus   interviewStatus
-  score             score?
-  reviewedBy        String?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  scheduling        Scheduling?
-  questions         Question[]
-  // interviewResponses InterviewResponses[]
+  sessionId          String            @id @default(cuid())
+  candidateId        String
+  candidate          Candidate         @relation(fields: [candidateId], references: [profileID])
+  assesmentId        String?
+  feedbackId         String?
+  interviewCategory  interviewCategory
+  interviewId        String
+  interview          Interview         @relation(fields: [interviewId], references: [interviewID])
+  scheduledDate      DateTime
+  scheduledAt        DateTime
+  completedDate      DateTime?
+  interviewStatus    interviewStatus
+  score              score?
+  reviewedBy         String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  scheduling         Scheduling?
+  questions          Question[]
+  interviewResponses Answer[]
   // interviewFeedback  InterviewFeedback[]
 }
 
@@ -386,18 +387,18 @@ enum interviewStatus {
 //   updatedAt   DateTime     @updatedAt
 // }
 model Question {
-  questionID       String           @id @default(cuid())
-  sessionID        String
-  questionCategory String?
-  questionText     String
-  aiContext        String?
-  diffcultyLevel   String?
-  type             QuestionType
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  usageFrequency   Int?
-  interviewSession InterviewSession @relation(fields: [sessionID], references: [sessionId])
-  // interviewResponses InterviewResponses[]
+  questionID         String           @id @default(cuid())
+  sessionID          String
+  questionCategory   String?
+  questionText       String
+  aiContext          String?
+  diffcultyLevel     String?
+  type               QuestionType
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  usageFrequency     Int?
+  interviewSession   InterviewSession @relation(fields: [sessionID], references: [sessionId])
+  interviewResponses Answer?
 }
 
 enum QuestionType {
@@ -418,3 +419,27 @@ model score {
 }
 
 //new schema
+model Answer {
+  responseID        String           @id @default(cuid())
+  sessionID         String
+  questionID        String           @unique
+  candidateID       String
+  responseText      String
+  responseTime      DateTime
+  languageDetected  String
+  sentimentAnalysis String?
+  keywordExtracted  String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  comparisonID      String?
+  assessmentID      String?
+  reviewID          String?
+  // interviewFeedback        InterviewResponseFeedback[]
+  question          Question         @relation(fields: [questionID], references: [questionID])
+  interviewSession  InterviewSession @relation(fields: [sessionID], references: [sessionId])
+  candidateProfiles Candidate        @relation(fields: [candidateID], references: [profileID])
+  // interviewMultimediaTable InterviewMultimediaTable[]
+  // candidatecomparison      CandidateComparison         @relation(fields: [comparisonID], references: [comparisonID])
+  // skillassessments         SkillAssessment             @relation(fields: [assessmentID], references: [assessmentID])
+  // reviewHistory            ReviewHistory               @relation(fields: [reviewID], references: [reviewID])
+}
