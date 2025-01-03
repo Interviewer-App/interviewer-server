@@ -173,11 +173,6 @@ export class AuthService {
       };
 
     }
-
-
-
-    
-
   }
 
   async providerRegisterUser(dto: ProviderUserDto): Promise<any> {
