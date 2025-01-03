@@ -10,6 +10,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { User } from 'src/user/entities/user.entity';
 import { Role } from '@prisma/client';
 import { first, last } from 'rxjs';
+import { ProviderUserDto } from './dto/provider-user.dto';
 
 
 @Injectable()
@@ -25,7 +26,7 @@ export class AuthService {
 
 
   async registerUser(dto: RegisterUserDto): Promise<any> {
-    debugger
+
     this.logger.log(`POST: user/register: Register user started`);
     // Check if password and passwordConfirmation match
     if (dto.password !== dto.passwordconf) throw new BadRequestException('Passwords do not match');
@@ -36,6 +37,15 @@ export class AuthService {
     //Data to lower case
     dto.email = dto.email.toLowerCase().trim();
     // dto.name = dto.name.toLowerCase();
+
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (existingUser) {
+      this.logger.warn(`POST: user/register: User already exists: ${dto.email}`);
+      throw new BadRequestException('User with this email already exists');
+    }
 
 
     //Hash the password
@@ -51,63 +61,7 @@ export class AuthService {
       };
       // const {passwordconf , ...newUserData} = dto
       // newUserData.password = hashedPassword;
-      if(dto.providerAccountId){
 
-        const newuser = await this.prisma.user.create({
-          data: {
-            firstName: dto.firstname,
-            lastName: dto.lastname,
-            email: dto.email,
-            providerAccountId: dto.providerAccountId,
-            provider: dto.provider,
-            ...(dto.role === Role.COMPANY && {
-              company: {
-                create: {
-                  companyName:  dto.companyname, // Ensure company name is provided
-                },
-              },
-            }),
-            ...(dto.role === Role.CANDIDATE && {
-              candidate: {
-                create: {
-                  experience: '', // Add appropriate value
-                  availability: '', // Add appropriate value
-                  resumeURL: '', // Add appropriate value
-                  skillHighlights: '', // Example field, replace with actual required fields
-                },
-              },
-            }),
-          },
-          select: {
-            userID: true,
-            email: true,
-            role: true,
-            createdAt: true,
-            company: {
-              select: {
-                companyID: true,
-                companyName: true,
-              },
-            },
-            candidate: {
-              select: {
-                profileID: true,
-                user: true,
-              },
-            },
-          },
-        });
-    
-  
-        return {
-          user: newuser,
-          token: this.getJwtToken({
-            id: newuser.userID.toString(),
-            role: newuser.role
-          })
-        };
-
-      }else{
 
         const newuser = await this.prisma.user.create({
           data: {
@@ -122,7 +76,6 @@ export class AuthService {
             ...(dto.role === Role.CANDIDATE && {
               candidate: {
                 create: {
-
                   experience: '', // Add appropriate value
                   availability: '', // Add appropriate value
                   resumeURL: '', // Add appropriate value
@@ -160,7 +113,7 @@ export class AuthService {
           })
         };
 
-      }
+      
 
 
       
@@ -190,6 +143,8 @@ export class AuthService {
           password: true,
           role: true,
           createdAt: true,
+          provider: true,
+          providerAccountId: true,
         }
       });
 
@@ -217,6 +172,138 @@ export class AuthService {
     };
   }
 
+  async providerRegisterUser(dto: ProviderUserDto): Promise<any> {
+
+    this.logger.log(`POST: user/register: Register user started`);
+    // Check if password and passwordConfirmation match
+
+    if (dto.role && !Role[dto.role]) throw new BadRequestException('Invalid role');
+
+
+    //Data to lower case
+    dto.email = dto.email.toLowerCase().trim();
+    // dto.name = dto.name.toLowerCase();
+
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+      select: {
+        userID: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        provider: true,
+        providerAccountId: true,
+      }
+    });
+
+    if (existingUser) {
+
+      if (!(existingUser.providerAccountId === dto.providerAccountId)) {
+        throw new BadRequestException('Wrong credentials');
+      }
+
+      this.logger.log(`POST: auth/login: Usuario aceptado: ${existingUser.email}`);
+      return {
+        user:existingUser,
+        token: this.getJwtToken({
+          id: existingUser.userID,
+          role: existingUser.role
+        })
+      };
+    }
+
+    try {
+      const newuser = await this.prisma.user.create({
+        data: {
+          firstName: dto.firstname,
+          lastName: dto.lastname,
+          email: dto.email,
+          providerAccountId: dto.providerAccountId,
+          provider: dto.provider,
+          ...(dto.role === Role.COMPANY && {
+            company: {
+              create: {
+                companyName:  dto.companyname, // Ensure company name is provided
+              },
+            },
+          }),
+          ...(dto.role === Role.CANDIDATE && {
+            candidate: {
+              create: {
+
+                // firstName: 'First',
+                // lastName:  'Last',
+                // skillHighlights: '',
+                experience: '', // Add appropriate value
+                availability: '', // Add appropriate value
+                resumeURL: '', // Add appropriate value
+                skillHighlights: '', // Example field, replace with actual required fields
+              },
+            },
+          }),
+        },
+        select: {
+          userID: true,
+          email: true,
+          role: true,
+          createdAt: true,
+          provider: true,
+          company: {
+            select: {
+              companyID: true,
+              companyName: true,
+            },
+          },
+          candidate: {
+            select: {
+              profileID: true,
+            },
+          },
+        },
+      });
+
+
+      return {
+        user: newuser,
+        token: this.getJwtToken({
+          id: newuser.userID.toString(),
+          role: newuser.role
+        })
+      };
+
+
+
+
+    } catch (error) {
+      if (error.code === 'P2002') {
+        this.logger.warn(`POST: auth/register: User already exists: ${dto.email}`);
+        throw new BadRequestException('User already exists');
+      }
+      this.logger.error(`POST: auth/register: error: ${error}`);
+      throw new InternalServerErrorException('Server error');
+    }
+
+  }
+
+  async userAvailability(email: string): Promise<any> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { email },
+        select: {
+          providerAccountId: true,
+        }
+      });
+
+      if (user){
+        return  {isUserExists: true, proId: user.providerAccountId};
+      }else {
+        return  {isUserExists: false};
+      }
+    }catch (error) {
+      this.logger.error(`POST: auth/login: error: ${error}`);
+      throw new BadRequestException('Wrong credentials');
+    }
+  }
 
   async refreshToken(user: User){
     return {

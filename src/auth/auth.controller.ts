@@ -9,6 +9,7 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 import { LoginUserDto } from './dto/login-user.dto';
 import { User } from 'src/user/entities/user.entity';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { ProviderUserDto } from './dto/provider-user.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -41,6 +42,21 @@ export class AuthController {
     response.status(HttpStatus.OK).send(data);
   }
 
+
+  @Post('provider-register')
+  @ApiOperation({
+    summary: 'REGISTER',
+    description: 'Public endpoint to register a new user with "user" Role.'
+  })
+  @ApiResponse({status: 201, description: 'Ok', type: LoginResponse})
+  @ApiResponse({status: 400, description: 'Bad request'})
+  @ApiResponse({status: 500, description: 'Server error'})
+  providerRegister(@Body() createUserDto: ProviderUserDto) {
+    Logger.log(`Register`);
+    return this.authService.providerRegisterUser(createUserDto);
+  }
+
+
   @UseGuards(JwtAuthGuard)
   @Get('me')
   @ApiOperation({
@@ -69,7 +85,19 @@ export class AuthController {
     return this.authService.refreshToken(user);
   }
 
-
+  @Get('check-user-availability/:email')
+  @ApiOperation({
+    summary: 'User availability check',
+    description: 'public endpoint allowed for check user availability. If user is available, it returns true, otherwise false.'
+  })
+  @ApiResponse({status: 201, description: 'Ok', type: LoginResponse})
+  @ApiResponse({status: 400, description: 'Bad request'})
+  @ApiResponse({status: 500, description: 'Server error'})                //Swagger
+  userAvailabilityCheck(
+    @Param('email') email: string
+  ){
+    return this.authService.userAvailability(email);
+  }
 
 
 }
