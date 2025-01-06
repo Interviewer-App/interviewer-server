@@ -117,23 +117,33 @@ export class InterviewService {
 
         try {
             const interviews = await this.prisma.interview.findMany({
-                select: {
-                    interviewID: true,
-                    companyID: true,
-                    jobTitle: true,
-                    jobDescription: true,
-                    requiredSkills: true,
-                    scheduledDate: true,
-                    scheduledAt: true,
-                    status: true,
+                include: {
+                    company: {
+                        select: {
+                            companyName: true,
+                        }
+                    },
                     interviewers: true,
                     candidates: true,
                     interviewSessions: true,
-                    createdAt: true,
-                    updatedAt: true,
                 }
             });
-            return interviews;
+            return interviews.map(interview => ({
+                interviewID: interview.interviewID,
+                companyID: interview.companyID,
+                companyName: interview.company.companyName,
+                jobTitle: interview.jobTitle,
+                jobDescription: interview.jobDescription,
+                requiredSkills: interview.requiredSkills,
+                scheduledDate: interview.scheduledDate,
+                scheduledAt: interview.scheduledAt,
+                status: interview.status,
+                interviewers: interview.interviewers,
+                candidates: interview.candidates,
+                interviewSessions: interview.interviewSessions,
+                createdAt: interview.createdAt,
+                updatedAt: interview.updatedAt,
+            }));
         } catch (error) {
             this.logger.error(`GET: error: ${error}`);
             throw new InternalServerErrorException('Server error');
