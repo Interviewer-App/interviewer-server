@@ -68,7 +68,7 @@ export class UserService {
   async findAll(page: number, limit: number) {
     try {
       const skip = (page - 1) * limit;
-      const take = Number(limit); // Ensure limit is a number
+      const take = Number(limit);
 
       const users = await this.prisma.user.findMany({
         skip,
