@@ -7,6 +7,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { User } from './entities/user.entity';
 import { Role } from '@prisma/client';
+import { take } from "rxjs";
 
 
 @Injectable()
@@ -64,10 +65,14 @@ export class UserService {
     }
   }
 
-  async findAll() {
-    
+  async findAll(page: number, limit: number) {
     try {
+      const skip = (page - 1) * limit;
+      const take = Number(limit); // Ensure limit is a number
+
       const users = await this.prisma.user.findMany({
+        skip,
+        take,
         select: {
           userID: true,
           email: true,
@@ -76,12 +81,21 @@ export class UserService {
           updatedAt: true,
         }
       });
-      return users;
+
+      const total = await this.prisma.user.count();
+
+      return {
+        data: users,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      };
+
     } catch (error) {
       this.logger.error(`GET: error: ${error}`);
       throw new InternalServerErrorException('Server error');
     }
-        
   }
 
   async findOne(field: string, value: string, user: User) {

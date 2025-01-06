@@ -27,7 +27,7 @@ export class UserController {
     return this.userService.create(createUserDto);
   }
   
-  @Get()
+  @Get(':page/:limit')
   @ApiOperation({
     summary: 'GET ALL USERS',
     description: 'Private endpoint to list all Users. It is allowed only by "admin" users.'
@@ -37,8 +37,8 @@ export class UserController {
   @ApiResponse({status: 403, description: 'Forbidden' })
   @ApiResponse({status: 500, description: 'Server error'})             //Swagger
   @Auth(Role.ADMIN, Role.COMPANY)
-  findAll() {
-    return this.userService.findAll();
+  findAll(@Param('page') page: number,@Param('limit') limit: number) {
+    return this.userService.findAll(page, limit);
   }
 
   @Get(':id')
