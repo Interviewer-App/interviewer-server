@@ -117,6 +117,17 @@ export class CreateInterviewDto {
     companyID: string;
 
     @ApiProperty({
+        description: "Job Title for the interview",
+        nullable: true,
+        required: false,
+        type: "string",
+        example: "Senior Software Engineer",
+    })
+    @IsNotEmpty()
+    @IsString()
+    jobTitle: string;
+
+    @ApiProperty({
         description: "Job description for the interview",
         nullable: true,
         required: false,

@@ -271,6 +271,7 @@ model Company {
 
 model Interview {
   interviewID    String   @id @default(cuid())
+  jobTitle       String
   jobDescription String?
   requiredSkills String?
   companyID      String

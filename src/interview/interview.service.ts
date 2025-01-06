@@ -38,6 +38,7 @@ export class InterviewService {
             const interview = await this.prisma.interview.create({
                 data: {
                     companyID: dto.companyID,
+                    jobTitle: dto.jobTitle,
                     jobDescription: dto.jobDescription,
                     requiredSkills: dto.requiredSkills || null,
                     scheduledDate: dto.scheduledDate,
@@ -81,6 +82,7 @@ export class InterviewService {
                 where:{interviewID:id},
                 data: {
                     companyID: dto.companyID,
+                    jobTitle: dto.jobTitle,
                     jobDescription: dto.jobDescription,
                     requiredSkills: dto.requiredSkills || null,
                     scheduledDate: dto.scheduledDate,
@@ -118,6 +120,7 @@ export class InterviewService {
                 select: {
                     interviewID: true,
                     companyID: true,
+                    jobTitle: true,
                     jobDescription: true,
                     requiredSkills: true,
                     scheduledDate: true,
@@ -146,6 +149,7 @@ export class InterviewService {
                 where: { companyID: companyId },
                 select: {
                     interviewID: true,
+                    jobTitle: true,
                     companyID: true,
                     jobDescription: true,
                     requiredSkills: true,
