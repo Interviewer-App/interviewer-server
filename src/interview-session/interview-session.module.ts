@@ -5,10 +5,11 @@ import { AuthModule } from '../auth/auth.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { InterviewSessionCreateConsumer } from './interview-session-create.consumer';
 import { KafkaModule } from '../kafka/kafka.module';
+import { InterviewSessionGateway } from './interview-session.gateway';
 
 @Module({
   controllers: [InterviewSessionController],
-  providers: [InterviewSessionService],
+  providers: [InterviewSessionService, InterviewSessionGateway],
   imports:[
     AuthModule,
     PrismaModule,

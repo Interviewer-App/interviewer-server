@@ -235,7 +235,7 @@ export class AuthService {
 
       this.logger.log(`POST: auth/login: Usuario aceptado: ${existingUser.email}`);
       return {
-        user:existingUser,
+        user: existingUser,
         token: this.getJwtToken({
           id: existingUser.userID,
           role: existingUser.role
