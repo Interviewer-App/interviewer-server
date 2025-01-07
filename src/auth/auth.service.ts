@@ -210,6 +210,17 @@ export class AuthService {
         userID: true,
         email: true,
         role: true,
+        company: {
+          select: {
+            companyID: true,
+            companyName: true,
+          },
+        },
+        candidate: {
+          select: {
+            profileID: true,
+          },
+        },
         createdAt: true,
         provider: true,
         providerAccountId: true,

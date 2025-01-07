@@ -10,6 +10,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateInterviewDto } from './dto/create-interview.dto';
 import { UpdateInterviewDto } from './dto/update-interview.dto';
 import { ProducerService } from '../kafka/producer/producer.service';
+import { InterviewStatus } from "@prisma/client";
 
 
 @Injectable()
@@ -117,6 +118,47 @@ export class InterviewService {
 
         try {
             const interviews = await this.prisma.interview.findMany({
+                include: {
+                    company: {
+                        select: {
+                            companyName: true,
+                        }
+                    },
+                    interviewers: true,
+                    candidates: true,
+                    interviewSessions: true,
+                }
+            });
+            return interviews.map(interview => ({
+                interviewID: interview.interviewID,
+                companyID: interview.companyID,
+                companyName: interview.company.companyName,
+                jobTitle: interview.jobTitle,
+                jobDescription: interview.jobDescription,
+                requiredSkills: interview.requiredSkills,
+                scheduledDate: interview.scheduledDate,
+                scheduledAt: interview.scheduledAt,
+                status: interview.status,
+                interviewers: interview.interviewers,
+                candidates: interview.candidates,
+                interviewSessions: interview.interviewSessions,
+                createdAt: interview.createdAt,
+                updatedAt: interview.updatedAt,
+            }));
+        } catch (error) {
+            this.logger.error(`GET: error: ${error}`);
+            throw new InternalServerErrorException('Server error');
+        }
+
+    }
+
+    async findAllPublishedInterviews() {
+
+        try {
+            const interviews = await this.prisma.interview.findMany({
+                where:{
+                    status: InterviewStatus.ACTIVE,
+                },
                 include: {
                     company: {
                         select: {
