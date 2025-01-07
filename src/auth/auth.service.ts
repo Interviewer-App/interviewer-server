@@ -142,6 +142,12 @@ export class AuthService {
           email: true,
           password: true,
           role: true,
+          company: {
+            select: { companyID: true },
+          },
+          candidate: {
+            select: { profileID: true },
+          },
           createdAt: true,
           provider: true,
           providerAccountId: true,
@@ -153,7 +159,7 @@ export class AuthService {
       throw new BadRequestException('Wrong credentials');
     }
 
-    if(user.provider === 'google' || user.provider === 'github') {
+    if (user.provider === 'google' || user.provider === 'github') {
       throw new BadRequestException('Wrong credentials');
     } else {
       const passwordMatch = await bcrypt.compare(password, user.password);
@@ -163,17 +169,28 @@ export class AuthService {
 
       delete user.password;
 
+      const { company, candidate, ...cleanedUser } = user;
+      let extraInfo = {};
+      if (user.role === 'COMPANY' && user.company) {
+        extraInfo = { companyID: company.companyID };
+      } else if (user.role === 'CANDIDATE' && user.candidate) {
+        extraInfo = { candidateID: candidate.profileID };
+      }
+
       this.logger.log(`POST: auth/login: Usuario aceptado: ${user.email}`);
       return {
-        user,
+        user: {
+          ...cleanedUser,
+          ...extraInfo
+        },
         token: this.getJwtToken({
           id: user.userID,
           role: user.role
         })
       };
-
     }
   }
+
 
   async providerRegisterUser(dto: ProviderUserDto): Promise<any> {
 
