@@ -232,6 +232,49 @@ export class InterviewService {
     }
 
 
+
+    async findById(id: string) {
+
+        try {
+            const interview = await this.prisma.interview.findUniqueOrThrow({
+                where:{
+                    interviewID: id,
+                },
+                include: {
+                    company: {
+                        select: {
+                            companyName: true,
+                        }
+                    },
+                    interviewers: true,
+                    candidates: true,
+                    interviewSessions: true,
+                }
+            });
+            return {
+                interviewID: interview.interviewID,
+                companyID: interview.companyID,
+                companyName: interview.company.companyName,
+                jobTitle: interview.jobTitle,
+                jobDescription: interview.jobDescription,
+                requiredSkills: interview.requiredSkills,
+                scheduledDate: interview.scheduledDate,
+                scheduledAt: interview.scheduledAt,
+                status: interview.status,
+                interviewers: interview.interviewers,
+                candidates: interview.candidates,
+                interviewSessions: interview.interviewSessions,
+                createdAt: interview.createdAt,
+                updatedAt: interview.updatedAt,
+            };
+        } catch (error) {
+            this.logger.error(`GET: error: ${error}`);
+            throw new InternalServerErrorException('Server error');
+        }
+
+    }
+
+
       async remove(id: string) {
     
         try {

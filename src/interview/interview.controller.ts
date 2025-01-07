@@ -69,6 +69,20 @@ export class InterviewController {
         return this.interviewService.findAllPublishedInterviews();
     }
 
+    @Get(':id')
+    @ApiOperation({
+        summary: 'GET INTERVIEW BY ID',
+        description: 'Private endpoint to Get interview by Id. It is allowed only by "admin" users'
+    })
+    @ApiResponse({ status: 201, description: 'Created', type: Interview,isArray: true })
+    @ApiResponse({ status: 400, description: 'Bad request' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
+    @Auth(Role.COMPANY)
+    findInterviewById(@Param('id') id: string) {
+        return this.interviewService.findById(id);
+    }
+
     @Get(':companyId')
     @ApiOperation({
         summary: 'GET ALL INTERVIEWS BY COMPANHY ID',
