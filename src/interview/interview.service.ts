@@ -85,7 +85,7 @@ export class InterviewService {
                     companyID: dto.companyID,
                     jobTitle: dto.jobTitle,
                     jobDescription: dto.jobDescription,
-                    requiredSkills: dto.requiredSkills || null,
+                    requiredSkills: dto.requiredSkills,
                     scheduledDate: dto.scheduledDate,
                     scheduledAt: dto.scheduledAt,
                     status: dto.status,
