@@ -69,7 +69,7 @@ export class InterviewController {
         return this.interviewService.findAllPublishedInterviews();
     }
 
-    @Get(':id')
+    @Get('interview/:id')
     @ApiOperation({
         summary: 'GET INTERVIEW BY ID',
         description: 'Private endpoint to Get interview by Id. It is allowed only by "admin" users'

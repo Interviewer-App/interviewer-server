@@ -236,6 +236,12 @@ export class InterviewService {
     async findById(id: string) {
 
         try {
+            const interviewExist = await this.prisma.interview.findUnique({
+                where: { interviewID: id },
+            });
+            if (!interviewExist) {
+                throw new NotFoundException(`Interview with id ${id} not found`);
+            }
             const interview = await this.prisma.interview.findUniqueOrThrow({
                 where:{
                     interviewID: id,
@@ -268,6 +274,9 @@ export class InterviewService {
                 updatedAt: interview.updatedAt,
             };
         } catch (error) {
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
             this.logger.error(`GET: error: ${error}`);
             throw new InternalServerErrorException('Server error');
         }
