@@ -62,6 +62,20 @@ export class InterviewSessionController {
     return this.interviewSessionService.findByInterviewId(interviewId);
   }
 
+  @Get('candidate/:candidateId')
+  @ApiOperation({
+    summary: 'GET ALL INTERVIEW SESSIONS BY CANDIDATE ID',
+    description: 'Private endpoint to Get all Interviews by candidate id. It is allowed only by "company" users'
+  })
+  @ApiResponse({ status: 201, description: 'Created', type: InterviewSession, isArray: true })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
+  @Auth(Role.COMPANY)
+  findByCandidateId(@Param('candidateId') candidateId: string) {
+    return this.interviewSessionService.findByCandidateId(candidateId);
+  }
+
   @Delete(':id')
   @ApiOperation({
     summary: 'DELETE INTERVIEW SESSION BY INTERVIEW SESSION ID',

@@ -162,6 +162,46 @@ export class InterviewSessionService {
     }
   }
 
+  async findByCandidateId(candidateId: string) {
+    try {
+      const interviewSessions = await this.prisma.interviewSession.findMany({
+        where: { candidateId: candidateId },
+        select: {
+          sessionId: true,
+          interviewId: true,
+          candidateId: true,
+          assesmentId: true,
+          feedbackId: true,
+          interviewCategory: true,
+          scheduledDate: true,
+          scheduledAt: true,
+          completedDate: true,
+          interviewStatus: true,
+          score: true,
+          reviewedBy: true,
+          createdAt: true,
+          updatedAt: true,
+          candidate: true,
+          interview: true,
+          scheduling: true,
+          questions: true
+        }
+      });
+
+      if (!interviewSessions || interviewSessions.length === 0) {
+        this.logger.warn(`GET: No sessions found for candidate ID: ${candidateId}`);
+        throw new NotFoundException(`No sessions found for candidate ID: ${candidateId}`);
+      }
+      return interviewSessions;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`GET: error: ${error}`);
+      throw new InternalServerErrorException('Server error');
+    }
+  }
+
   // findAll() {
   //   return `This action returns all interviewSession`;
   // }
