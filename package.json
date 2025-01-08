@@ -36,6 +36,7 @@
     "class-validator": "^0.14.1",
     "dotenv": "^16.4.7",
     "kafkajs": "^2.2.4",
+    "node-cron": "^3.0.3",
     "openai": "^4.76.3",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.0",

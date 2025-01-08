@@ -327,4 +327,38 @@ export class InterviewService {
         this.logger.error(`${method}: Prisma error: ${error.message}`);
     }
 
+    async findAllByStatus(status: InterviewStatus) {
+        try {
+            const interviews = await this.prisma.interview.findMany({
+                where: { status: status },
+                select: {
+                    interviewID: true,
+                    jobTitle: true,
+                    companyID: true,
+                    jobDescription: true,
+                    requiredSkills: true,
+                    scheduledDate: true,
+                    scheduledAt: true,
+                    status: true,
+                    interviewers: true,
+                    candidates: true,
+                    interviewSessions: true,
+                    createdAt: true,
+                    updatedAt: true,
+                }
+            });
+
+            if (!interviews || interviews.length === 0) {
+                this.logger.warn(`GET: No interviews found for Status: ${status}`);
+                throw new NotFoundException(`No interviews found for Status: ${status}`);
+            }
+            return interviews;
+        } catch (error) {
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
+            this.logger.error(`GET: error: ${error}`);
+            throw new InternalServerErrorException('Server error');
+        }
+    }
 }

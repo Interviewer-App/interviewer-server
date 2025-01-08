@@ -1,10 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from "@nestjs/common";
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { InterviewService } from './interview.service';
 import { Auth, GetUser } from 'src/auth/decorators';
 import { Interview } from './entities/interview.entity';
-import { CreateInterviewDto } from './dto/create-interview.dto';
-import { Role } from '@prisma/client';
+import { CreateInterviewDto } from "./dto/create-interview.dto";
+import { InterviewStatus, Role } from "@prisma/client";
 import { UpdateInterviewDto } from './dto/update-interview.dto';
 
 @ApiBearerAuth()
@@ -81,6 +81,26 @@ export class InterviewController {
     @Auth(Role.COMPANY)
     findInterviewById(@Param('id') id: string) {
         return this.interviewService.findById(id);
+    }
+
+    @Get('status')
+    @ApiQuery({
+        name: 'status',
+        enum: InterviewStatus,
+        description: 'Filter by status',
+        required: true,
+    })
+    @ApiOperation({
+        summary: 'GET INTERVIEW BY STATUS',
+        description: 'Private endpoint to Get interview by Status. It is allowed only by "admin" users'
+    })
+    @ApiResponse({ status: 201, description: 'Created', type: Interview,isArray: true })
+    @ApiResponse({ status: 400, description: 'Bad request' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
+    @Auth(Role.COMPANY)
+    findAllByStatus(@Query('status') status: InterviewStatus ) {
+        return this.interviewService.findAllByStatus(status);
     }
 
     @Get(':companyId')

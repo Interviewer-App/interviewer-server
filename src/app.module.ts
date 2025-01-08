@@ -11,6 +11,7 @@ import { InterviewModule } from './interview/interview.module';
 import { InterviewSessionModule } from './interview-session/interview-session.module';
 import { KafkaModule } from './kafka/kafka.module';
 import { AnswersModule } from './answers/answers.module';
+import { CronService } from './cron/cron.service';
 
 @Module({
   imports: [
@@ -27,6 +28,6 @@ import { AnswersModule } from './answers/answers.module';
     // KafkaModule,
   ],
   controllers:[AppController],
-  providers:[AppService]
+  providers:[AppService, CronService]
 })
 export class AppModule {}
