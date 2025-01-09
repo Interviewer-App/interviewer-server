@@ -160,7 +160,21 @@ export class InterviewSessionService {
         this.logger.warn(`GET: No sessions found for interview ID: ${interviewId}`);
         throw new NotFoundException(`No sessions found for interview ID: ${interviewId}`);
       }
-      return interviewSessions;
+      const total = await this.prisma.interviewSession.count({
+        where: {
+          interviewId: interviewId,
+        }
+        }
+      );
+
+      return {
+        interviewSessions,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      };
+      // return interviewSessions;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
