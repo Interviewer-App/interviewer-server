@@ -24,7 +24,7 @@ export class InterviewSessionController {
   @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
-  @Auth(Role.COMPANY)
+  @Auth(Role.COMPANY, Role.CANDIDATE)
   create(@Body() createInterviewSessionDto: CreateInterviewSessionDto) {
     return this.interviewSessionService.create(createInterviewSessionDto);
   }
@@ -62,7 +62,7 @@ export class InterviewSessionController {
     return this.interviewSessionService.findByInterviewId(interviewId);
   }
 
-  @Get('candidate/:candidateId')
+  @Get('candidate/:candidateId/:page/:limit')
   @ApiOperation({
     summary: 'GET ALL INTERVIEW SESSIONS BY CANDIDATE ID',
     description: 'Private endpoint to Get all Interviews by candidate id. It is allowed only by "company" users'
@@ -71,9 +71,9 @@ export class InterviewSessionController {
   @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
-  @Auth(Role.COMPANY)
-  findByCandidateId(@Param('candidateId') candidateId: string) {
-    return this.interviewSessionService.findByCandidateId(candidateId);
+  @Auth(Role.COMPANY, Role.CANDIDATE)
+  findByCandidateId(@Param('candidateId') candidateId: string, @Param('page') page: number, @Param('limit') limit: number) {
+    return this.interviewSessionService.findByCandidateId(candidateId, page, limit);
   }
 
   @Delete(':id')
