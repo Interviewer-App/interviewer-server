@@ -122,9 +122,13 @@ export class InterviewSessionService {
     }
   }
 
-  async findByInterviewId(interviewId: string) {
+  async findByInterviewId(interviewId: string, page: number, limit: number) {
     try {
+      const skip = (page - 1) * limit;
+      const take = Number(limit);
       const interviewSessions = await this.prisma.interviewSession.findMany({
+        skip,
+        take,
         where: { interviewId: interviewId },
         select: {
           sessionId: true,
