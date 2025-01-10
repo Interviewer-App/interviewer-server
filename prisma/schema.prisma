@@ -352,7 +352,9 @@ model InterviewSession {
   scheduling         Scheduling?
   questions          Question[]
   interviewResponses Answer[]
+
   // interviewFeedback  InterviewFeedback[]
+  @@unique([interviewId, candidateId])
 }
 
 model Scheduling {
