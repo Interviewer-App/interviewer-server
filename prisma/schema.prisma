@@ -389,18 +389,19 @@ enum interviewStatus {
 //   updatedAt   DateTime     @updatedAt
 // }
 model Question {
-  questionID         String           @id @default(cuid())
-  sessionID          String
-  questionCategory   String?
-  questionText       String
-  aiContext          String?
-  diffcultyLevel     String?
-  type               QuestionType
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
-  usageFrequency     Int?
-  interviewSession   InterviewSession @relation(fields: [sessionID], references: [sessionId])
-  interviewResponses Answer?
+  questionID           String           @id @default(cuid())
+  sessionID            String
+  questionCategory     String?
+  questionText         String
+  estimatedTimeMinutes Int              @default(0)
+  aiContext            String?
+  diffcultyLevel       String?
+  type                 QuestionType
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  usageFrequency       Int?
+  interviewSession     InterviewSession @relation(fields: [sessionID], references: [sessionId])
+  interviewResponses   Answer?
 }
 
 enum QuestionType {

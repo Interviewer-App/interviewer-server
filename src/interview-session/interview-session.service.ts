@@ -335,6 +335,7 @@ export class InterviewSessionService {
                     sessionID: true,
                     questionText: true,
                     type: true,
+                    estimatedTimeMinutes: true,
                     createdAt: true,
                     updatedAt: true,
                 }
@@ -398,6 +399,7 @@ export class InterviewSessionService {
               data: {
                   questionText:dto.question,
                   type:dto.type.toUpperCase() === 'OPEN_ENDED' ? 'OPEN_ENDED' : 'CODING',
+                  estimatedTimeMinutes:dto.estimatedTimeInMinutes
               },
           });
 

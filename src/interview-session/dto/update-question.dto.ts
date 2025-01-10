@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString } from "class-validator";
+import { IsInt, IsNotEmpty, IsOptional, IsString } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 
 export class UpdateQuestionDto{
@@ -23,6 +23,17 @@ export class UpdateQuestionDto{
   @IsString()
   @IsNotEmpty()
   type: string;
+
+  @ApiProperty({
+    description: "Estimated time",
+    nullable: false,
+    required: true,
+    type: 'integer',
+    example: 5,
+  })
+  @IsInt()
+  @IsOptional()
+  estimatedTimeInMinutes: number;
 
   @IsString()
   @IsOptional()

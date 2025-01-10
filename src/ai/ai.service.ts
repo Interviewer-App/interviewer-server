@@ -29,7 +29,7 @@ export class AiService {
   async generateQuestions(
     id: string,
     dto: GenerateQuestionsDto,
-  ): Promise<{ message: string }> {
+  ): Promise<any> {
     this.logger.log(`POST: interview/generate-and-add-questions: Started`);
     const model = this.genAI.getGenerativeModel({
       model: 'gemini-2.0-flash-exp',
@@ -66,7 +66,7 @@ export class AiService {
         generationConfig: generationConfig,
       });
       const content = result.response.text();
-      let questions: { question: string; type: string }[] = [];
+      let questions: { question: string; type: string; estimated_time: string}[] = [];
 
       try {
         questions = JSON.parse(content);
@@ -93,6 +93,7 @@ export class AiService {
             data: {
               questionText: q.question,
               type: q.type.toUpperCase() === 'OPEN-ENDED' ? 'OPEN_ENDED' : 'CODING',
+              estimatedTimeMinutes: parseInt(q.estimated_time.match(/\d+/)?.[0] || "0", 10),
               aiContext: `Generated for ${dto.jobRole}`,
               usageFrequency: 0,
               interviewSession: {
@@ -118,6 +119,7 @@ export class AiService {
       );
 
       return {
+        question: questions,
         message: `Questions generated and added to Interview session ${id} successfully`,
       };
     } catch (error) {

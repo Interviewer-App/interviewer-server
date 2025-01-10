@@ -16,7 +16,7 @@ export class CronService {
       await this.prisma.interview.updateMany({
         where: {
           scheduledAt: {
-            lt: now,
+            lte: new Date(now.getTime() - 15 * 60 * 1000),
           },
           status: {
             equals: 'ACTIVE',
