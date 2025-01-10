@@ -270,16 +270,17 @@ model Company {
 // }
 
 model Interview {
-  interviewID    String   @id @default(cuid())
-  jobTitle       String
-  jobDescription String?
-  requiredSkills String?
-  companyID      String
-  scheduledDate  DateTime
-  scheduledAt    DateTime
-  status         status
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  interviewID       String            @id @default(cuid())
+  interviewCategory interviewCategory
+  jobTitle          String
+  jobDescription    String?
+  requiredSkills    String?
+  companyID         String
+  scheduledDate     DateTime
+  scheduledAt       DateTime
+  status            status
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
   company           Company                   @relation(fields: [companyID], references: [companyID])
   interviewSessions InterviewSession[]

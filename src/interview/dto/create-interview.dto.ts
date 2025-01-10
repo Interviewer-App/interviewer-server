@@ -103,6 +103,11 @@ export enum InterviewStatus {
     PENDING = "PENDING",
 }
 
+export enum InterviewCategory {
+    Technical = "Technical",
+    Behavioural = "Behavioural"
+}
+
 export class CreateInterviewDto {
 
     @ApiProperty({
@@ -137,6 +142,17 @@ export class CreateInterviewDto {
     @IsOptional()
     @IsString()
     jobDescription?: string;
+
+    @ApiProperty({
+        description: "Interview Category",
+        nullable: false,
+        required: true,
+        enum: InterviewCategory,
+        example: InterviewCategory.Technical,
+    })
+    @IsNotEmpty()
+    @IsEnum(InterviewCategory)
+    interviewCategory: InterviewCategory;
 
     @ApiProperty({
         description: "Required skills for the interview",
