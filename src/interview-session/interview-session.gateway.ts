@@ -95,14 +95,32 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
         answer: answerText
       });
 
-      const score = await this.prisma.score.update({
-        where:{
-          responseId:existing.responseID
+      const existingScore = await this.prisma.score.findUnique({
+        where: {
+          responseId: existing.responseID, // Unique identifier for the score record
         },
-        data:{
-          score: parseFloat(metrics.relevanceScore)
-        }
-      })
+      });
+      
+      let score;
+      if (existingScore) {
+        // Update the existing score
+        score = await this.prisma.score.update({
+          where: {
+            responseId: existing.responseID,
+          },
+          data: {
+            score: parseFloat(metrics.relevanceScore),
+          },
+        });
+      } else {
+        // Create a new score
+        score = await this.prisma.score.create({
+          data: {
+            responseId: existing.responseID,
+            score: parseFloat(metrics.relevanceScore),
+          },
+        });
+      }
 
       // Notify the company that the candidate has submitted an answer
       this.server.to(`session-${sessionId}`).emit('answerSubmitted', {
@@ -139,6 +157,8 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
           score: parseFloat(metrics.relevanceScore)
         }
       })
+
+      
 
       // Notify the company that the candidate has submitted an answer
       this.server.to(`session-${sessionId}`).emit('answerSubmitted', {
