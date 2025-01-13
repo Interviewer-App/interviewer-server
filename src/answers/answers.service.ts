@@ -99,5 +99,39 @@ export class AnswersService {
     }
     this.logger.error(`${method}: Prisma error: ${error.message}`);
   }
-  
+
+  async getTotalScoreBySessionId(sessionId: string) {
+    try {
+      const answers = await this.prisma.answer.findMany({
+        where: { sessionID: sessionId },
+        include: { score: true },
+      });
+
+      if (answers.length === 0) {
+        throw new NotFoundException(`No answers found for session ID ${sessionId}`);
+      }
+
+      let totalScore = 0;
+      let numberOfAnswers = 0;
+
+      for (const answer of answers) {
+        if (answer.score) {
+          totalScore += answer.score.score;
+          numberOfAnswers++;
+        }
+      }
+
+      return {
+        sessionId,
+        totalScore,
+        numberOfAnswers,
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`GET: error: ${error}`);
+      throw new InternalServerErrorException('Server error');
+    }
+  }
 }

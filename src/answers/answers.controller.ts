@@ -6,6 +6,7 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagg
 import { InterviewSession } from "../interview-session/entities/interview-session.entity";
 import { Auth } from "../auth/decorators";
 import { Role } from "@prisma/client";
+import { Interview } from "../interview/entities/interview.entity";
 
 @ApiBearerAuth()
 @ApiTags('Answers')
@@ -25,6 +26,20 @@ export class AnswersController {
   @Auth(Role.COMPANY, Role.CANDIDATE)
   create(@Body() createAnswerDto: CreateAnswerDto) {
     return this.answersService.create(createAnswerDto);
+  }
+
+  @Get('totalScore/:sessionId')
+  @ApiOperation({
+    summary: 'GET TOTAL SCORE OF SUBMITTED ANSWERS BY SESSION ID',
+    description: 'Private endpoint to Get scoe for the submitted answers by session id. It is allowed only by "admin" users'
+  })
+  @ApiResponse({ status: 201, description: 'Created' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
+  @Auth(Role.COMPANY, Role.CANDIDATE)
+  getTotalScoreBySessionId(@Param('sessionId') sessionId: string) {
+    return this.answersService.getTotalScoreBySessionId(sessionId);
   }
 
   // @Get()

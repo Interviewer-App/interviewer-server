@@ -419,7 +419,7 @@ model score {
   createdAt  DateTime? @default(now())
   updatedAt  DateTime? @updatedAt
 
-  session Answer @relation(fields: [responseId], references: [responseID])
+  answers Answer @relation(fields: [responseId], references: [responseID])
   // candidate Candidate        @relation(fields: [candidateID], references: [profileID])
 }
 
