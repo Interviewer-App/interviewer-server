@@ -300,6 +300,59 @@ export class InterviewSessionService {
     }
   }
 
+  async findSessionHistoryBySessionId(sessionId: string) {
+    try {
+      this.logger.log(`POST: interviewsession/session: Get Interview Session By SessionId started`);
+
+      const interviewSessionExist = await this.prisma.interviewSession.findUnique({
+        where: { sessionId: sessionId },
+      });
+      if (!interviewSessionExist) {
+        throw new NotFoundException(`Interview session with id ${sessionId} not found`);
+      }
+
+      const interviewSession = await this.prisma.interviewSession.findUniqueOrThrow({
+        where: { sessionId: sessionId },
+        select: {
+          sessionId: true,
+          interviewId: true,
+          candidateId: true,
+          assesmentId: true,
+          feedbackId: true,
+          interviewCategory: true,
+          scheduledDate: true,
+          scheduledAt: true,
+          completedDate: true,
+          interviewStatus: true,
+          score: true,
+          reviewedBy: true,
+          createdAt: true,
+          updatedAt: true,
+          candidate: true,
+          interview: true,
+          scheduling: true,
+          questions: {
+            include:{
+              interviewResponses:{
+                include:{
+                  score: true,
+                }
+              }
+            }
+          }
+        }
+      });
+
+      return interviewSession;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`GET: error: ${error}`);
+      throw new InternalServerErrorException('Server error');
+    }
+  }
+
   // findAll() {
   //   return `This action returns all interviewSession`;
   // }
