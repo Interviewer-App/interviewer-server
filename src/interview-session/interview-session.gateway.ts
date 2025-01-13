@@ -8,6 +8,8 @@ import {
 } from "@nestjs/websockets";
 import { Server, Socket } from 'socket.io';
 import { PrismaService } from '../prisma/prisma.service';
+import { InterviewSessionService } from "./interview-session.service";
+import { AiService } from "src/ai/ai.service";
 
 @WebSocketGateway({ cors: true })
 export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -16,7 +18,7 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
   // Track active interview sessions
   private activeSessions: Map<string, Set<string>> = new Map(); // sessionId -> Set of participantIds (candidate and company)
 
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private aiService : AiService) {}
 
   handleConnection(client: Socket, ...args: any[]) {
     console.log(`Client connected: ${client.id}`);
@@ -67,10 +69,10 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
   }
   @SubscribeMessage('submitAnswer')
   async handleSubmitAnswer(
-    @MessageBody() data: { sessionId: string, questionId: string, candidateId: string, answerText: string },
+    @MessageBody() data: { sessionId: string, questionId: string, candidateId: string, answerText: string, questionText: string },
     @ConnectedSocket() client: Socket
   ) {
-    const { sessionId, questionId, candidateId, answerText } = data;
+    const { sessionId, questionId, candidateId, answerText, questionText } = data;
 
     const answer = await this.prisma.answer.create({
       data: {
@@ -86,12 +88,17 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     });
 
     console.log('Answer saved:', answer);
+    const metrics = await this.aiService.analyzeResponse({
+      question: questionText,
+      answer: answerText
+    });
 
     // Notify the company that the candidate has submitted an answer
     this.server.to(`session-${sessionId}`).emit('answerSubmitted', {
       questionId,
       candidateId,
       answerText,
+      metrics
     });
   }
 

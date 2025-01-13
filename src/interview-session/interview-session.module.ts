@@ -6,10 +6,11 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { InterviewSessionCreateConsumer } from './interview-session-create.consumer';
 import { KafkaModule } from '../kafka/kafka.module';
 import { InterviewSessionGateway } from './interview-session.gateway';
+import { AiService } from 'src/ai/ai.service';
 
 @Module({
   controllers: [InterviewSessionController],
-  providers: [InterviewSessionService, InterviewSessionGateway],
+  providers: [InterviewSessionService, InterviewSessionGateway, AiService],
   imports:[
     AuthModule,
     PrismaModule,
