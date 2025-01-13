@@ -124,4 +124,17 @@ export class UserController {
     return this.userService.remove("email", email, user);
   }
 
+  @Get('candidate/details/:candidateId')
+  @ApiOperation({
+    summary: 'GET CANDIDATE DETAILS BY CANDIDATE ID',
+    description: 'Private endpoint to get candidate details by Id.'
+  })
+  @ApiResponse({status: 200, description: 'Ok'})
+  @ApiResponse({status: 401, description: 'Unauthorized'})
+  @ApiResponse({status: 500, description: 'Server error'})             //Swagger
+  @Auth(Role.COMPANY, Role.CANDIDATE)
+  findCandidateDetailsById(@Param('candidateId') candidateId: string) {
+    return this.userService.findCandidateDetailsById(candidateId);
+  }
+
 }

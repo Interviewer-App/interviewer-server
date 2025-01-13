@@ -1,4 +1,11 @@
-import { BadRequestException, Injectable, InternalServerErrorException, Logger, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+  UnauthorizedException
+} from "@nestjs/common";
 
 import * as bcrypt from 'bcrypt';
 
@@ -225,5 +232,44 @@ export class UserService {
    }
   }
 
+  async findCandidateDetailsById(candidateId: string) {
+    try{
+      const candidate = await this.prisma.candidate.findUnique({
+        where:{
+          profileID: candidateId
+        },
+        select:{
+          userID: true,
+          skillHighlights: true,
+          experience: true,
+          availability: true,
+          user: {
+            select:{
+              firstName: true,
+              lastName: true,
+              username: true,
+              dob: true,
+              email: true,
+              gender: true,
+              contactNo: true,
+              role: true,
+            }
+          },
+        }
+      })
+      if (!candidate) {
+        throw new NotFoundException(`Candidate with id ${candidateId} not found`);
+      }
+      return candidate;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.prismaErrorHanler(error, "Get", candidateId);
+      this.logger.error(`GET: error: ${error}`);
+      throw new InternalServerErrorException('Server error');
+    }
+    
+  }
 }
 
