@@ -69,10 +69,10 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
   }
   @SubscribeMessage('submitAnswer')
   async handleSubmitAnswer(
-    @MessageBody() data: { sessionId: string, questionId: string, candidateId: string, answerText: string, questionText: string },
+    @MessageBody() data: { sessionId: string, questionId: string, candidateId: string, answerText: string, questionText: string, questionNumber: string, numOfQuestions: string },
     @ConnectedSocket() client: Socket
   ) {
-    const { sessionId, questionId, candidateId, answerText, questionText } = data;
+    const { sessionId, questionId, candidateId, answerText, questionText , questionNumber , numOfQuestions} = data;
 
     let existing = await this.prisma.answer.findUnique({
       where:{
@@ -166,7 +166,9 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
         candidateId,
         questionText,
         answerText,
-        metrics
+        metrics,
+        questionNumber,
+        numOfQuestions
       });
     }
 
