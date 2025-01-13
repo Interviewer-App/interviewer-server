@@ -345,7 +345,7 @@ model InterviewSession {
   scheduledAt        DateTime
   completedDate      DateTime?
   interviewStatus    interviewStatus
-  score              score?
+  score              Float?
   reviewedBy         String?
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
@@ -412,14 +412,14 @@ enum QuestionType {
 }
 
 model score {
-  scoreID   String  @id @default(cuid())
-  sessionID String  @unique
+  scoreID    String    @id @default(cuid())
+  responseId String    @unique
   // candidateID String @unique
-  score     String
-  createdAt String?
-  updatedAt String?
+  score      Float
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
 
-  session InterviewSession @relation(fields: [sessionID], references: [sessionId])
+  session Answer @relation(fields: [responseId], references: [responseID])
   // candidate Candidate        @relation(fields: [candidateID], references: [profileID])
 }
 
@@ -430,6 +430,7 @@ model Answer {
   questionID        String           @unique
   candidateID       String
   responseText      String
+  score             score?
   responseTime      DateTime
   languageDetected  String
   sentimentAnalysis String?

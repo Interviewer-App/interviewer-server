@@ -93,6 +93,13 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
       answer: answerText
     });
 
+    const score = await this.prisma.score.create({
+      data:{
+        responseId: answer.responseID,
+        score: metrics.relevanceScore
+      }
+    })
+
     // Notify the company that the candidate has submitted an answer
     this.server.to(`session-${sessionId}`).emit('answerSubmitted', {
       questionId,
