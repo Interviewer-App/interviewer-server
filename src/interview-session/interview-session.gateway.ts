@@ -109,6 +109,26 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     });
   }
 
+  @SubscribeMessage('nextQuestion')
+  async handleNextQuestion(
+    @MessageBody() data: { sessionId: string, nextQuestionId: string, followUpQuestion?: string },
+    @ConnectedSocket() client: Socket
+  ) {
+    const { sessionId, nextQuestionId, followUpQuestion } = data;
+
+    console.log(`Received nextQuestion event for session ${sessionId} with nextQuestionId ${nextQuestionId}`);
+
+    const message = {
+      type: followUpQuestion ? 'followUpQuestion' : 'navigateToNextQuestion',
+      nextQuestionId,
+      followUpQuestion,
+    };
+
+    this.server.to(`session-${sessionId}`).emit('navigateNextQuestion', message);
+
+    console.log(`Emitted nextQuestion event to room session-${sessionId}:`, message);
+  }
+
   @SubscribeMessage('leaveInterviewSession')
   handleLeaveInterviewSession(
     @MessageBody() data: { sessionId: string, userId: string },
