@@ -4,6 +4,7 @@ import { UpdateInterviewSessionDto } from './dto/update-interview-session.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { arrayNotEmpty, isNotEmpty } from "class-validator";
 import { UpdateQuestionDto } from "./dto/update-question.dto";
+import { CreateQuestionDto } from "./dto/create-question.dto";
 // import { ProducerService } from '../kafka/producer/producer.service';
 
 @Injectable()
@@ -525,5 +526,50 @@ export class InterviewSessionService {
       );
     }
     this.logger.error(`${method}: Prisma error: ${error.message}`);
+  }
+
+  async createQuestions(dto: CreateQuestionDto) {
+    this.logger.log(`POST: interview/create: New interview started`);
+
+    try {
+      const session = await this.prisma.interviewSession.findUnique({
+        where: { sessionId: dto.sessionId },
+      });
+      if (!session) {
+        throw new NotFoundException(`Interview Session with id ${dto.sessionId} not found`);
+      }
+
+      const question = await this.prisma.question.create({
+        data: {
+          questionText: dto.question,
+          type: dto.type.toUpperCase() === 'OPEN-ENDED' ? 'OPEN_ENDED' : 'CODING',
+          estimatedTimeMinutes: dto.estimatedTimeInMinutes,
+          usageFrequency: 0,
+          interviewSession: {
+            connect: {
+              sessionId: dto.sessionId,
+            },
+          },
+        },
+      });
+
+
+      this.logger.log(
+        `POST: interview-session/create: Question ${question.questionID} created successfully`
+      );
+
+      return {
+        message: "Question created successfully",
+        question,
+      };
+    } catch (error) {
+      // Custom Prisma error handler
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.prismaErrorHandler(error, "POST", dto.sessionId);
+      this.logger.error(`POST: Question/create: Error: ${error.message}`);
+      throw new InternalServerErrorException("Server error occurred");
+    }
   }
 }

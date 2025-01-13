@@ -8,6 +8,7 @@ import { Auth } from "../auth/decorators";
 import { Role } from "@prisma/client";
 import { InterviewSession } from './entities/interview-session.entity';
 import { UpdateQuestionDto } from "./dto/update-question.dto";
+import { CreateQuestionDto } from "./dto/create-question.dto";
 
 @ApiBearerAuth()
 @ApiTags('Interview-Session')
@@ -174,6 +175,19 @@ export class InterviewSessionController {
     return this.interviewSessionService.removeQuestionBySessionId(sessionId);
   }
 
+  @Post('question')
+  @ApiOperation({
+    summary: 'CREATE QUESTIONS',
+    description: 'Private endpoint to Create a new Questions. It is allowed only by "company" users'
+  })
+  @ApiResponse({ status: 201, description: 'Created'})
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
+  @Auth(Role.COMPANY)
+  createQuestions(@Body() createQuestionsDto: CreateQuestionDto) {
+    return this.interviewSessionService.createQuestions(createQuestionsDto);
+  }
 
   //
   // @Patch(':id')
