@@ -7,10 +7,11 @@ import { InterviewSessionCreateConsumer } from './interview-session-create.consu
 import { KafkaModule } from '../kafka/kafka.module';
 import { InterviewSessionGateway } from './interview-session.gateway';
 import { AiService } from 'src/ai/ai.service';
+import { AnswersService } from "../answers/answers.service";
 
 @Module({
   controllers: [InterviewSessionController],
-  providers: [InterviewSessionService, InterviewSessionGateway, AiService],
+  providers: [InterviewSessionService, InterviewSessionGateway, AiService, AnswersService],
   imports:[
     AuthModule,
     PrismaModule,

@@ -10,6 +10,7 @@ import { Server, Socket } from 'socket.io';
 import { PrismaService } from '../prisma/prisma.service';
 import { InterviewSessionService } from "./interview-session.service";
 import { AiService } from "src/ai/ai.service";
+import { AnswersService } from "../answers/answers.service";
 
 @WebSocketGateway({ cors: true })
 export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -18,7 +19,7 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
   // Track active interview sessions
   private activeSessions: Map<string, Set<string>> = new Map(); // sessionId -> Set of participantIds (candidate and company)
 
-  constructor(private prisma: PrismaService, private aiService : AiService) {}
+  constructor(private prisma: PrismaService, private aiService : AiService, private answerService:AnswersService) {}
 
   handleConnection(client: Socket, ...args: any[]) {
     console.log(`Client connected: ${client.id}`);
@@ -67,72 +68,133 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
       this.server.to(`session-${sessionId}`).emit('questions', { questions });
     }
   }
+  // @SubscribeMessage('submitAnswer')
+  // async handleSubmitAnswer(
+  //   @MessageBody() data: { sessionId: string, questionId: string, candidateId: string, answerText: string, questionText: string, questionNumber: string, numOfQuestions: string },
+  //   @ConnectedSocket() client: Socket
+  // ) {
+  //   const { sessionId, questionId, candidateId, answerText, questionText , questionNumber , numOfQuestions} = data;
+  //
+  //   let existing = await this.prisma.answer.findUnique({
+  //     where:{
+  //       questionID: questionId,
+  //     }
+  //   })
+  //   if (existing) {
+  //     existing = await this.prisma.answer.update({
+  //       where:{
+  //         questionID: questionId
+  //       },
+  //       data: {
+  //         responseText: answerText,
+  //       }
+  //     })
+  //
+  //     console.log('Answer updated on existing answer:', existing);
+  //     const metrics = await this.aiService.analyzeResponse({
+  //       question: questionText,
+  //       answer: answerText
+  //     });
+  //
+  //     const existingScore = await this.prisma.score.findUnique({
+  //       where: {
+  //         responseId: existing.responseID, // Unique identifier for the score record
+  //       },
+  //     });
+  //    
+  //     let score;
+  //     if (existingScore) {
+  //       // Update the existing score
+  //       score = await this.prisma.score.update({
+  //         where: {
+  //           responseId: existing.responseID,
+  //         },
+  //         data: {
+  //           score: parseFloat(metrics.relevanceScore),
+  //         },
+  //       });
+  //     } else {
+  //       // Create a new score
+  //       score = await this.prisma.score.create({
+  //         data: {
+  //           responseId: existing.responseID,
+  //           score: parseFloat(metrics.relevanceScore),
+  //         },
+  //       });
+  //     }
+  //
+  //     // Notify the company that the candidate has submitted an answer
+  //     this.server.to(`session-${sessionId}`).emit('answerSubmitted', {
+  //       questionId,
+  //       candidateId,
+  //       questionText,
+  //       answerText,
+  //       metrics
+  //     });
+  //
+  //   }else {
+  //     const answer = await this.prisma.answer.create({
+  //       data: {
+  //         sessionID: sessionId,
+  //         questionID: questionId,
+  //         candidateID: candidateId,
+  //         responseText: answerText,
+  //         responseTime: new Date(),
+  //         languageDetected: 'en',
+  //         sentimentAnalysis: null,
+  //         keywordExtracted: null,
+  //       },
+  //     });
+  //
+  //     console.log('Answer saved:', answer);
+  //     const metrics = await this.aiService.analyzeResponse({
+  //       question: questionText,
+  //       answer: answerText
+  //     });
+  //
+  //     const score = await this.prisma.score.create({
+  //       data:{
+  //         responseId: answer.responseID,
+  //         score: parseFloat(metrics.relevanceScore)
+  //       }
+  //     })
+  //
+  //    
+  //
+  //     // Notify the company that the candidate has submitted an answer
+  //     this.server.to(`session-${sessionId}`).emit('answerSubmitted', {
+  //       questionId,
+  //       candidateId,
+  //       questionText,
+  //       answerText,
+  //       metrics,
+  //       questionNumber,
+  //       numOfQuestions
+  //     });
+  //   }
+  //
+  // }
+
   @SubscribeMessage('submitAnswer')
   async handleSubmitAnswer(
-    @MessageBody() data: { sessionId: string, questionId: string, candidateId: string, answerText: string, questionText: string, questionNumber: string, numOfQuestions: string },
+    @MessageBody() data: { sessionId: string, questionId: string, candidateId: string, answerText: string, questionText: string, questionNumber: number, numOfQuestions: number },
     @ConnectedSocket() client: Socket
   ) {
     const { sessionId, questionId, candidateId, answerText, questionText , questionNumber , numOfQuestions} = data;
+    console.log(data);
+    
+    let answer = await this.prisma.answer.findUnique({
+      where: { questionID: questionId },
+    });
 
-    let existing = await this.prisma.answer.findUnique({
-      where:{
-        questionID: questionId,
-      }
-    })
-    if (existing) {
-      existing = await this.prisma.answer.update({
-        where:{
-          questionID: questionId
-        },
-        data: {
-          responseText: answerText,
-        }
-      })
-
-      console.log('Answer updated on existing answer:', existing);
-      const metrics = await this.aiService.analyzeResponse({
-        question: questionText,
-        answer: answerText
+    if (answer) {
+      answer = await this.prisma.answer.update({
+        where: { questionID: questionId },
+        data: { responseText: answerText },
       });
-
-      const existingScore = await this.prisma.score.findUnique({
-        where: {
-          responseId: existing.responseID, // Unique identifier for the score record
-        },
-      });
-      
-      let score;
-      if (existingScore) {
-        // Update the existing score
-        score = await this.prisma.score.update({
-          where: {
-            responseId: existing.responseID,
-          },
-          data: {
-            score: parseFloat(metrics.relevanceScore),
-          },
-        });
-      } else {
-        // Create a new score
-        score = await this.prisma.score.create({
-          data: {
-            responseId: existing.responseID,
-            score: parseFloat(metrics.relevanceScore),
-          },
-        });
-      }
-
-      // Notify the company that the candidate has submitted an answer
-      this.server.to(`session-${sessionId}`).emit('answerSubmitted', {
-        questionId,
-        candidateId,
-        questionText,
-        answerText,
-        metrics
-      });
-
-    }else {
-      const answer = await this.prisma.answer.create({
+      console.log('Answer updated:', answer);
+    } else {
+      answer = await this.prisma.answer.create({
         data: {
           sessionID: sessionId,
           questionID: questionId,
@@ -144,34 +206,68 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
           keywordExtracted: null,
         },
       });
+      console.log('Answer created:', answer);
+    }
+    
+    const metrics = await this.analyzeResponse(questionText, answerText);
+    
+    const score = await this.upsertScore(answer.responseID, metrics.relevanceScore);
 
-      console.log('Answer saved:', answer);
-      const metrics = await this.aiService.analyzeResponse({
-        question: questionText,
-        answer: answerText
+    const totalScore = await this.getTotalScoreBySessionId(sessionId);
+
+    this.notifyAnswerSubmission(sessionId, questionId, candidateId, questionText, answerText, metrics, questionNumber, numOfQuestions, totalScore);
+  }
+
+  private async analyzeResponse(questionText: string, answerText: string) {
+    return this.aiService.analyzeResponse({
+      question: questionText,
+      answer: answerText,
+    });
+  }
+
+  private async upsertScore(responseId: string, relevanceScore: string) {
+    const existingScore = await this.prisma.score.findUnique({
+      where: { responseId },
+    });
+
+    if (existingScore) {
+      return this.prisma.score.update({
+        where: { responseId },
+        data: { score: parseFloat(relevanceScore) },
       });
-
-      const score = await this.prisma.score.create({
-        data:{
-          responseId: answer.responseID,
-          score: parseFloat(metrics.relevanceScore)
-        }
-      })
-
-      
-
-      // Notify the company that the candidate has submitted an answer
-      this.server.to(`session-${sessionId}`).emit('answerSubmitted', {
-        questionId,
-        candidateId,
-        questionText,
-        answerText,
-        metrics,
-        questionNumber,
-        numOfQuestions
+    } else {
+      return this.prisma.score.create({
+        data: { responseId, score: parseFloat(relevanceScore) },
       });
     }
+  }
 
+  private async getTotalScoreBySessionId(sessionId: string) {
+    const total = await this.answerService.getTotalScoreBySessionId(sessionId);
+    return total;
+  }
+
+  private notifyAnswerSubmission(
+    sessionId: string,
+    questionId: string,
+    candidateId: string,
+    questionText: string,
+    answerText: string,
+    metrics: any,
+    questionNumber: number,
+    numOfQuestions: number,
+    totalScore: any,
+  ) {
+    this.server.to(`session-${sessionId}`).emit('answerSubmitted', {
+      questionId,
+      candidateId,
+      questionText,
+      answerText,
+      metrics,
+      questionNumber,
+      numOfQuestions,
+      totalScore,
+    });
   }
 
   @SubscribeMessage('nextQuestion')
