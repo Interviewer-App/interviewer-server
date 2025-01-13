@@ -121,6 +121,15 @@ export class AnswersService {
         }
       }
 
+      const session = await this.prisma.interviewSession.update({
+        where: {
+          sessionId: sessionId
+        },
+        data: {
+          score: totalScore,
+        }
+      })
+
       return {
         sessionId,
         totalScore,
