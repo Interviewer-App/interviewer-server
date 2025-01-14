@@ -171,26 +171,108 @@ export class InterviewService {
 
     }
 
-    async findAllPublishedInterviews() {
-
+    async findAllPublishedInterviews(
+      sortBy?: string,
+      datePosted?: string,
+      category?: string,
+      jobTitle?: string,
+      keywords?: string,
+    ) {
         try {
+            const where: any = {
+                status: InterviewStatus.ACTIVE,
+            };
+
+
+            if (datePosted) {
+                const now = new Date();
+                let startDate: Date;
+
+                switch (datePosted) {
+                    case 'last 24 hours':
+                        startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                        break;
+                    case 'last week':
+                        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                        break;
+                    case 'last month':
+                        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                        break;
+                    default:
+                        startDate = new Date(0);
+                }
+
+                where.createdAt = {
+                    gte: startDate,
+                };
+            }
+
+
+            if (category) {
+                where.interviewCategory = category;
+            }
+
+
+            if (jobTitle) {
+                where.jobTitle = {
+                    contains: jobTitle,
+                    mode: 'insensitive',
+                };
+            }
+
+
+            if (keywords) {
+                where.OR = [
+                    { jobTitle: { contains: keywords, mode: 'insensitive' } },
+                    { jobDescription: { contains: keywords, mode: 'insensitive' } },
+                    { requiredSkills: { contains: keywords, mode: 'insensitive' } },
+                ];
+            }
+
+
             const interviews = await this.prisma.interview.findMany({
-                where:{
-                    status: InterviewStatus.ACTIVE,
-                },
+                where,
                 include: {
                     company: {
                         select: {
                             companyName: true,
-                        }
+                        },
                     },
                     interviewers: true,
                     candidates: true,
                     interviewSessions: true,
                     CategoryAssignment: true,
-                }
+                },
             });
-            return interviews.map(interview => ({
+
+
+            let sortedInterviews = interviews;
+            if (sortBy) {
+                switch (sortBy) {
+                    case 'latest':
+                        sortedInterviews = interviews.sort(
+                          (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+                        );
+                        break;
+                    case 'a-z':
+                        sortedInterviews = interviews.sort((a, b) =>
+                          a.jobTitle.localeCompare(b.jobTitle),
+                        );
+                        break;
+                    case 'z-a':
+                        sortedInterviews = interviews.sort((a, b) =>
+                          b.jobTitle.localeCompare(a.jobTitle),
+                        );
+                        break;
+                    case 'topmatch':
+                        sortedInterviews = interviews;
+                        break;
+                    default:
+                        sortedInterviews = interviews;
+                }
+            }
+
+            return sortedInterviews.map((interview) => ({
                 interviewID: interview.interviewID,
                 companyID: interview.companyID,
                 companyName: interview.company.companyName,
@@ -212,7 +294,6 @@ export class InterviewService {
             this.logger.error(`GET: error: ${error}`);
             throw new InternalServerErrorException('Server error');
         }
-
     }
 
 

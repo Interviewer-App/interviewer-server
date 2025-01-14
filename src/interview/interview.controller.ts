@@ -58,15 +58,32 @@ export class InterviewController {
     @Get('published')
     @ApiOperation({
         summary: 'GET ALL PUBLISHED INTERVIEWS',
-        description: 'Private endpoint to Get all Interviews with status published. It is allowed only by "admin" users'
+        description: 'Private endpoint to Get all Interviews with status published. It is allowed only by "admin" users',
     })
-    @ApiResponse({ status: 201, description: 'Created', type: Interview,isArray: true })
+    @ApiResponse({ status: 200, description: 'Success', type: Interview, isArray: true })
     @ApiResponse({ status: 400, description: 'Bad request' })
     @ApiResponse({ status: 401, description: 'Unauthorized' })
-    @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
+    @ApiResponse({ status: 500, description: 'Server error' })
+    @ApiQuery({ name: 'sortBy', required: false, description: 'Sort by: latest, a-z, z-a, topmatch' })
+    @ApiQuery({ name: 'datePosted', required: false, description: 'Filter by date posted: last 24 hours, last week, last month' })
+    @ApiQuery({ name: 'category', required: false, description: 'Filter by interview category' })
+    @ApiQuery({ name: 'jobTitle', required: false, description: 'Filter by job title' })
+    @ApiQuery({ name: 'keywords', required: false, description: 'Filter by keywords in job title, description, or skills' })
     @Auth(Role.COMPANY, Role.CANDIDATE)
-    findAllPublishedInterview() {
-        return this.interviewService.findAllPublishedInterviews();
+    findAllPublishedInterview(
+      @Query('sortBy') sortBy?: string,
+      @Query('datePosted') datePosted?: string,
+      @Query('category') category?: string,
+      @Query('jobTitle') jobTitle?: string,
+      @Query('keywords') keywords?: string,
+    ) {
+        return this.interviewService.findAllPublishedInterviews(
+          sortBy,
+          datePosted,
+          category,
+          jobTitle,
+          keywords,
+        );
     }
 
     @Get('interview/:id')

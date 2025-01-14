@@ -165,14 +165,24 @@ export class AiService {
 
       // Construct the prompt using DTO fields
       const prompt = `
-      Generate 5 interview questions for a ${dto.skillLevel} ${dto.jobRole} role.
-      The company culture is: ${dto.companyCulture || 'not specified'}.
-      The company's aim is: ${dto.companyAim || 'not specified'}.
-      The type of questions to generate is: ${dto.QuestionType}.
-      Keywords to focus on: ${dto.Keywords?.join(', ') || 'not specified'}.
-      Provide the question, specify the type: 'open-ended' or 'coding', and estimate the time for answering each question.
-      Format the response as JSON.
-    `;
+          Generate 5 interview questions for a ${dto.skillLevel} ${dto.jobRole} role.
+          The company culture is: ${dto.companyCulture || 'not specified'}.
+          The company's aim is: ${dto.companyAim || 'not specified'}.
+          The type of questions to generate is: ${dto.QuestionType}.
+          Keywords to focus on: ${dto.Keywords?.join(', ') || 'not specified'}.
+        
+          For each question, provide:
+          1. The question text.
+          2. The type of question: 'open-ended' or 'coding'.
+          3. The estimated time for answering the question (in minutes).
+          4. An explanation of what the question is designed to assess and why it is relevant to the role.
+        
+          Format the response as a JSON array, where each question is an object with the following fields:
+          - question: The question text.
+          - type: The type of question ('open-ended' or 'coding').
+          - estimated_time: The estimated time for answering the question (e.g., "5 minutes").
+          - explanation: A brief explanation of what the question assesses and its relevance to the role.
+        `;
 
       // Generate questions using the AI model
       const result = await model.generateContent({
@@ -183,7 +193,7 @@ export class AiService {
       const content = result.response.text();
 
       // Parse the generated content into JSON
-      let questions: { question: string; type: string; estimated_time: string }[] = [];
+      let questions: { question: string; type: string; estimated_time: string; explanation:string }[] = [];
 
       try {
         questions = JSON.parse(content);
@@ -212,6 +222,7 @@ export class AiService {
             data: {
               questionText: q.question,
               type: q.type.toUpperCase() === 'OPEN-ENDED' ? 'OPEN_ENDED' : 'CODING',
+              explanation: q.explanation,
               estimatedTimeMinutes: parseInt(q.estimated_time.match(/\d+/)?.[0] || "0", 10),
               aiContext: `Generated for ${dto.jobRole} (${dto.skillLevel})`,
               usageFrequency: 0,
