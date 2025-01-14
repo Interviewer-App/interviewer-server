@@ -86,7 +86,7 @@ export class InterviewSessionController {
   @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
-  @Auth(Role.COMPANY)
+  @Auth(Role.COMPANY, Role.CANDIDATE)
   findSessionHistoryBySessionId(@Param('sessionId') sessionId: string) {
     return this.interviewSessionService.findSessionHistoryBySessionId(sessionId);
   }
