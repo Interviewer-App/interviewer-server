@@ -12,6 +12,7 @@ import { InterviewSessionModule } from './interview-session/interview-session.mo
 import { KafkaModule } from './kafka/kafka.module';
 import { AnswersModule } from './answers/answers.module';
 import { CronService } from './cron/cron.service';
+import { CategoryModule } from './category/category.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { CronService } from './cron/cron.service';
     InterviewModule,
     InterviewSessionModule,
     AnswersModule,
+    CategoryModule,
     // KafkaModule,
   ],
   controllers:[AppController],

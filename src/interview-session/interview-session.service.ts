@@ -529,7 +529,7 @@ export class InterviewSessionService {
   }
 
   async createQuestions(dto: CreateQuestionDto) {
-    this.logger.log(`POST: interview/create: New interview started`);
+    this.logger.log(`POST: Question/create: New Question creating started`);
 
     try {
       const session = await this.prisma.interviewSession.findUnique({

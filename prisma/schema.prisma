@@ -252,6 +252,7 @@ model Company {
   user               User          @relation(fields: [userID], references: [userID])
   interviewer        Interviewer[]
   interviews         Interview[]
+  Category           Category[]
 }
 
 // model Interview {
@@ -282,10 +283,11 @@ model Interview {
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
-  company           Company                   @relation(fields: [companyID], references: [companyID])
-  interviewSessions InterviewSession[]
-  interviewers      InterviewerOnInterviews[]
-  candidates        CandidateOnInterviews[]
+  company            Company                   @relation(fields: [companyID], references: [companyID])
+  interviewSessions  InterviewSession[]
+  interviewers       InterviewerOnInterviews[]
+  candidates         CandidateOnInterviews[]
+  CategoryAssignment CategoryAssignment[]
 }
 
 model InterviewerOnInterviews {
@@ -448,4 +450,30 @@ model Answer {
   // candidatecomparison      CandidateComparison         @relation(fields: [comparisonID], references: [comparisonID])
   // skillassessments         SkillAssessment             @relation(fields: [assessmentID], references: [assessmentID])
   // reviewHistory            ReviewHistory               @relation(fields: [reviewID], references: [reviewID])
+}
+
+model Category {
+  categoryId   String   @id @default(cuid())
+  companyId    String
+  categoryName String
+  description  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  company            Company              @relation(fields: [companyId], references: [companyID])
+  CategoryAssignment CategoryAssignment[]
+}
+
+model CategoryAssignment {
+  assignmentId String   @id @default(cuid())
+  interviewId  String
+  categoryId   String
+  percentage   Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  interview Interview @relation(fields: [interviewId], references: [interviewID])
+  category  Category  @relation(fields: [categoryId], references: [categoryId])
+
+  @@unique([interviewId, categoryId])
 }
