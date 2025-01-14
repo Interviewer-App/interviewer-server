@@ -26,14 +26,124 @@ export class AiService {
     this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   }
 
+  // async generateQuestions(
+  //   id: string,
+  //   dto: GenerateQuestionsDto,
+  // ): Promise<any> {
+  //   this.logger.log(`POST: interview/generate-and-add-questions: Started`);
+  //   const model = this.genAI.getGenerativeModel({
+  //     model: 'gemini-2.0-flash-exp',
+  //   });
+  //   const generationConfig = {
+  //     temperature: 1,
+  //     topP: 0.95,
+  //     topK: 40,
+  //     maxOutputTokens: 8192,
+  //     responseMimeType: 'application/json',
+  //   };
+  //
+  //   try {
+  //     const existingInterview = await this.prisma.interviewSession.findUnique({
+  //       where: { sessionId: id },
+  //     });
+  //
+  //     if (!existingInterview) {
+  //       this.logger.warn(`Interview with ID ${id} not found`);
+  //       throw new NotFoundException(`Interview with ID ${id} not found`);
+  //     }
+  //     const prompt = `Generate 5 interview questions for a ${dto.skillLevel} ${dto.jobRole} role. Provide the question, specify the type: 'open-ended' or 'coding' and estimate time for the answering each question. Format the response as JSON.`;
+  //
+  //     //   const response = await this.openai.chat.completions.create({
+  //     //     model: "gpt-3.5-turbo",
+  //     //     messages: [{ role: "user", content: prompt }],
+  //     //     response_format: { type: "json_object" },
+  //     //   });
+  //
+  //     //   const content = response.choices[0]?.message?.content;
+  //
+  //     const result = await model.generateContent({
+  //       contents: [{ role: 'user', parts: [{ text: prompt }] }],
+  //       generationConfig: generationConfig,
+  //     });
+  //     const content = result.response.text();
+  //     let questions: { question: string; type: string; estimated_time: string}[] = [];
+  //
+  //     try {
+  //       questions = JSON.parse(content);
+  //     } catch (parseError) {
+  //       this.logger.error(
+  //         'Failed to parse OpenAI response into JSON format',
+  //         parseError,
+  //       );
+  //       throw new InternalServerErrorException('Invalid response from OpenAI');
+  //     }
+  //
+  //     if (
+  //       !Array.isArray(questions) ||
+  //       !questions.every((q) => q.question && q.type)
+  //     ) {
+  //       throw new InternalServerErrorException(
+  //         'Generated questions do not match the expected format',
+  //       );
+  //     }
+  //
+  //     await Promise.all(
+  //       questions.map(async (q) => {
+  //         return this.prisma.question.create({
+  //           data: {
+  //             questionText: q.question,
+  //             type: q.type.toUpperCase() === 'OPEN-ENDED' ? 'OPEN_ENDED' : 'CODING',
+  //             estimatedTimeMinutes: parseInt(q.estimated_time.match(/\d+/)?.[0] || "0", 10),
+  //             aiContext: `Generated for ${dto.jobRole}`,
+  //             usageFrequency: 0,
+  //             interviewSession: {
+  //               connect: {
+  //                 sessionId: id,
+  //               },
+  //             },
+  //           },
+  //         });
+  //       }),
+  //     );
+  //
+  //
+  //     // const interviewSession = await this.prisma.interviewSession.update({
+  //     //   where: { sessionId: id },
+  //     //   data: {
+  //     //     questions: questions,
+  //     //   },
+  //     // });
+  //
+  //     this.logger.log(
+  //       `POST: interview/generate-and-add-questions: Interview session ${id} updated successfully`,
+  //     );
+  //
+  //     return {
+  //       question: questions,
+  //       message: `Questions generated and added to Interview session ${id} successfully`,
+  //     };
+  //   } catch (error) {
+  //     if (error instanceof NotFoundException) {
+  //       throw error;
+  //     }
+  //     this.logger.error(
+  //       `POST: interview/generate-and-add-questions: Error occurred: ${error.message}`,
+  //     );
+  //     this.prismaErrorHandler(error, 'POST', id);
+  //     throw new InternalServerErrorException('Server error occurred');
+  //   }
+  // }
+
   async generateQuestions(
     id: string,
     dto: GenerateQuestionsDto,
   ): Promise<any> {
     this.logger.log(`POST: interview/generate-and-add-questions: Started`);
+
     const model = this.genAI.getGenerativeModel({
       model: 'gemini-2.0-flash-exp',
     });
+
     const generationConfig = {
       temperature: 1,
       topP: 0.95,
@@ -43,6 +153,7 @@ export class AiService {
     };
 
     try {
+      // Check if the interview session exists
       const existingInterview = await this.prisma.interviewSession.findUnique({
         where: { sessionId: id },
       });
@@ -51,42 +162,50 @@ export class AiService {
         this.logger.warn(`Interview with ID ${id} not found`);
         throw new NotFoundException(`Interview with ID ${id} not found`);
       }
-      const prompt = `Generate 5 interview questions for a ${dto.skillLevel} ${dto.jobRole} role. Provide the question, specify the type: 'open-ended' or 'coding' and estimate time for the answering each question. Format the response as JSON.`;
 
-      //   const response = await this.openai.chat.completions.create({
-      //     model: "gpt-3.5-turbo",
-      //     messages: [{ role: "user", content: prompt }],
-      //     response_format: { type: "json_object" },
-      //   });
+      // Construct the prompt using DTO fields
+      const prompt = `
+      Generate 5 interview questions for a ${dto.skillLevel} ${dto.jobRole} role.
+      The company culture is: ${dto.companyCulture || 'not specified'}.
+      The company's aim is: ${dto.companyAim || 'not specified'}.
+      The type of questions to generate is: ${dto.QuestionType}.
+      Keywords to focus on: ${dto.Keywords?.join(', ') || 'not specified'}.
+      Provide the question, specify the type: 'open-ended' or 'coding', and estimate the time for answering each question.
+      Format the response as JSON.
+    `;
 
-      //   const content = response.choices[0]?.message?.content;
-
+      // Generate questions using the AI model
       const result = await model.generateContent({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: generationConfig,
       });
+
       const content = result.response.text();
-      let questions: { question: string; type: string; estimated_time: string}[] = [];
+
+      // Parse the generated content into JSON
+      let questions: { question: string; type: string; estimated_time: string }[] = [];
 
       try {
         questions = JSON.parse(content);
       } catch (parseError) {
         this.logger.error(
-          'Failed to parse OpenAI response into JSON format',
+          'Failed to parse AI response into JSON format',
           parseError,
         );
-        throw new InternalServerErrorException('Invalid response from OpenAI');
+        throw new InternalServerErrorException('Invalid response from AI');
       }
 
+      // Validate the structure of the generated questions
       if (
         !Array.isArray(questions) ||
-        !questions.every((q) => q.question && q.type)
+        !questions.every((q) => q.question && q.type && q.estimated_time)
       ) {
         throw new InternalServerErrorException(
           'Generated questions do not match the expected format',
         );
       }
 
+      // Save the generated questions to the database
       await Promise.all(
         questions.map(async (q) => {
           return this.prisma.question.create({
@@ -94,7 +213,7 @@ export class AiService {
               questionText: q.question,
               type: q.type.toUpperCase() === 'OPEN-ENDED' ? 'OPEN_ENDED' : 'CODING',
               estimatedTimeMinutes: parseInt(q.estimated_time.match(/\d+/)?.[0] || "0", 10),
-              aiContext: `Generated for ${dto.jobRole}`,
+              aiContext: `Generated for ${dto.jobRole} (${dto.skillLevel})`,
               usageFrequency: 0,
               interviewSession: {
                 connect: {
@@ -106,30 +225,16 @@ export class AiService {
         }),
       );
 
-
-      // const interviewSession = await this.prisma.interviewSession.update({
-      //   where: { sessionId: id },
-      //   data: {
-      //     questions: questions,
-      //   },
-      // });
-
-      this.logger.log(
-        `POST: interview/generate-and-add-questions: Interview session ${id} updated successfully`,
-      );
-
+      this.logger.log(`POST: interview/generate-and-add-questions: Questions generated and saved successfully`);
       return {
-        question: questions,
-        message: `Questions generated and added to Interview session ${id} successfully`,
+        message: 'Questions generated and saved successfully',
+        questions,
       };
     } catch (error) {
-      if (error instanceof NotFoundException) {
+      if (error instanceof NotFoundException || error instanceof InternalServerErrorException) {
         throw error;
       }
-      this.logger.error(
-        `POST: interview/generate-and-add-questions: Error occurred: ${error.message}`,
-      );
-      this.prismaErrorHandler(error, 'POST', id);
+      this.logger.error(`POST: interview/generate-and-add-questions: Error: ${error.message}`);
       throw new InternalServerErrorException('Server error occurred');
     }
   }
