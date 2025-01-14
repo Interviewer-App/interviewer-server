@@ -1,7 +1,15 @@
-import { Injectable, InternalServerErrorException, Logger, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException
+} from "@nestjs/common";
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { PrismaService } from '../prisma/prisma.service';
+import { UpdateCategoryAssignmentDto } from "./dto/update-category-assignment.dto";
+import { CreateCategoryAssignmentDto } from "./dto/create-category-assignment.dto";
 
 @Injectable()
 export class CategoryService {
@@ -203,5 +211,138 @@ export class CategoryService {
     }
     this.logger.error(`${method}: Prisma error: ${error.message}`);
   }
-  
+
+  async updateAssignedCategory(assignmentId: string, dto: UpdateCategoryAssignmentDto) {
+    this.logger.log(`PATCH: category-assignment/update: Updating assignment ${assignmentId}`);
+
+    try {
+      const assignment = await this.prisma.categoryAssignment.findUnique({
+        where: { assignmentId },
+      });
+      if (!assignment) {
+        throw new NotFoundException(`Category assignment with ID ${assignmentId} not found`);
+      }
+      if(await this.checkInterviewIsActive(assignment.interviewId)){
+        console.log(await this.checkInterviewIsActive(assignment.interviewId))
+        return {
+          message: "This interview is Active Interview Cannot Update",
+        }
+      }
+      const updatedAssignment = await this.prisma.categoryAssignment.update({
+        where: { assignmentId },
+        data: {
+          percentage: dto.percentage,
+        },
+      });
+
+      this.logger.log(`PATCH: category-assignment/update: Assignment ${assignmentId} updated successfully`);
+      return {
+        message: 'Category assignment updated successfully',
+        assignment: updatedAssignment,
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`PATCH: category-assignment/update: Error: ${error.message}`);
+      throw new InternalServerErrorException('Server error occurred');
+    }
+
+  }
+
+  private async checkInterviewIsActive(interviewId: string) {
+    const interview = await this.prisma.interview.findUnique({
+      where:{interviewID:interviewId}
+    })
+    return interview.status === 'ACTIVE';
+  }
+
+  async removeAssignedCategories(assignmentId: string) {
+    this.logger.log(`DELETE: category-assignment/delete: Deleting assignment ${assignmentId}`);
+
+    try {
+      // Check if the assignment exists
+      const assignment = await this.prisma.categoryAssignment.findUnique({
+        where: { assignmentId },
+      });
+      if (!assignment) {
+        throw new NotFoundException(`Category assignment with ID ${assignmentId} not found`);
+      }
+      if(await this.checkInterviewIsActive(assignment.interviewId)){
+        return {
+          message: 'This interview is Active Interview Cannot Update',
+        }
+      }
+
+      await this.prisma.categoryAssignment.delete({
+        where: { assignmentId },
+      });
+
+      this.logger.log(`DELETE: category-assignment/delete: Assignment ${assignmentId} deleted successfully`);
+      return {
+        message: 'Category assignment deleted successfully',
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`DELETE: category-assignment/delete: Error: ${error.message}`);
+      throw new InternalServerErrorException('Server error occurred');
+    }
+  }
+
+  async createCategoryAssignmnet(dto: CreateCategoryAssignmentDto) {
+    this.logger.log(`POST: category-assignment/create: Creating a new category assignment`);
+
+    try {
+      // Check if the interview exists
+      const interview = await this.prisma.interview.findUnique({
+        where: { interviewID: dto.interviewId },
+      });
+      if (!interview) {
+        throw new NotFoundException(`Interview with ID ${dto.interviewId} not found`);
+      }
+
+      // Check if the category exists
+      const category = await this.prisma.category.findUnique({
+        where: { categoryId: dto.categoryId },
+      });
+      if (!category) {
+        throw new NotFoundException(`Category with ID ${dto.categoryId} not found`);
+      }
+
+      const existingAssignment = await this.prisma.categoryAssignment.findUnique({
+        where: {
+          interviewId_categoryId: {
+            interviewId: dto.interviewId,
+            categoryId: dto.categoryId,
+          },
+        },
+      });
+      if (existingAssignment) {
+        throw new BadRequestException('A category assignment for this interview and category already exists');
+      }
+
+      // Create the assignment
+      const assignment = await this.prisma.categoryAssignment.create({
+        data: {
+          interviewId: dto.interviewId,
+          categoryId: dto.categoryId,
+          percentage: dto.percentage,
+        },
+      });
+
+      this.logger.log(`POST: category-assignment/create: Assignment ${assignment.assignmentId} created successfully`);
+      return {
+        message: 'Category assignment created successfully',
+        assignment,
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
+      this.logger.error(`POST: category-assignment/create: Error: ${error.message}`);
+      throw new InternalServerErrorException('Server error occurred');
+    }
+  }
 }

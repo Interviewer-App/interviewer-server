@@ -9,12 +9,14 @@ import {
   HttpCode,
   HttpStatus, Patch
 } from "@nestjs/common";
-import { ApiOperation, ApiResponse, ApiTags, ApiParam, ApiBearerAuth } from "@nestjs/swagger";
+import { ApiOperation, ApiResponse, ApiTags, ApiParam, ApiBearerAuth, ApiBody } from "@nestjs/swagger";
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { Auth } from '../auth/decorators';
 import { Role } from '@prisma/client';
+import { UpdateCategoryAssignmentDto } from "./dto/update-category-assignment.dto";
+import { CreateCategoryAssignmentDto } from "./dto/create-category-assignment.dto";
 
 @ApiBearerAuth()
 @ApiTags('Categories')
@@ -79,7 +81,6 @@ export class CategoryController {
   }
 
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'DELETE CATEGORY',
     description: 'Private endpoint to delete a category. It is allowed only by "company" users.',
@@ -92,5 +93,50 @@ export class CategoryController {
   @Auth(Role.COMPANY)
   async remove(@Param('id') id: string) {
     return await this.categoryService.remove(id);
+  }
+
+  @Patch('category-assigned/:assignmentId')
+  @ApiOperation({
+    summary: 'UPDATE CATEGORY Assignment',
+    description: 'Private endpoint to update a category assignment with interviews. It is allowed only by "company" users.',
+  })
+  @ApiParam({ name: 'assignmentId', description: 'Category Assignment ID', type: 'string' })
+  @ApiResponse({ status: 200, description: 'Category assignment updated successfully.' })
+  @ApiResponse({ status: 400, description: 'Bad request.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 404, description: 'Category not found.' })
+  @ApiResponse({ status: 500, description: 'Server error.' })
+  @Auth(Role.COMPANY)
+  async updateAssignedCategory(@Param('assignmentId') assignmentId: string, @Body() updateCategoryAssignmentDto: UpdateCategoryAssignmentDto) {
+    return await this.categoryService.updateAssignedCategory(assignmentId, updateCategoryAssignmentDto);
+  }
+
+  @Delete('category-assigned/:assignmentId')
+  @ApiOperation({
+    summary: 'DELETE CATEGORY',
+    description: 'Private endpoint to delete a category. It is allowed only by "company" users.',
+  })
+  @ApiParam({ name: 'assignmentId', description: 'Category Assignment ID', type: 'string' })
+  @ApiResponse({ status: 204, description: 'Category assignment deleted successfully.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 404, description: 'Category not found.' })
+  @ApiResponse({ status: 500, description: 'Server error.' })
+  @Auth(Role.COMPANY)
+  async removeAssignedCategories(@Param('assignmentId') assignmentId: string) {
+    return await this.categoryService.removeAssignedCategories(assignmentId);
+  }
+
+  @Post('category-assigned')
+  @ApiOperation({
+    summary: 'CREATE CATEGORY ASSIGNMENT',
+    description: 'Creates a new category assignment.',
+  })
+  @ApiBody({ type: CreateCategoryAssignmentDto })
+  @ApiResponse({ status: 201, description: 'Category assignment created successfully.' })
+  @ApiResponse({ status: 400, description: 'Bad request (e.g., duplicate assignment).' })
+  @ApiResponse({ status: 404, description: 'Interview or category not found.' })
+  @ApiResponse({ status: 500, description: 'Server error.' })
+  async createCategoryAssignment(@Body() dto: CreateCategoryAssignmentDto) {
+      return await this.categoryService.createCategoryAssignmnet(dto);
   }
 }
