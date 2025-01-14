@@ -1,0 +1,1 @@
+web: npm install && npx prisma generate && npm run build && npx prisma migrate deploy && npm start
