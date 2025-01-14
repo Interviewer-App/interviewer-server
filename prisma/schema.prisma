@@ -397,6 +397,7 @@ model Question {
   sessionID            String
   questionCategory     String?
   questionText         String
+  explanation          String?
   estimatedTimeMinutes Int              @default(0)
   aiContext            String?
   diffcultyLevel       String?
