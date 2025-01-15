@@ -272,16 +272,15 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
 
   @SubscribeMessage('nextQuestion')
   async handleNextQuestion(
-    @MessageBody() data: { sessionId: string, nextQuestionId: string, followUpQuestion?: string },
+    @MessageBody() data: { sessionId: string, followUpQuestion?: string },
     @ConnectedSocket() client: Socket
   ) {
-    const { sessionId, nextQuestionId, followUpQuestion } = data;
+    const { sessionId, followUpQuestion } = data;
 
-    console.log(`Received nextQuestion event for session ${sessionId} with nextQuestionId ${nextQuestionId}`);
+    console.log(`Received nextQuestion event for session ${sessionId}`);
 
     const message = {
       type: followUpQuestion ? 'followUpQuestion' : 'navigateToNextQuestion',
-      nextQuestionId,
       followUpQuestion,
     };
 
