@@ -8,7 +8,7 @@
   "scripts": {
     "build": "nest build && cp -R prisma dist/prisma",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "prisma:generate": "npx prisma generate", 
+    "prisma:generate": "npx prisma generate",
     "prisma:migrate": "npx prisma migrate deploy",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
+    "@nestjs-modules/mailer": "^2.0.2",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^3.3.0",
     "@nestjs/core": "^10.0.0",
@@ -39,8 +40,10 @@
     "dotenv": "^16.4.7",
     "kafkajs": "^2.2.4",
     "node-cron": "^3.0.3",
+    "nodemailer": "^6.9.16",
     "openai": "^4.76.3",
     "passport-jwt": "^4.0.1",
+    "pug": "^3.0.3",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1"
   },
@@ -52,6 +55,7 @@
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.2",
     "@types/node": "^20.3.1",
+    "@types/nodemailer": "^6.4.17",
     "@types/passport-jwt": "^4.0.1",
     "@types/supertest": "^6.0.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
