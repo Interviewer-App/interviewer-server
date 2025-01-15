@@ -345,4 +345,45 @@ export class CategoryService {
       throw new InternalServerErrorException('Server error occurred');
     }
   }
+
+  async getAllCategories(companyId: string) {
+    this.logger.log(`GET: Category/findAll: Fetching categories for company ID ${companyId}`);
+
+    try {
+
+      const categories = await this.prisma.category.findMany({
+        where: { companyId: companyId },
+        select: {
+          categoryId: true,
+          companyId: true,
+          categoryName: true,
+          description: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      if (!categories || categories.length === 0) {
+        this.logger.warn(`GET: No categories found for company ID: ${companyId}`);
+        throw new NotFoundException(`No categories found for company ID: ${companyId}`);
+      }
+
+      const total = await this.prisma.category.count({
+        where: { companyId: companyId },
+      });
+
+      this.logger.log(`GET: Category/findAll: Fetched ${categories.length} categories for company ID ${companyId}`);
+
+      return {
+        categories,
+        total,
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`GET: Category/findAll: Error: ${error.message}`);
+      throw new InternalServerErrorException("Server error occurred");
+    }
+  }
 }

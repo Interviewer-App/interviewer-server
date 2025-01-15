@@ -49,6 +49,17 @@ export class CategoryController {
   async findAll(@Param('companyId') companyId: string, @Param('page') page: number, @Param('limit') limit: number) {
     return await this.categoryService.findAll(companyId, page, limit);
   }
+  @Get('categories/:companyId')
+  @ApiOperation({
+    summary: 'GET ALL CATEGORIES',
+    description: 'Public endpoint to fetch all categories.',
+  })
+  @ApiResponse({ status: 200, description: 'Categories fetched successfully.' })
+  @ApiResponse({ status: 500, description: 'Server error.' })
+  @Auth(Role.COMPANY)
+  async getAllCategories(@Param('companyId') companyId: string) {
+    return await this.categoryService.getAllCategories(companyId);
+  }
 
   @Get(':id')
   @ApiOperation({
