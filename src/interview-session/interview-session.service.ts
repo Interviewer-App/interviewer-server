@@ -182,6 +182,7 @@ export class InterviewSessionService {
           interview: true,
           scheduling: true,
           questions: true,
+          CategoryScore: true,
         },
       });
 
@@ -396,7 +397,8 @@ export class InterviewSessionService {
             candidate: true,
             interview: true,
             scheduling: true,
-            questions: true
+            questions: true,
+            CategoryScore: true,
         }
       });
 
@@ -441,6 +443,7 @@ export class InterviewSessionService {
           candidate: true,
           interview: true,
           scheduling: true,
+          CategoryScore: true,
           questions: {
             include:{
               interviewResponses:{

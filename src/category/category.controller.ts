@@ -17,6 +17,7 @@ import { Auth } from '../auth/decorators';
 import { Role } from '@prisma/client';
 import { UpdateCategoryAssignmentDto } from "./dto/update-category-assignment.dto";
 import { CreateCategoryAssignmentDto } from "./dto/create-category-assignment.dto";
+import { UpdateCategoryScoreDto } from "./dto/update-category-score.dto";
 
 @ApiBearerAuth()
 @ApiTags('Categories')
@@ -149,5 +150,48 @@ export class CategoryController {
   @ApiResponse({ status: 500, description: 'Server error.' })
   async createCategoryAssignment(@Body() dto: CreateCategoryAssignmentDto) {
       return await this.categoryService.createCategoryAssignmnet(dto);
+  }
+
+  @Get('category-score/:sessionId')
+  @ApiOperation({
+    summary: 'GET CATEGORY SCORES BY SESSION ID',
+    description: 'Fetches all category scores for a given session ID.',
+  })
+  @ApiParam({ name: 'sessionId', description: 'Session ID', type: 'string' })
+  @ApiResponse({ status: 200, description: 'Category scores fetched successfully.' })
+  @ApiResponse({ status: 404, description: 'Session not found.' })
+  @ApiResponse({ status: 500, description: 'Server error.' })
+  async getCategoryScoresBySessionId(@Param('sessionId') sessionId: string) {
+      return await this.categoryService.getCategoryScoresBySessionId(sessionId);
+  }
+
+  @Patch('category-score/:categoryScoreId')
+  @ApiOperation({
+    summary: 'UPDATE CATEGORY SCORE',
+    description: 'Updates the score for a specific category score.',
+  })
+  @ApiParam({ name: 'categoryScoreId', description: 'Category Score ID', type: 'string' })
+  @ApiBody({ type: UpdateCategoryScoreDto })
+  @ApiResponse({ status: 200, description: 'Category score updated successfully.' })
+  @ApiResponse({ status: 404, description: 'Category score not found.' })
+  @ApiResponse({ status: 500, description: 'Server error.' })
+  async updateCategoryScore(
+    @Param('categoryScoreId') categoryScoreId: string,
+    @Body() dto: UpdateCategoryScoreDto,
+  ) {
+      return await this.categoryService.updateCategoryScore(categoryScoreId, dto);
+  }
+
+  @Get('session/category-score/:sessionId/total')
+  @ApiOperation({
+    summary: 'CALCULATE TOTAL SCORE FOR SESSION',
+    description: 'Calculates the total score for a given session ID.',
+  })
+  @ApiParam({ name: 'sessionId', description: 'Session ID', type: 'string' })
+  @ApiResponse({ status: 200, description: 'Total score calculated successfully.' })
+  @ApiResponse({ status: 404, description: 'Session not found.' })
+  @ApiResponse({ status: 500, description: 'Server error.' })
+  async calculateTotalScore(@Param('sessionId') sessionId: string) {
+      return await this.categoryService.calculateTotalScore(sessionId);
   }
 }

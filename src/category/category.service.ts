@@ -10,6 +10,7 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateCategoryAssignmentDto } from "./dto/update-category-assignment.dto";
 import { CreateCategoryAssignmentDto } from "./dto/create-category-assignment.dto";
+import { UpdateCategoryScoreDto } from "./dto/update-category-score.dto";
 
 @Injectable()
 export class CategoryService {
@@ -384,6 +385,107 @@ export class CategoryService {
       }
       this.logger.error(`GET: Category/findAll: Error: ${error.message}`);
       throw new InternalServerErrorException("Server error occurred");
+    }
+  }
+
+  async getCategoryScoresBySessionId(sessionId: string) {
+    this.logger.log(`GET: Fetching category scores for session ID: ${sessionId}`);
+
+    try {
+      const categoryScores = await this.prisma.categoryScore.findMany({
+        where: { sessionId: sessionId },
+        include: {
+          categoryAssignment: {
+            include: {
+              category: true,
+            },
+          },
+        },
+      });
+
+      if (!categoryScores || categoryScores.length === 0) {
+        this.logger.warn(`No category scores found for session ID: ${sessionId}`);
+        throw new NotFoundException(`No category scores found for session ID: ${sessionId}`);
+      }
+
+      return {
+        message: 'Category scores fetched successfully',
+        categoryScores,
+      };
+    } catch (error) {
+      this.logger.error(`GET: Error fetching category scores: ${error.message}`);
+      throw new InternalServerErrorException('Server error occurred');
+    }
+  }
+
+  async updateCategoryScore(categoryScoreId: string, dto: UpdateCategoryScoreDto) {
+    this.logger.log(`PATCH: Updating category score with ID: ${categoryScoreId}`);
+
+    try {
+      const categoryScore = await this.prisma.categoryScore.findUnique({
+        where: { categoryScoreId: categoryScoreId },
+      });
+
+      if (!categoryScore) {
+        this.logger.warn(`Category score with ID ${categoryScoreId} not found`);
+        throw new NotFoundException(`Category score with ID ${categoryScoreId} not found`);
+      }
+
+      const updatedCategoryScore = await this.prisma.categoryScore.update({
+        where: { categoryScoreId: categoryScoreId },
+        data: { score: dto.score },
+      });
+
+      return {
+        message: 'Category score updated successfully',
+        categoryScore: updatedCategoryScore,
+      };
+    } catch (error) {
+      this.logger.error(`PATCH: Error updating category score: ${error.message}`);
+      throw new InternalServerErrorException('Server error occurred');
+    }
+  }
+
+  async calculateTotalScore(sessionId: string) {
+    this.logger.log(`GET: Calculating total score for session ID: ${sessionId}`);
+
+    try {
+      const categoryScores = await this.prisma.categoryScore.findMany({
+        where: { sessionId: sessionId },
+        select:{
+          categoryAssignment: true,
+          score: true,
+        }
+      });
+
+      if (!categoryScores || categoryScores.length === 0) {
+        this.logger.warn(`No category scores found for session ID: ${sessionId}`);
+        throw new NotFoundException(`No category scores found for session ID: ${sessionId}`);
+      }
+
+      let totalScore = 0;
+      for (const categoryScore of categoryScores) {
+        const percentage = categoryScore.categoryAssignment.percentage;
+        totalScore += categoryScore.score * (percentage / 100);
+      }
+
+      const session = await this.prisma.interviewSession.update({
+        where:{
+          sessionId: sessionId,
+        },
+        data: {
+          score: totalScore,
+        }
+      })
+
+      return {
+        message: 'Total score calculated successfully',
+        totalScore,
+        session
+      };
+    } catch (error) {
+      this.logger.error(`GET: Error calculating total score: ${error.message}`);
+      throw new InternalServerErrorException('Server error occurred');
     }
   }
 }
