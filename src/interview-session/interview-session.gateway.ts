@@ -11,6 +11,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { InterviewSessionService } from "./interview-session.service";
 import { AiService } from "src/ai/ai.service";
 import { AnswersService } from "../answers/answers.service";
+import { CategoryService } from "../category/category.service";
 
 @WebSocketGateway({ cors: true })
 export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -19,7 +20,7 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
   // Track active interview sessions
   private activeSessions: Map<string, Set<string>> = new Map(); // sessionId -> Set of participantIds (candidate and company)
 
-  constructor(private prisma: PrismaService, private aiService : AiService, private answerService:AnswersService) {}
+  constructor(private prisma: PrismaService, private aiService : AiService, private answerService:AnswersService, private categoryService:CategoryService) {}
 
   handleConnection(client: Socket, ...args: any[]) {
     console.log(`Client connected: ${client.id}`);
@@ -66,7 +67,14 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
       const questions = await this.fetchQuestionsForSession(sessionId);
       console.log(questions);
       this.server.to(`session-${sessionId}`).emit('questions', { questions });
+      const categoryScores = await this.fetchCategoryScores(sessionId);
+      console.log(categoryScores);
+      this.server.to(`session-${sessionId}`).emit('categoryScores', { categoryScores });
     }
+  }
+
+  private async fetchCategoryScores(sessionId: string) {
+    return await this.categoryService.getCategoryScoresBySessionId(sessionId);
   }
   // @SubscribeMessage('submitAnswer')
   // async handleSubmitAnswer(

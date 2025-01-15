@@ -8,10 +8,11 @@ import { KafkaModule } from '../kafka/kafka.module';
 import { InterviewSessionGateway } from './interview-session.gateway';
 import { AiService } from 'src/ai/ai.service';
 import { AnswersService } from "../answers/answers.service";
+import { CategoryService } from "../category/category.service";
 
 @Module({
   controllers: [InterviewSessionController],
-  providers: [InterviewSessionService, InterviewSessionGateway, AiService, AnswersService],
+  providers: [InterviewSessionService, InterviewSessionGateway, AiService, AnswersService, CategoryService],
   imports:[
     AuthModule,
     PrismaModule,
