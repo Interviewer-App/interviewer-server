@@ -83,4 +83,14 @@ export class GenerateQuestionsDto {
   @IsArray()
   @IsOptional()
   Keywords?: string[];
+
+  @ApiProperty({
+    description: 'No of questions to generate',
+    example: 5,
+    nullable: false,
+    required: true,
+  })
+  @IsInt()
+  @IsNotEmpty()
+  noOfQuestions: number;
 }
