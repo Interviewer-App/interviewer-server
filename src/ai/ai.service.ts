@@ -165,7 +165,7 @@ export class AiService {
 
       // Construct the prompt using DTO fields
       const prompt = `
-          Generate 5 interview questions for a ${dto.skillLevel} ${dto.jobRole} role.
+          Generate ${dto.noOfQuestions} interview questions for a ${dto.skillLevel} ${dto.jobRole} role.
           The company culture is: ${dto.companyCulture || 'not specified'}.
           The company's aim is: ${dto.companyAim || 'not specified'}.
           The type of questions to generate is: ${dto.QuestionType}.

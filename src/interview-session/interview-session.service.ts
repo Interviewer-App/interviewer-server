@@ -141,9 +141,9 @@ export class InterviewSessionService {
     try {
       const skip = (page - 1) * limit;
       const take = Number(limit);
-      const interviewSessions = await this.prisma.interviewSession.findMany({
-        skip,
-        take,
+
+
+      const allInterviewSessions = await this.prisma.interviewSession.findMany({
         where: { interviewId: interviewId },
         select: {
           sessionId: true,
@@ -161,35 +161,48 @@ export class InterviewSessionService {
           createdAt: true,
           updatedAt: true,
           candidate: {
-            include:{
+            include: {
               user: true,
-            }
+            },
           },
           interview: true,
           scheduling: true,
-          questions: true
-        }
+          questions: true,
+        },
       });
 
-      if (!interviewSessions || interviewSessions.length === 0) {
+      if (!allInterviewSessions || allInterviewSessions.length === 0) {
         this.logger.warn(`GET: No sessions found for interview ID: ${interviewId}`);
         throw new NotFoundException(`No sessions found for interview ID: ${interviewId}`);
       }
-      const total = await this.prisma.interviewSession.count({
-        where: {
-          interviewId: interviewId,
+
+      // Calculate the maximum score and the corresponding candidate ID from all sessions
+      let maxScore = -Infinity;
+      let maxScoreCandidateFirstName: string | null = null;
+      let maxScoreCandidateLastName: string | null = null;
+
+      allInterviewSessions.forEach((session) => {
+        if (session.score !== null && session.score > maxScore) {
+          maxScore = session.score;
+          maxScoreCandidateFirstName = session.candidate.user.firstName;
+          maxScoreCandidateLastName = session.candidate.user.lastName;
         }
-        }
-      );
+      });
+
+      const paginatedInterviewSessions = allInterviewSessions.slice(skip, skip + take);
+
+      const total = allInterviewSessions.length;
 
       return {
-        interviewSessions,
+        interviewSessions: paginatedInterviewSessions,
+        maxScore: maxScore !== -Infinity ? maxScore : null, // Return null if no valid score is found
+        maxScoreCandidateFirstName,
+        maxScoreCandidateLastName,
         total,
         page,
         limit,
         totalPages: Math.ceil(total / limit),
       };
-      // return interviewSessions;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -255,6 +268,88 @@ export class InterviewSessionService {
     }
   }
 
+  async findOverviewByInterviewId(interviewId: string) {
+    try {
+
+      const interview = await this.prisma.interview.findUnique({
+        where: { interviewID: interviewId },
+      });
+
+      if (!interview) {
+        this.logger.warn(`GET: Interview with ID ${interviewId} not found`);
+        throw new NotFoundException(`Interview with ID ${interviewId} not found. Please check the interview ID.`);
+      }
+
+      const allInterviewSessions = await this.prisma.interviewSession.findMany({
+        where: {
+          interviewId: interviewId,
+          interviewStatus: 'completed',
+        },
+        select: {
+          sessionId: true,
+          interviewId: true,
+          candidateId: true,
+          interviewStatus: true,
+          score: true,
+          candidate: {
+            include: {
+              user: true,
+            },
+          },
+        },
+      });
+
+      const total = await this.totalSessions(interviewId);
+
+      if (!allInterviewSessions || allInterviewSessions.length === 0) {
+        this.logger.warn(`GET: No completed sessions found for interview ID: ${interviewId}`);
+        return {
+          maxScore: 0,
+          maxScoreCandidateFirstName: null,
+          maxScoreCandidateLastName: null,
+          total: total != 0 ? total : 0,
+          totalCompletedInterviews: 0,
+        };
+      }
+
+      let maxScore = -Infinity;
+      let maxScoreCandidateFirstName: string | null = null;
+      let maxScoreCandidateLastName: string | null = null;
+
+      allInterviewSessions.forEach((session) => {
+        if (session.score !== null && session.score > maxScore) {
+          maxScore = session.score;
+          maxScoreCandidateFirstName = session.candidate.user.firstName;
+          maxScoreCandidateLastName = session.candidate.user.lastName;
+        }
+      });
+
+      const totalCompletedInterviews = allInterviewSessions.length;
+
+      return {
+        maxScore: maxScore !== -Infinity ? maxScore : null, 
+        maxScoreCandidateFirstName,
+        maxScoreCandidateLastName,
+        total,
+        totalCompletedInterviews,
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`GET: error: ${error}`);
+      throw new InternalServerErrorException('Server error');
+    }
+  }
+
+  private async totalSessions(interviewId: string) {
+    return await this.prisma.interviewSession.count({
+      where: {
+        interviewId: interviewId,
+      },
+    });
+  }
+  
   async findBySessionId(sessionId: string) {
     try {
       this.logger.log(`POST: interviewsession/session: Get Interview Session By SessionId started`);
