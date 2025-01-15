@@ -141,9 +141,9 @@ export class InterviewSessionService {
     try {
       const skip = (page - 1) * limit;
       const take = Number(limit);
-      const interviewSessions = await this.prisma.interviewSession.findMany({
-        skip,
-        take,
+
+
+      const allInterviewSessions = await this.prisma.interviewSession.findMany({
         where: { interviewId: interviewId },
         select: {
           sessionId: true,
@@ -161,35 +161,48 @@ export class InterviewSessionService {
           createdAt: true,
           updatedAt: true,
           candidate: {
-            include:{
+            include: {
               user: true,
-            }
+            },
           },
           interview: true,
           scheduling: true,
-          questions: true
-        }
+          questions: true,
+        },
       });
 
-      if (!interviewSessions || interviewSessions.length === 0) {
+      if (!allInterviewSessions || allInterviewSessions.length === 0) {
         this.logger.warn(`GET: No sessions found for interview ID: ${interviewId}`);
         throw new NotFoundException(`No sessions found for interview ID: ${interviewId}`);
       }
-      const total = await this.prisma.interviewSession.count({
-        where: {
-          interviewId: interviewId,
+
+      // Calculate the maximum score and the corresponding candidate ID from all sessions
+      let maxScore = -Infinity;
+      let maxScoreCandidateFirstName: string | null = null;
+      let maxScoreCandidateLastName: string | null = null;
+
+      allInterviewSessions.forEach((session) => {
+        if (session.score !== null && session.score > maxScore) {
+          maxScore = session.score;
+          maxScoreCandidateFirstName = session.candidate.user.firstName;
+          maxScoreCandidateLastName = session.candidate.user.lastName;
         }
-        }
-      );
+      });
+
+      const paginatedInterviewSessions = allInterviewSessions.slice(skip, skip + take);
+
+      const total = allInterviewSessions.length;
 
       return {
-        interviewSessions,
+        interviewSessions: paginatedInterviewSessions,
+        maxScore: maxScore !== -Infinity ? maxScore : null, // Return null if no valid score is found
+        maxScoreCandidateFirstName,
+        maxScoreCandidateLastName,
         total,
         page,
         limit,
         totalPages: Math.ceil(total / limit),
       };
-      // return interviewSessions;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
