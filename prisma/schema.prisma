@@ -354,6 +354,7 @@ model InterviewSession {
   scheduling         Scheduling?
   questions          Question[]
   interviewResponses Answer[]
+  CategoryScore      CategoryScore[]
 
   // interviewFeedback  InterviewFeedback[]
   @@unique([interviewId, candidateId])
@@ -473,8 +474,23 @@ model CategoryAssignment {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  interview Interview @relation(fields: [interviewId], references: [interviewID])
-  category  Category  @relation(fields: [categoryId], references: [categoryId])
+  interview     Interview       @relation(fields: [interviewId], references: [interviewID])
+  category      Category        @relation(fields: [categoryId], references: [categoryId])
+  CategoryScore CategoryScore[]
 
   @@unique([interviewId, categoryId])
+}
+
+model CategoryScore {
+  categoryScoreId String   @id @default(cuid())
+  sessionId       String
+  assignmentId    String
+  score           Float
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  interviewSession   InterviewSession   @relation(fields: [sessionId], references: [sessionId])
+  categoryAssignment CategoryAssignment @relation(fields: [assignmentId], references: [assignmentId])
+
+  @@unique([sessionId, assignmentId])
 }

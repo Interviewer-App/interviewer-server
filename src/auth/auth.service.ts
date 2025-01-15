@@ -103,8 +103,18 @@ export class AuthService {
             },
           },
         });
-    
-  
+
+        if(newuser.role === Role.COMPANY){
+          const technicalCategory = await this.prisma.category.create({
+            data:{
+              companyId: newuser.company.companyID,
+              categoryName: 'Technical',
+              description: 'Asseses the technical ability of the candidate'
+            }
+          })
+          this.logger.log(`Default category technical created for the company: ${technicalCategory.categoryId}`);
+        }
+
         return {
           user: newuser,
           token: this.getJwtToken({

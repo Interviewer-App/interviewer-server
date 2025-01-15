@@ -7,7 +7,7 @@ import {
   Min,
   IsJSON,
   IsEnum,
-  IsArray,
+  IsArray, IsPositive
 } from "class-validator";
 
 export enum QuestionTypes {
@@ -91,6 +91,7 @@ export class GenerateQuestionsDto {
     required: true,
   })
   @IsInt()
+  @IsPositive()
   @IsNotEmpty()
   noOfQuestions: number;
 }

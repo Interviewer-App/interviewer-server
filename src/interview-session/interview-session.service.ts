@@ -27,6 +27,7 @@ export class InterviewSessionService {
       if (!interview) {
         throw new NotFoundException(`Interview with id ${dto.interviewId} not found`);
       }
+
       const candidate = await this.prisma.candidate.findUnique({
         where: { profileID: dto.candidateId },
       });
@@ -35,19 +36,24 @@ export class InterviewSessionService {
       }
 
       const existingSession = await this.prisma.interviewSession.findUnique({
-          where: {
-            interviewId_candidateId: {
-              interviewId: dto.interviewId,
-              candidateId: dto.candidateId,
-            },
+        where: {
+          interviewId_candidateId: {
+            interviewId: dto.interviewId,
+            candidateId: dto.candidateId,
           },
-      })
-      if (existingSession != null ) {
+        },
+      });
+      if (existingSession != null) {
         return {
           message: "Interview session already exists",
           interviewSession: existingSession,
         };
       }
+
+      const categoryAssignments = await this.prisma.categoryAssignment.findMany({
+        where: { interviewId: dto.interviewId },
+      });
+
       const interviewSession = await this.prisma.interviewSession.create({
         data: {
           interviewId: dto.interviewId,
@@ -55,9 +61,21 @@ export class InterviewSessionService {
           scheduledDate: dto.scheduledDate,
           scheduledAt: dto.scheduledAt,
           interviewCategory: dto.interviewCategory,
-          interviewStatus: dto.interviewStatus
+          interviewStatus: dto.interviewStatus,
         },
       });
+
+      const categoryScores = await Promise.all(
+        categoryAssignments.map(async (assignment) => {
+          return this.prisma.categoryScore.create({
+            data: {
+              sessionId: interviewSession.sessionId,
+              assignmentId: assignment.assignmentId,
+              score: 0,
+            },
+          });
+        })
+      );
 
       await this.prisma.interview.update({
         where: { interviewID: dto.interviewId },
@@ -72,18 +90,14 @@ export class InterviewSessionService {
         `POST: interview-session/create: Interview Session ${interviewSession.sessionId} created successfully`
       );
 
-
-      // this._kafka.produce({
-      //   topic: 'new-interview-session',
-      //   messages:[{value:'this is interview session created'}]
-      // })
-
       return {
         message: "Interview session created successfully",
-        interviewSession,
+        interviewSession: {
+          ...interviewSession,
+          categoryScores,
+        },
       };
     } catch (error) {
-      // Custom Prisma error handler
       if (error instanceof NotFoundException) {
         throw error;
       }
