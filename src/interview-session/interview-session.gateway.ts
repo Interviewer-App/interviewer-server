@@ -279,7 +279,7 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     
     const score = await this.upsertScore(answer.responseID, metrics.relevanceScore);
     
-    const categoryScoreId = await this.findCategoryScoreId('Technical');
+    const categoryScoreId = await this.findCategoryScoreId('Technical',sessionId);
 
     const totalScore = await this.getTotalScoreBySessionId(sessionId);
 
@@ -294,9 +294,10 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     this.notifyAnswerSubmission(sessionId, questionId, candidateId, questionText, answerText, metrics, questionNumber, numOfQuestions, totalScore);
   }
   
-  private async findCategoryScoreId(category:string){
+  private async findCategoryScoreId(category:string,sessionId: string) {
     const categoryScoreId = await this.prisma.categoryScore.findFirst({
       where:{
+        sessionId: sessionId,
         categoryAssignment:{
           category:{
             categoryName: category,
