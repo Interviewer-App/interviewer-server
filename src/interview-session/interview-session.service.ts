@@ -684,4 +684,35 @@ export class InterviewSessionService {
       throw new InternalServerErrorException("Server error occurred");
     }
   }
+
+  async updateConsumeTimeAndStatus(sessionId: string, consumedTimeMinutes: number) {
+     this.logger.log(`POST: Question/updateConsumeTimeAndStatus: ${sessionId}`);
+     const session = await this.prisma.interviewSession.findUnique({
+       where: { sessionId: sessionId },
+     });
+     if (!session) {
+       throw new NotFoundException(`Interview Session with id ${sessionId}`);
+     }
+
+     try {
+       const updatedSession = await this.prisma.interviewSession.update({
+         where: {
+           sessionId: sessionId,
+         },
+         data: {
+           timeConsumed: consumedTimeMinutes,
+           interviewStatus: "completed",
+         }
+       });
+
+       return updatedSession;
+     }catch (error) {
+       if (error instanceof NotFoundException) {
+         throw error;
+       }
+       this.prismaErrorHandler(error, "GET", sessionId);
+       this.logger.error(`POST: Question/create: Error: ${error.message}`);
+       throw new InternalServerErrorException("Server error occurred");
+     }
+  }
 }
