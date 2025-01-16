@@ -6,8 +6,8 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-  "build": "nest build && npx prisma generate && npx prisma migrate deploy && cp -R prisma dist/prisma",
-  "vercel-build": "nest build && npx prisma generate",
+  "build": "nest build --output public && npx prisma generate && npx prisma migrate deploy && cp -R prisma dist/prisma",
+  "vercel-build": "nest build --output public && npx prisma generate",
   "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
   "prisma:generate": "npx prisma generate",
   "prisma:migrate": "npx prisma migrate deploy",
