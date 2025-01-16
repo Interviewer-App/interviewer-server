@@ -12,11 +12,14 @@ import { InterviewSessionService } from "./interview-session.service";
 import { AiService } from "src/ai/ai.service";
 import { AnswersService } from "../answers/answers.service";
 import { CategoryService } from "../category/category.service";
+import { UpdateCategoryScoreDto } from "../category/dto/update-category-score.dto";
+import { Logger, NotFoundException } from "@nestjs/common";
 
 @WebSocketGateway({ cors: true })
 export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
 
+  private readonly logger = new Logger('InterviewSessionSocket');
   // Track active interview sessions
   private activeSessions: Map<string, Set<string>> = new Map(); // sessionId -> Set of participantIds (candidate and company)
 
@@ -70,11 +73,66 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
       const categoryScores = await this.fetchCategoryScores(sessionId);
       console.log(categoryScores);
       this.server.to(`session-${sessionId}`).emit('categoryScores', { categoryScores });
+      const totalScore = await this.calculateTotalScore(sessionId);
+      console.log(totalScore);
+      this.server.to(`session-${sessionId}`).emit('totalScore', { totalScore });
     }
   }
 
   private async fetchCategoryScores(sessionId: string) {
     return await this.categoryService.getCategoryScoresBySessionId(sessionId);
+  }
+
+  @SubscribeMessage('submitCategoryScore')
+  async submitCategoryScore(@MessageBody() data: { sessionId: string; categoryScoreId: string; score: number }) {
+    const { sessionId, categoryScoreId, score } = data;
+
+    if (!sessionId || !categoryScoreId || score === undefined) {
+      this.logger.error('Invalid input data: sessionId, categoryScoreId, and score are required');
+      this.server.to(`session-${sessionId}`).emit('error', {
+        message: 'Invalid input data: sessionId, categoryScoreId, and score are required',
+      });
+      return;
+    }
+
+    if (typeof score !== 'number' || score < 0 || score > 100) {
+      this.logger.error(`Invalid score: ${score}. Score must be a number between 0 and 100`);
+      this.server.to(`session-${sessionId}`).emit('error', {
+        message: 'Invalid score: Score must be a number between 0 and 100',
+      });
+      return;
+    }
+
+    try {
+      const updateScoreDto = new UpdateCategoryScoreDto();
+      updateScoreDto.score = score;
+
+      const updatedScore = await this.updateCategoryScore(categoryScoreId, updateScoreDto);
+      this.logger.log(`Category score updated successfully: ${JSON.stringify(updatedScore)}`);
+
+      const totalScore = await this.calculateTotalScore(sessionId);
+      this.logger.log(`Total score calculated successfully: ${JSON.stringify(totalScore)}`);
+
+      const categoryScores = await this.fetchCategoryScores(sessionId);
+      this.logger.log(`Category scores fetched successfully: ${JSON.stringify(categoryScores)}`);
+
+      this.server.to(`session-${sessionId}`).emit('categoryScores', { categoryScores });
+      this.server.to(`session-${sessionId}`).emit('totalScore', { totalScore });
+    } catch (error) {
+      this.logger.error(`Error in submitCategoryScore: ${error.message}`);
+
+      this.server.to(`session-${sessionId}`).emit('error', {
+        message: error instanceof NotFoundException ? error.message : 'An error occurred while processing your request',
+      });
+    }
+  }
+
+  private async updateCategoryScore(categoryScoreId: string, dto: UpdateCategoryScoreDto) {
+    return await this.categoryService.updateCategoryScore(categoryScoreId, dto);
+  }
+
+  private async calculateTotalScore(sessionId: string) {
+    return await this.categoryService.calculateTotalScore(sessionId);
   }
   // @SubscribeMessage('submitAnswer')
   // async handleSubmitAnswer(
@@ -220,10 +278,36 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     const metrics = await this.analyzeResponse(questionText, answerText);
     
     const score = await this.upsertScore(answer.responseID, metrics.relevanceScore);
+    
+    const categoryScoreId = await this.findCategoryScoreId('Technical');
 
     const totalScore = await this.getTotalScoreBySessionId(sessionId);
 
+    const dataScore = {
+      sessionId: sessionId,
+      categoryScoreId: categoryScoreId.categoryScoreId,
+      score: totalScore.score,
+    } ;
+
+    this.submitCategoryScore(dataScore);
+
     this.notifyAnswerSubmission(sessionId, questionId, candidateId, questionText, answerText, metrics, questionNumber, numOfQuestions, totalScore);
+  }
+  
+  private async findCategoryScoreId(category:string){
+    const categoryScoreId = await this.prisma.categoryScore.findFirst({
+      where:{
+        categoryAssignment:{
+          category:{
+            categoryName: category,
+          }
+        }
+      },
+      select:{
+        categoryScoreId: true,
+      }
+    })
+    return categoryScoreId;
   }
 
   private async analyzeResponse(questionText: string, answerText: string) {
