@@ -102,7 +102,7 @@ export class InterviewService {
                 where: {interviewId: id},
             })
             if(sessionExist || sessionExist.length > 0){
-                if(dto.status=='ARCHIVED'){
+                if(dto.status!=null||dto.status!=undefined){
                     const updateStatus = await this.prisma.interview.update({
                         where: {
                             interviewID: id,
