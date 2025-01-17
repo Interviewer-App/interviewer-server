@@ -34,24 +34,40 @@ export class EmailServerService implements MailService{
     * @param {CreateEmailServerDto} email - The email object containing the recipient, subject, and text.
     * @return {Promise<void>} - A promise that resolves when the email is sent successfully.
     */
-    async sendMailSandBox(email: CreateEmailServerDto): Promise<void> {
-       const templateFile = path.join(__dirname, '../../src/email-server/template/notification.pug'); 
-       const fileImg = path.join(__dirname, '../../public/interview.jpg'); 
-    //    const socialMediaImg = path.join(__dirname, '../../src/email-server/public/img/social-media.png'); 
-       const imageData = readFileSync(fileImg).toString('base64'); 
-    //    const imageDataSocialMedia = readFileSync(socialMediaImg).toString('base64'); 
-   
-       const data = {
-         title: 'My title',
-         img: imageData,
-         description: 'description',
-        //  imgSocial: imageDataSocialMedia,
-       };
-   
-       const render = this._bodytemplete(templateFile, data);
-       console.log(render)
-       await this._processSendEmail(email.to, email.subject, email.body, render);
-    }
+    // async sendMailSandBox(email: CreateEmailServerDto): Promise<void> {
+    //    const templateFile = path.join(__dirname, '../../src/email-server/template/notification.pug');
+    //    const fileImg = path.join(__dirname, '../../public/interview.jpg');
+    // //    const socialMediaImg = path.join(__dirname, '../../src/email-server/public/img/social-media.png');
+    //    const imageData = readFileSync(fileImg).toString('base64');
+    // //    const imageDataSocialMedia = readFileSync(socialMediaImg).toString('base64');
+    //
+    //    const data = {
+    //      title: 'My title',
+    //      img: imageData,
+    //      description: 'description',
+    //     //  imgSocial: imageDataSocialMedia,
+    //    };
+    //
+    //    const render = this._bodytemplete(templateFile, data);
+    //    console.log(render)
+    //    await this._processSendEmail(email.to, email.subject, email.body, render);
+    // }
+   async sendMailSandBox(email: CreateEmailServerDto): Promise<void> {
+     const templateFile = path.join(__dirname, '../../src/email-server/template/notification.pug');
+     const fileImg = path.join(__dirname, '../../public/interview.jpg');
+     const imageData = readFileSync(fileImg).toString('base64');
+
+     const data = {
+       title: 'My title',
+       img: imageData,
+       description: email.body,
+       year: new Date().getFullYear(),
+     };
+
+     const render = this._bodytemplete(templateFile, data);
+     console.log(render);
+     await this._processSendEmail(email.to, email.subject, email.body, render);
+   }
    
    /**
     * Generate the function comment for the given function body.
@@ -78,7 +94,7 @@ export class EmailServerService implements MailService{
       await  this.mailerMain.sendMail({
            to: to,
            subject: subject ,
-           text: text,
+           text: text || "This is the plain text version of the email.",
            html: body,
          })
          .then(() => {

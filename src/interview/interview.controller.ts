@@ -6,6 +6,7 @@ import { Interview } from './entities/interview.entity';
 import { CreateInterviewDto } from "./dto/create-interview.dto";
 import { InterviewStatus, Role } from "@prisma/client";
 import { UpdateInterviewDto } from './dto/update-interview.dto';
+import { EmailInvitationDto } from "./dto/email-invitation.dto";
 
 @ApiBearerAuth()
 @ApiTags('Interview')
@@ -147,6 +148,20 @@ export class InterviewController {
     @Auth(Role.COMPANY)
     remove(@Param('id') id: string) {
         return this.interviewService.remove(id);
+    }
+
+    @Post('send-invitation')
+    @ApiOperation({
+        summary: 'SEND INVITATION',
+        description: 'Private endpoint to send invitations to candidate for the interview. It is allowed only by "admin" users'
+    })
+    @ApiResponse({ status: 201, description: 'Created'})
+    @ApiResponse({ status: 400, description: 'Bad request' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
+    @Auth(Role.ADMIN, Role.COMPANY)
+    sendEmailInvitation(@Body() emailInvitation: EmailInvitationDto) {
+        return this.interviewService.sendEmailInvitation(emailInvitation);
     }
 
 
