@@ -102,6 +102,23 @@ export class InterviewService {
                 where: {interviewId: id},
             })
             if(sessionExist || sessionExist.length > 0){
+                if(dto.status=='ARCHIVED'){
+                    const updateStatus = await this.prisma.interview.update({
+                        where: {
+                            interviewID: id,
+                        },
+                        data: {
+                            status: dto.status,
+                        },
+                        include: {
+                            CategoryAssignment: true,
+                        },
+                    })
+                    return {
+                        message: 'Interview status updated successfully',
+                        updateStatus,
+                    };
+                }
                 throw new BadRequestException('Cannot update this interview.Candidates already joined to this interview');
             }
 
