@@ -82,20 +82,29 @@ export class InterviewService {
         }
     }
 
-    async update(id:string, dto: UpdateInterviewDto) {
-
-        this.logger.log(`POST: interview/update: Interview update started`);
+    async update(id: string, dto: UpdateInterviewDto) {
+        this.logger.log(`PATCH: interview/update: Interview update started`);
 
         try {
             const interviewExist = await this.prisma.interview.findUnique({
                 where: { interviewID: id },
             });
+
             if (!interviewExist) {
                 throw new NotFoundException(`Interview with id ${id} not found`);
             }
-            // Creating a new interview in the database
+
+            const totalPercentage = dto.categoryAssignments.reduce((sum, assignment) => sum + assignment.percentage, 0);
+            if (totalPercentage !== 100) {
+                throw new BadRequestException('The total percentage of category assignments must be 100.');
+            }
+
+            await this.prisma.categoryAssignment.deleteMany({
+                where: { interviewId: id },
+            });
+
             const interview = await this.prisma.interview.update({
-                where:{interviewID:id},
+                where: { interviewID: id },
                 data: {
                     companyID: dto.companyID,
                     jobTitle: dto.jobTitle,
@@ -105,27 +114,34 @@ export class InterviewService {
                     scheduledDate: dto.scheduledDate,
                     scheduledAt: dto.scheduledAt,
                     status: dto.status,
+                    CategoryAssignment: {
+                        createMany: {
+                            data: dto.categoryAssignments.map((assignment) => ({
+                                categoryId: assignment.categoryId,
+                                percentage: assignment.percentage,
+                            })),
+                        },
+                    },
+                },
+                include: {
+                    CategoryAssignment: true,
                 },
             });
 
             this.logger.log(
-                `POST: interview/update: Interview ${interview.interviewID} updaated successfully`
+              `PATCH: interview/update: Interview ${interview.interviewID} updated successfully`,
             );
 
-
-
             return {
-                message: "Interview updated successfully",
+                message: 'Interview updated successfully',
                 interview,
             };
         } catch (error) {
-            if (error instanceof NotFoundException) {
+            if (error instanceof NotFoundException || error instanceof BadRequestException) {
                 throw error;
             }
-            // Custom Prisma error handler
-            this.prismaErrorHandler(error, "POST", dto.companyID);
-            this.logger.error(`POST: interview/create: Error: ${error.message}`);
-            throw new InternalServerErrorException("Server error occurred");
+            this.logger.error(`PATCH: interview/update: Error: ${error.message}`);
+            throw new InternalServerErrorException('Server error occurred');
         }
     }
     
