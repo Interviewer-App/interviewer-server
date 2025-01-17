@@ -96,7 +96,7 @@ export class InterviewController {
     @ApiResponse({ status: 400, description: 'Bad request' })
     @ApiResponse({ status: 401, description: 'Unauthorized' })
     @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
-    @Auth(Role.COMPANY)
+    @Auth(Role.COMPANY,Role.CANDIDATE)
     findInterviewById(@Param('id') id: string) {
         return this.interviewService.findById(id);
     }
