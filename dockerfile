@@ -1,29 +1,29 @@
-# Use the official Node.js image
-FROM node:18
+# Build stage
+FROM node:16-alpine AS build
 
-# Set the working directory
-WORKDIR /app
+WORKDIR /usr/src/app
 
-# Copy package.json and package-lock.json
-COPY package*.json ./
+COPY package.json package-lock.json ./
 
-# Install dependencies
 RUN npm install
 
-# Copy the rest of the application code
 COPY . .
 
-# Generate the Prisma Client
+RUN npm install prisma --save-dev
 RUN npx prisma generate
-
-# Build the application
 RUN npm run build
 
-# Copy the Prisma schema and migrations
-COPY prisma ./prisma
+# Final stage
+FROM node:16-alpine
 
-# Expose the application port
+WORKDIR /usr/src/app
+
+COPY --from=build /usr/src/app/node_modules ./node_modules
+COPY --from=build /usr/src/app/dist ./dist
+COPY package.json ./
+
+ENV NODE_ENV=production
+
 EXPOSE 3333
 
-# Run migrations and start the application
-CMD npx prisma migrate deploy && npm start
+CMD ["node", "dist/main.js"]
