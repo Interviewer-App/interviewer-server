@@ -1,5 +1,5 @@
 # Build stage
-FROM node:16-alpine AS build
+FROM node:20-alpine AS build
 
 WORKDIR /usr/src/app
 
@@ -14,13 +14,13 @@ RUN npx prisma generate
 RUN npm run build
 
 # Final stage
-FROM node:16-alpine
+FROM node:20-alpine
 
 WORKDIR /usr/src/app
 
 COPY --from=build /usr/src/app/node_modules ./node_modules
 COPY --from=build /usr/src/app/dist ./dist
-# COPY package*.json ./
+COPY package.json ./
 
 ENV NODE_ENV=production
 
