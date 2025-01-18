@@ -20,10 +20,10 @@ WORKDIR /usr/src/app
 
 COPY --from=build /usr/src/app/node_modules ./node_modules
 COPY --from=build /usr/src/app/dist ./dist
-COPY package.json ./
+COPY package*.json ./
 
 ENV NODE_ENV=production
 
-EXPOSE 3000
+EXPOSE 3333
 
 CMD ["node", "dist/main.js"]
