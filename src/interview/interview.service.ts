@@ -11,6 +11,10 @@ import { CreateInterviewDto } from './dto/create-interview.dto';
 import { UpdateInterviewDto } from './dto/update-interview.dto';
 import { ProducerService } from '../kafka/producer/producer.service';
 import { InterviewStatus } from "@prisma/client";
+import { EmailInvitationDto } from "./dto/email-invitation.dto";
+import { EmailServerService } from "../email-server/email-server.service";
+import { CreateEmailServerDto } from "../email-server/dto/create-email-server.dto";
+import * as process from "node:process";
 
 
 @Injectable()
@@ -19,7 +23,7 @@ export class InterviewService {
 
     constructor(
         private prisma: PrismaService,
-
+        private emailService:EmailServerService,
 
     ) { }
 
@@ -92,6 +96,30 @@ export class InterviewService {
 
             if (!interviewExist) {
                 throw new NotFoundException(`Interview with id ${id} not found`);
+            }
+
+            const sessionExist = await this.prisma.interviewSession.findMany({
+                where: {interviewId: id},
+            })
+            if(sessionExist || sessionExist.length > 0){
+                if(dto.status!=null||dto.status!=undefined){
+                    const updateStatus = await this.prisma.interview.update({
+                        where: {
+                            interviewID: id,
+                        },
+                        data: {
+                            status: dto.status,
+                        },
+                        include: {
+                            CategoryAssignment: true,
+                        },
+                    })
+                    return {
+                        message: 'Interview status updated successfully',
+                        updateStatus,
+                    };
+                }
+                throw new BadRequestException('Cannot update this interview.Candidates already joined to this interview');
             }
 
             const totalPercentage = dto.categoryAssignments.reduce((sum, assignment) => sum + assignment.percentage, 0);
@@ -507,6 +535,34 @@ export class InterviewService {
             }
             this.logger.error(`GET: error: ${error}`);
             throw new InternalServerErrorException('Server error');
+        }
+    }
+
+    async sendEmailInvitation(dto: EmailInvitationDto) {
+        const interview = await this.prisma.interview.findUnique({
+            where:{
+                interviewID: dto.interviewId
+            },
+            select:{
+                jobTitle: true,
+                company: {
+                    select:{
+                        companyName: true,
+                    }
+                }
+            }
+        })
+        const message = `You invited to join to ${interview.jobTitle} interview of the ${interview.company.companyName} company,
+                          Here is the link ${process.env.FRONTEND_BASE_URL}interviews/${dto.interviewId}`;
+        const emailDto = new CreateEmailServerDto();
+        emailDto.body = message;
+        emailDto.to = dto.to;
+        emailDto.subject = `Invitation to Join To ${interview.jobTitle} Interview by the ${interview.company.companyName}`;
+
+        await this.emailService.sendMailSandBox(emailDto);
+
+        return {
+            message: `Invitation send to candidate email ${dto.to}`
         }
     }
 }
