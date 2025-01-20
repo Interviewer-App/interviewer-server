@@ -10,12 +10,14 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateInterviewDto } from './dto/create-interview.dto';
 import { UpdateInterviewDto } from './dto/update-interview.dto';
 import { ProducerService } from '../kafka/producer/producer.service';
-import { InterviewStatus } from "@prisma/client";
+import { InterviewStatus, Role } from "@prisma/client";
 import { EmailInvitationDto } from "./dto/email-invitation.dto";
 import { EmailServerService } from "../email-server/email-server.service";
 import { CreateEmailServerDto } from "../email-server/dto/create-email-server.dto";
 import * as process from "node:process";
 import { BookScheduleDto } from "./dto/book-schedule.dto";
+import { AuthService } from "../auth/auth.service";
+import { RegisterUserDto } from "../auth/dto/register-user.dto";
 
 
 @Injectable()
@@ -25,6 +27,7 @@ export class InterviewService {
     constructor(
         private prisma: PrismaService,
         private emailService:EmailServerService,
+        private authService: AuthService,
 
     ) { }
 
@@ -197,6 +200,7 @@ export class InterviewService {
                     candidates: true,
                     interviewSessions: true,
                     CategoryAssignment: true,
+                    scheduling: true,
                 }
             });
             return interviews.map(interview => ({
@@ -214,6 +218,7 @@ export class InterviewService {
                 candidates: interview.candidates,
                 interviewSessions: interview.interviewSessions,
                 CategoryAssignment: interview.CategoryAssignment,
+                scheduling: interview.scheduling,
                 createdAt: interview.createdAt,
                 updatedAt: interview.updatedAt,
             }));
@@ -295,6 +300,7 @@ export class InterviewService {
                     candidates: true,
                     interviewSessions: true,
                     CategoryAssignment: true,
+                    scheduling: true,
                 },
             });
 
@@ -340,6 +346,7 @@ export class InterviewService {
                 candidates: interview.candidates,
                 interviewSessions: interview.interviewSessions,
                 CategoryAssignment: interview.CategoryAssignment,
+                scheduling: interview.scheduling,
                 createdAt: interview.createdAt,
                 updatedAt: interview.updatedAt,
             }));
@@ -369,6 +376,7 @@ export class InterviewService {
                     candidates: true,
                     interviewSessions: true,
                     CategoryAssignment: true,
+                    scheduling: true,
                     createdAt: true,
                     updatedAt: true,
                 }
@@ -414,6 +422,7 @@ export class InterviewService {
                     candidates: true,
                     interviewSessions: true,
                     CategoryAssignment: true,
+                    scheduling: true,
                 }
             });
             return {
@@ -431,6 +440,7 @@ export class InterviewService {
                 candidates: interview.candidates,
                 interviewSessions: interview.interviewSessions,
                 CategoryAssignment: interview.CategoryAssignment,
+                scheduling: interview.scheduling,
                 createdAt: interview.createdAt,
                 updatedAt: interview.updatedAt,
             };
@@ -558,31 +568,150 @@ export class InterviewService {
     }
 
     async sendEmailInvitation(dto: EmailInvitationDto) {
-        const interview = await this.prisma.interview.findUnique({
-            where:{
-                interviewID: dto.interviewId
-            },
-            select:{
-                jobTitle: true,
-                company: {
-                    select:{
-                        companyName: true,
-                    }
+        this.logger.log(`Sending email invitation to ${dto.to}`);
+
+        try {
+            if (!dto.to || !dto.interviewId || !dto.scheduleId) {
+                throw new BadRequestException('Invalid input data: to, interviewId, and scheduleId are required');
+            }
+
+            let isNewUser = false;
+            let getUser = await this.prisma.user.findUnique({
+                where: {
+                    email: dto.to,
+                    role: Role.CANDIDATE,
+                },
+                select: {
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                    candidate: true,
+                },
+            });
+
+            let temporaryCredentials = '';
+
+            if (!getUser) {
+                isNewUser = true;
+
+                const firstName = dto.to.substring(0,dto.to.indexOf('@'));
+                const lastName = 'guest';
+                const password = this.generateRandomPassword();
+
+                const registerDto = new RegisterUserDto();
+                registerDto.email = dto.to;
+                registerDto.role = Role.CANDIDATE;
+                registerDto.firstname = firstName;
+                registerDto.lastname = lastName;
+                registerDto.password = password;
+                registerDto.passwordconf = password;
+
+                const newUser = await this.authService.registerUser(registerDto);
+                console.log(newUser)
+
+                if (newUser) {
+                    getUser = await this.prisma.user.findUnique({
+                        where: {
+                            userID: newUser.userID,
+                        },
+                        select: {
+                            firstName: true,
+                            lastName: true,
+                            email: true,
+                            candidate: true,
+                        },
+                    });
+
+                    temporaryCredentials = `\n\nYou have been registered with temporary credentials:\n`
+                      + `Email: ${dto.to}\n`
+                      + `Password: ${password}\n\n`
+                      + `Please use these credentials to log in and change your password later.`;
                 }
             }
-        })
-        const message = `You invited to join to ${interview.jobTitle} interview of the ${interview.company.companyName} company,
-                          Here is the link ${process.env.FRONTEND_BASE_URL}interviews/${dto.interviewId}`;
-        const emailDto = new CreateEmailServerDto();
-        emailDto.body = message;
-        emailDto.to = dto.to;
-        emailDto.subject = `Invitation to Join To ${interview.jobTitle} Interview by the ${interview.company.companyName}`;
 
-        await this.emailService.sendMailSandBox(emailDto);
+            const interview = await this.prisma.interview.findUnique({
+                where: {
+                    interviewID: dto.interviewId,
+                },
+                select: {
+                    jobTitle: true,
+                    company: {
+                        select: {
+                            companyName: true,
+                        },
+                    },
+                },
+            });
 
-        return {
-            message: `Invitation send to candidate email ${dto.to}`
+            if (!interview) {
+                throw new NotFoundException(`Interview with ID ${dto.interviewId} not found`);
+            }
+
+            let bookSchedule = await this.prisma.scheduling.findUnique({
+                where: {
+                    scheduleID: dto.scheduleId,
+                    interviewId: dto.interviewId,
+                },
+            });
+
+            if (!bookSchedule) {
+                throw new NotFoundException(`No schedule found for scheduleId: ${dto.scheduleId}`);
+            }
+
+            if (bookSchedule.isBooked) {
+                throw new BadRequestException('This schedule is already booked for another candidate');
+            }
+
+            bookSchedule = await this.prisma.scheduling.update({
+                where: {
+                    scheduleID: dto.scheduleId,
+                    interviewId: dto.interviewId,
+                },
+                data: {
+                    candidateId: getUser.candidate.profileID,
+                },
+            });
+
+            const message = `Hi ${getUser.firstName},\n\n`
+              + `You have been invited to join the ${interview.jobTitle} interview at ${interview.company.companyName}.\n`
+              + `Your scheduled time slot is on ${bookSchedule.startTime.toDateString()} from ${bookSchedule.startTime.toTimeString()} to ${bookSchedule.endTime.toTimeString()}.\n`
+              + `Please use this link to join the interview: ${process.env.FRONTEND_BASE_URL}/interviews/${dto.interviewId}\n`
+              + `${temporaryCredentials}\n\n`
+              + `Best regards,\nThe Interview Team`;
+
+            const candidateInvite = await this.prisma.candidateInvitation.create({
+                data:{
+                    candidateID: getUser.candidate.profileID,
+                    interviewID: dto.interviewId,
+                    message: message,
+                }
+            })
+            const emailDto = new CreateEmailServerDto();
+            emailDto.body = message;
+            emailDto.to = dto.to;
+            emailDto.subject = `Invitation to Join the ${interview.jobTitle} Interview at ${interview.company.companyName}`;
+
+            await this.emailService.sendMailSandBox(emailDto);
+
+            return {
+                message: `Invitation sent to candidate email ${dto.to}`,
+                candidateInvite,
+            };
+        } catch (error) {
+            if (error instanceof NotFoundException || error instanceof BadRequestException) {
+                throw error;
+            }
+            this.logger.error(`Error sending email invitation: ${error.message}`);
+            throw new InternalServerErrorException('Failed to send email invitation');
         }
+    }
+    private generateRandomPassword(): string {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()';
+        let password = '';
+        for (let i = 0; i < 12; i++) {
+            password += chars[Math.floor(Math.random() * chars.length)];
+        }
+        return password;
     }
 
     async findSchedulesByInterviewId(interviewId: string) {

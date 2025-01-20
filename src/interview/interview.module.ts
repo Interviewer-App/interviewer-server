@@ -6,9 +6,10 @@ import { PrismaModule } from 'src/prisma/prisma.module';
 import { KafkaModule } from '../kafka/kafka.module';
 import { InterviewGateway } from "./interview.gateway";
 import { EmailServerModule } from "../email-server/email-server.module";
+import { AuthService } from "../auth/auth.service";
 
 @Module({
-  providers: [InterviewService, InterviewGateway],
+  providers: [InterviewService, InterviewGateway, AuthService],
   controllers: [InterviewController],
   imports: [
       AuthModule,
