@@ -29,4 +29,16 @@ export class EmailInvitationDto {
   @IsNotEmpty({ message: 'Interview Id is required' })
   interviewId: string;
 
+  @ApiProperty({
+    description: "Schedule Id",
+    nullable: false,
+    required: true,
+    type: "string",
+    example: "skjdn893hduifbfybdh982",
+  })
+  @IsString({ message: 'Schedule Id must be a string' })
+  @IsNotEmpty({ message: 'Schedule Id is required' })
+  scheduleId: string;
+
+
 }

@@ -15,6 +15,7 @@ import { EmailInvitationDto } from "./dto/email-invitation.dto";
 import { EmailServerService } from "../email-server/email-server.service";
 import { CreateEmailServerDto } from "../email-server/dto/create-email-server.dto";
 import * as process from "node:process";
+import { BookScheduleDto } from "./dto/book-schedule.dto";
 
 
 @Injectable()
@@ -452,6 +453,7 @@ export class InterviewService {
                 include: {
                     interviewSessions: true,
                     CategoryAssignment: true,
+                    scheduling: true,
                 }
             });
             if (!interviewExist) {
@@ -464,6 +466,15 @@ export class InterviewService {
                     }
                 })
                 this.logger.warn(`DELETE:Categories associated with interview Id: ${id} Deleted`);
+            }
+
+            if(interviewExist.scheduling!=null || interviewExist.scheduling.length>0){
+                const deleteScheduling = await this.prisma.scheduling.deleteMany({
+                    where: {
+                        interviewId:id
+                    }
+                })
+                this.logger.warn(`DELETE:Scheduling with interviewId: ${id} Deleted`);
             }
 
             if(interviewExist.interviewSessions){
@@ -575,12 +586,103 @@ export class InterviewService {
     }
 
     async findSchedulesByInterviewId(interviewId: string) {
-        const schedules = await this.prisma.scheduling.findMany({
-            where: {
-                interviewId: interviewId,
-            }
-        })
-        return schedules;
+        this.logger.log(`GET: Fetching schedules for interview ID: ${interviewId}`);
 
+        try {
+            const interview = await this.prisma.interview.findUnique({
+                where: { interviewID: interviewId },
+            });
+
+            if (!interview) {
+                this.logger.warn(`Interview with ID ${interviewId} not found`);
+                throw new NotFoundException(`Interview with ID ${interviewId} not found`);
+            }
+
+            const schedules = await this.prisma.scheduling.findMany({
+                where: { interviewId: interviewId },
+            });
+
+            if (!schedules || schedules.length === 0) {
+                this.logger.warn(`No schedules found for interview ID: ${interviewId}`);
+                return {
+                    message: 'No schedules found for this interview',
+                    schedules: [],
+                };
+            }
+
+            return {
+                message: 'Schedules fetched successfully',
+                schedules,
+            };
+        } catch (error) {
+            if (error instanceof NotFoundException || error instanceof BadRequestException) {
+                throw error;
+            }
+            this.logger.error(`GET: Error fetching schedules: ${error.message}`);
+            throw new InternalServerErrorException('Failed to fetch schedules');
+        }
+    }
+
+    async bookInterviewSchedule(dto: BookScheduleDto) {
+        this.logger.log(`Booking schedule with ID: ${dto.scheduleId}`);
+
+        try {
+            if (!dto.scheduleId || !dto.candidateId || !dto.interviewId) {
+                throw new BadRequestException('Invalid input data: scheduleId, candidateId, and interviewId are required');
+            }
+
+            const schedule = await this.prisma.scheduling.findUnique({
+                where: { scheduleID: dto.scheduleId },
+            });
+
+            if (!schedule) {
+                this.logger.warn(`Schedule with ID ${dto.scheduleId} not found`);
+                throw new NotFoundException(`Schedule with ID ${dto.scheduleId} not found`);
+            }
+
+            if (schedule.isBooked) {
+                this.logger.warn(`Schedule with ID ${dto.scheduleId} is already booked`);
+                throw new BadRequestException('This schedule is already booked');
+            }
+
+            const candidate = await this.prisma.candidate.findUnique({
+                where: { profileID: dto.candidateId },
+            });
+
+            if (!candidate) {
+                this.logger.warn(`Candidate with ID ${dto.candidateId} not found`);
+                throw new NotFoundException(`Candidate with ID ${dto.candidateId} not found`);
+            }
+
+            const interview = await this.prisma.interview.findUnique({
+                where: { interviewID: dto.interviewId },
+            });
+
+            if (!interview) {
+                this.logger.warn(`Interview with ID ${dto.interviewId} not found`);
+                throw new NotFoundException(`Interview with ID ${dto.interviewId} not found`);
+            }
+
+            const bookedSchedule = await this.prisma.scheduling.update({
+                where: { scheduleID: dto.scheduleId },
+                data: {
+                    candidateId: dto.candidateId,
+                    isBooked: true,
+                },
+            });
+
+            this.logger.log(`Schedule with ID ${dto.scheduleId} booked successfully`);
+
+            return {
+                message: 'Schedule booked successfully',
+                schedule: bookedSchedule,
+            };
+        } catch (error) {
+            if (error instanceof NotFoundException || error instanceof BadRequestException) {
+                throw error;
+            }
+            this.logger.error(`Error booking schedule: ${error.message}`);
+            throw new InternalServerErrorException('Failed to book schedule');
+        }
     }
 }

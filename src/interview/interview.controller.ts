@@ -7,6 +7,7 @@ import { CreateInterviewDto } from "./dto/create-interview.dto";
 import { InterviewStatus, Role } from "@prisma/client";
 import { UpdateInterviewDto } from './dto/update-interview.dto';
 import { EmailInvitationDto } from "./dto/email-invitation.dto";
+import { BookScheduleDto } from "./dto/book-schedule.dto";
 
 @ApiBearerAuth()
 @ApiTags('Interview')
@@ -178,5 +179,17 @@ export class InterviewController {
         return this.interviewService.findSchedulesByInterviewId(interviewId);
     }
 
-
+    @Post('book-schedule')
+    @ApiOperation({
+        summary: 'BOOK INTERVIEW SLOT',
+        description: 'Private endpoint to send invitations to candidate for the interview. It is allowed only by "admin" users'
+    })
+    @ApiResponse({ status: 201, description: 'Created'})
+    @ApiResponse({ status: 400, description: 'Bad request' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
+    @Auth(Role.CANDIDATE, Role.COMPANY)
+    bookInterviewSchedule(@Body() bookScheduleDto: BookScheduleDto) {
+        return this.interviewService.bookInterviewSchedule(bookScheduleDto);
+    }
 }
