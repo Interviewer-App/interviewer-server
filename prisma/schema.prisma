@@ -217,6 +217,8 @@ model Candidate {
   interviews         CandidateOnInterviews[]
   interviewResponses Answer[]
   userServey         CandidateServey[]
+
+  Scheduling Scheduling[]
 }
 
 model CandidateServey {
@@ -296,8 +298,8 @@ model Interview {
   jobDescription    String?
   requiredSkills    String?
   companyID         String
-  scheduledDate     DateTime
-  scheduledAt       DateTime
+  startDate         DateTime
+  endDate           DateTime
   status            status
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
@@ -307,6 +309,7 @@ model Interview {
   interviewers       InterviewerOnInterviews[]
   candidates         CandidateOnInterviews[]
   CategoryAssignment CategoryAssignment[]
+  scheduling         Scheduling[]
 }
 
 model InterviewerOnInterviews {
@@ -382,16 +385,23 @@ model InterviewSession {
 
 model Scheduling {
   scheduleID                String   @id @default(cuid())
-  sessionID                 String   @unique
-  date                      DateTime
-  time                      DateTime
+  interviewId               String
+  candidateId               String?
+  sessionID                 String?  @unique
+  startTime                 DateTime
+  endTime                   DateTime
   reminderSentToInterviewer Boolean?
   reminderSentToCandidate   Boolean?
+  isBooked                  Boolean  @default(false)
   notificationStatus        String?
   createdAt                 DateTime @default(now())
   updatedAt                 DateTime @updatedAt
 
-  interviewSession InterviewSession @relation(fields: [sessionID], references: [sessionId])
+  interviewSession InterviewSession? @relation(fields: [sessionID], references: [sessionId])
+  interview        Interview         @relation(fields: [interviewId], references: [interviewID])
+  candidate        Candidate?        @relation(fields: [candidateId], references: [profileID])
+
+  @@unique([interviewId, candidateId])
 }
 
 enum interviewCategory {

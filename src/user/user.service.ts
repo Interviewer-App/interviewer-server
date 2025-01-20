@@ -343,5 +343,55 @@ export class UserService {
       throw new InternalServerErrorException('Failed to save survey');
     }
   }
+
+  async getSurveys(role: 'candidate' | 'company', id: string) {
+    this.logger.log(`Fetching surveys for ${role} with ID: ${id}`);
+
+    try {
+      if (role === 'candidate') {
+        const candidate = await this.prisma.candidate.findUnique({
+          where: { profileID: id },
+        });
+
+        if (!candidate) {
+          throw new NotFoundException(`Candidate with ID ${id} not found`);
+        }
+
+        const surveys = await this.prisma.candidateServey.findMany({
+          where: { candidateId: id },
+        });
+
+        return {
+          message: 'Candidate surveys fetched successfully',
+          surveys,
+        };
+      } else if (role === 'company') {
+        const company = await this.prisma.company.findUnique({
+          where: { companyID: id },
+        });
+
+        if (!company) {
+          throw new NotFoundException(`Company with ID ${id} not found`);
+        }
+
+        const surveys = await this.prisma.companyServey.findMany({
+          where: { companyId: id },
+        });
+
+        return {
+          message: 'Company surveys fetched successfully',
+          surveys,
+        };
+      } else {
+        throw new BadRequestException('Invalid role. Role must be "candidate" or "company".');
+      }
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
+      this.logger.error(`Error fetching surveys: ${error.message}`);
+      throw new InternalServerErrorException('Failed to fetch surveys');
+    }
+  }
 }
 

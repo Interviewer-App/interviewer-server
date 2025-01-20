@@ -222,7 +222,7 @@ export class CreateInterviewDto {
     requiredSkills?: string;
 
     @ApiProperty({
-        description: "Scheduled date of the interview",
+        description: "Start date of the interview",
         nullable: false,
         required: true,
         type: "string",
@@ -231,10 +231,10 @@ export class CreateInterviewDto {
     })
     @IsNotEmpty()
     @IsDateString()
-    scheduledDate: Date;
+    startDate: Date;
 
     @ApiProperty({
-        description: "Scheduled date and time for the interview",
+        description: "End date for the interview",
         nullable: false,
         required: true,
         type: "string",
@@ -243,7 +243,7 @@ export class CreateInterviewDto {
     })
     @IsNotEmpty()
     @IsDateString()
-    scheduledAt: Date;
+    endDate: Date;
 
     @ApiProperty({
         description: "Status of the interview",

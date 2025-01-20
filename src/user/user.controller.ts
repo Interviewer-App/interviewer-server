@@ -1,8 +1,8 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from "@nestjs/common";
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { ApiBearerAuth, ApiBody, ApiOkResponse, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiBody, ApiOkResponse, ApiOperation, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Auth, GetUser } from 'src/auth/decorators';
 import { User } from './entities/user.entity';
 import { Role } from '@prisma/client';
@@ -151,5 +151,32 @@ export class UserController {
   @Auth(Role.COMPANY, Role.CANDIDATE)
   async saveSurvey(@Body() dto: SaveSurveyDto) {
       return await this.userService.saveSurvey(dto);
+  }
+
+  @Get('user/servey/answers')
+  @ApiOperation({
+    summary: 'GET SURVEYS',
+    description: 'Fetch surveys for a candidate or company by ID.',
+  })
+  @ApiQuery({
+    name: 'role',
+    description: 'Role of the user (candidate or company)',
+    example: 'candidate',
+    enum: ['candidate', 'company'],
+  })
+  @ApiQuery({
+    name: 'id',
+    description: 'ID of the candidate or company',
+    example: 'cl4quxjjs0003vuuc0arunrlf',
+  })
+  @ApiResponse({ status: 200, description: 'Surveys fetched successfully.' })
+  @ApiResponse({ status: 400, description: 'Bad request (e.g., invalid role).' })
+  @ApiResponse({ status: 404, description: 'Candidate or company not found.' })
+  @ApiResponse({ status: 500, description: 'Server error.' })
+  async getSurveys(
+    @Query('role') role: 'candidate' | 'company',
+    @Query('id') id: string,
+  ) {
+      return await this.userService.getSurveys(role, id);
   }
 }
