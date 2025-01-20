@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from "@nestjs/common";
-import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { InterviewService } from './interview.service';
 import { Auth, GetUser } from 'src/auth/decorators';
 import { Interview } from './entities/interview.entity';
@@ -191,5 +191,19 @@ export class InterviewController {
     @Auth(Role.CANDIDATE, Role.COMPANY)
     bookInterviewSchedule(@Body() bookScheduleDto: BookScheduleDto) {
         return this.interviewService.bookInterviewSchedule(bookScheduleDto);
+    }
+
+    @Get('invitations/:interviewID')
+    @ApiOperation({ summary: 'Get all invitations for a specific interview' })
+    @ApiParam({ name: 'interviewID', description: 'ID of the interview', type: String })
+    @ApiResponse({
+        status: 200,
+        description: 'List of invitations for the interview',
+    })
+    @ApiResponse({ status: 404, description: 'No invitations found for the interview' })
+    async getInvitationsByInterviewId(
+      @Param('interviewID') interviewID: string,
+    ) {
+        return this.interviewService.getInvitationsByInterviewId(interviewID);
     }
 }

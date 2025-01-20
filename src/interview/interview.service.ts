@@ -834,4 +834,41 @@ export class InterviewService {
             throw new InternalServerErrorException('Failed to book schedule');
         }
     }
+
+    async getInvitationsByInterviewId(interviewID: string) {
+
+        try {
+            const invitations = await this.prisma.candidateInvitation.findMany({
+                where: { interviewID },
+                include: {
+                    candidate: true,
+                    interview: true,
+                },
+            });
+
+            if (!invitations || invitations.length === 0) {
+                this.logger.warn(`No invitations found for interview ID: ${interviewID}`);
+                throw new NotFoundException(`No invitations found for interview ID ${interviewID}`);
+            }
+
+            return invitations.map((invitation) => ({
+                invitationID: invitation.invitationID,
+                candidateID: invitation.candidateID,
+                interviewID: invitation.interviewID,
+                status: invitation.status,
+                sentAt: invitation.sentAt,
+                message: invitation.message,
+                createdAt: invitation.createdAt,
+                updatedAt: invitation.updatedAt,
+            }));
+        } catch (error) {
+            this.logger.error(`Error fetching invitations for interview ID ${interviewID}: ${error.message}`);
+
+            if (error instanceof NotFoundException || error instanceof BadRequestException) {
+                throw error;
+            }
+
+            throw new InternalServerErrorException('An error occurred while fetching invitations.');
+        }
+    }
 }
