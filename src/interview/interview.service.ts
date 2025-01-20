@@ -143,6 +143,13 @@ export class InterviewService {
                 where: { interviewId: id },
             });
 
+            await this.prisma.scheduling.deleteMany({
+                where: {
+                    interviewId: id,
+                    isBooked: false,
+                },
+            });
+
             const interview = await this.prisma.interview.update({
                 where: { interviewID: id },
                 data: {
@@ -162,9 +169,17 @@ export class InterviewService {
                             })),
                         },
                     },
+                    scheduling: {
+                        create: dto.schedules.map((schedule) => ({
+                            startTime: schedule.startTime,
+                            endTime: schedule.endTime,
+                            isBooked: false,
+                        })),
+                    },
                 },
                 include: {
                     CategoryAssignment: true,
+                    scheduling: true,
                 },
             });
 
@@ -669,6 +684,7 @@ export class InterviewService {
                 },
                 data: {
                     candidateId: getUser.candidate.profileID,
+                    isBooked: true,
                 },
             });
 
