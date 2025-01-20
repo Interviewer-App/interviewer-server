@@ -612,7 +612,7 @@ export class InterviewService {
                 if (newUser) {
                     getUser = await this.prisma.user.findUnique({
                         where: {
-                            userID: newUser.userID,
+                            userID: newUser.user.userID,
                         },
                         select: {
                             firstName: true,
