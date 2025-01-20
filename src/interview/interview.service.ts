@@ -63,9 +63,17 @@ export class InterviewService {
                             })),
                         },
                     },
+                    scheduling: {
+                        create: dto.schedules.map((schedule) => ({
+                            startTime: schedule.startTime,
+                            endTime: schedule.endTime,
+                            isBooked: false,
+                        })),
+                    },
                 },
                 include: {
                     CategoryAssignment: true,
+                    scheduling: true,
                 },
             });
 
@@ -564,5 +572,15 @@ export class InterviewService {
         return {
             message: `Invitation send to candidate email ${dto.to}`
         }
+    }
+
+    async findSchedulesByInterviewId(interviewId: string) {
+        const schedules = await this.prisma.scheduling.findMany({
+            where: {
+                interviewId: interviewId,
+            }
+        })
+        return schedules;
+
     }
 }

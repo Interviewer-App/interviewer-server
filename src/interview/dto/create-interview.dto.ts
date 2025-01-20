@@ -165,6 +165,28 @@ export class CategoryAssignmentDto {
     percentage: number;
 }
 
+export class ScheduleDto {
+    @ApiProperty({
+        description: 'Start time of the schedule',
+        example: '2024-12-01T10:00:00.000Z',
+        type: 'string',
+        format: 'date-time',
+    })
+    @IsNotEmpty()
+    @IsDateString()
+    startTime: Date;
+
+    @ApiProperty({
+        description: 'End time of the schedule',
+        example: '2024-12-01T11:00:00.000Z',
+        type: 'string',
+        format: 'date-time',
+    })
+    @IsNotEmpty()
+    @IsDateString()
+    endTime: Date;
+}
+
 export class CreateInterviewDto {
     @ApiProperty({
         description: "Company ID",
@@ -266,4 +288,15 @@ export class CreateInterviewDto {
     @ValidateNested({ each: true })
     @Type(() => CategoryAssignmentDto)
     categoryAssignments: CategoryAssignmentDto[];
+
+    @ApiProperty({
+        description: 'Schedules for the interview',
+        nullable: false,
+        required: true,
+        type: [ScheduleDto],
+    })
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => ScheduleDto)
+    schedules: ScheduleDto[];
 }

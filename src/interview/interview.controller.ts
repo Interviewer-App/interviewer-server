@@ -164,5 +164,19 @@ export class InterviewController {
         return this.interviewService.sendEmailInvitation(emailInvitation);
     }
 
+    @Get('schedules/:interviewId')
+    @ApiOperation({
+        summary: 'GET ALL SCHEDULES OF THE INTERVIEW',
+        description: 'Private endpoint to Get all schedules of the interview. It is allowed only by "admin" users'
+    })
+    @ApiResponse({ status: 201, description: 'Created'})
+    @ApiResponse({ status: 400, description: 'Bad request' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
+    @Auth(Role.COMPANY,Role.CANDIDATE)
+    findSchedulesByInterviewId(@Param('interviewId') interviewId: string) {
+        return this.interviewService.findSchedulesByInterviewId(interviewId);
+    }
+
 
 }
