@@ -113,7 +113,7 @@ export class InterviewService {
             const sessionExist = await this.prisma.interviewSession.findMany({
                 where: {interviewId: id},
             })
-            if(sessionExist || sessionExist.length > 0){
+            if(sessionExist.length > 0){
                 if(dto.status!=null||dto.status!=undefined){
                     const updateStatus = await this.prisma.interview.update({
                         where: {
@@ -134,21 +134,25 @@ export class InterviewService {
                 throw new BadRequestException('Cannot update this interview.Candidates already joined to this interview');
             }
 
-            const totalPercentage = dto.categoryAssignments.reduce((sum, assignment) => sum + assignment.percentage, 0);
-            if (totalPercentage !== 100) {
-                throw new BadRequestException('The total percentage of category assignments must be 100.');
+            if(dto.categoryAssignments!=undefined){
+                const totalPercentage = dto.categoryAssignments.reduce((sum, assignment) => sum + assignment.percentage, 0);
+                if (totalPercentage !== 100) {
+                    throw new BadRequestException('The total percentage of category assignments must be 100.');
+                }
+
+                await this.prisma.categoryAssignment.deleteMany({
+                    where: { interviewId: id },
+                });
             }
 
-            await this.prisma.categoryAssignment.deleteMany({
-                where: { interviewId: id },
-            });
-
-            await this.prisma.scheduling.deleteMany({
-                where: {
-                    interviewId: id,
-                    isBooked: false,
-                },
-            });
+            if(dto.schedules!=undefined){
+                await this.prisma.scheduling.deleteMany({
+                    where: {
+                        interviewId: id,
+                        isBooked: false,
+                    },
+                });
+            }
 
             const interview = await this.prisma.interview.update({
                 where: { interviewID: id },
@@ -161,21 +165,21 @@ export class InterviewService {
                     startDate: dto.startDate,
                     endDate: dto.endDate,
                     status: dto.status,
-                    CategoryAssignment: {
+                    ...(dto.categoryAssignments!=undefined && {CategoryAssignment: {
                         createMany: {
                             data: dto.categoryAssignments.map((assignment) => ({
                                 categoryId: assignment.categoryId,
                                 percentage: assignment.percentage,
                             })),
                         },
-                    },
-                    scheduling: {
+                    }}),
+                        ...(dto.schedules!=undefined && {scheduling: {
                         create: dto.schedules.map((schedule) => ({
                             startTime: schedule.startTime,
                             endTime: schedule.endTime,
                             isBooked: false,
                         })),
-                    },
+                    }}),
                 },
                 include: {
                     CategoryAssignment: true,
