@@ -15,6 +15,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { User } from './entities/user.entity';
 import { Role } from '@prisma/client';
 import { take } from "rxjs";
+import { SaveSurveyDto } from "./dto/create-survey.dto";
 
 
 @Injectable()
@@ -270,6 +271,77 @@ export class UserService {
       throw new InternalServerErrorException('Server error');
     }
     
+  }
+
+  async saveSurvey(dto: SaveSurveyDto) {
+    this.logger.log(`Saving survey for ${dto.role} with ID: ${dto.id}`);
+
+    try {
+      const normalizedSurveys = dto.surveys.map((survey) => ({
+        ...survey,
+        answer: Array.isArray(survey.answer) ? survey.answer : [survey.answer],
+      }));
+
+      if (dto.role === 'candidate') {
+        const candidate = await this.prisma.candidate.findUnique({
+          where: { profileID: dto.id },
+        });
+
+        if (!candidate) {
+          throw new NotFoundException(`Candidate with ID ${dto.id} not found`);
+        }
+
+        const savedSurveys = await Promise.all(
+          normalizedSurveys.map((survey) =>
+            this.prisma.candidateServey.create({
+              data: {
+                question: survey.question,
+                answer: survey.answer,
+                candidateId: dto.id,
+              },
+            }),
+          ),
+        );
+
+        return {
+          message: 'Candidate surveys saved successfully',
+          surveys: savedSurveys,
+        };
+      } else if (dto.role === 'company') {
+        const company = await this.prisma.company.findUnique({
+          where: { companyID: dto.id },
+        });
+
+        if (!company) {
+          throw new NotFoundException(`Company with ID ${dto.id} not found`);
+        }
+
+        const savedSurveys = await Promise.all(
+          normalizedSurveys.map((survey) =>
+            this.prisma.companyServey.create({
+              data: {
+                question: survey.question,
+                answer: survey.answer,
+                companyId: dto.id,
+              },
+            }),
+          ),
+        );
+
+        return {
+          message: 'Company surveys saved successfully',
+          surveys: savedSurveys,
+        };
+      } else {
+        throw new BadRequestException('Invalid role. Role must be "candidate" or "company".');
+      }
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
+      this.logger.error(`Error saving survey: ${error.message}`);
+      throw new InternalServerErrorException('Failed to save survey');
+    }
   }
 }
 

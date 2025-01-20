@@ -215,6 +215,15 @@ model Candidate {
   sessions           InterviewSession[]
   interviews         CandidateOnInterviews[]
   interviewResponses Answer[]
+  userServey         CandidateServey[]
+}
+
+model CandidateServey {
+  serveyId    String    @id @default(cuid())
+  question    String
+  answer      String[]
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [profileID])
 }
 
 model Admin {
@@ -242,17 +251,26 @@ model Interviewer {
 }
 
 model Company {
-  companyID          String        @id @default(cuid())
-  userID             String        @unique
+  companyID          String          @id @default(cuid())
+  userID             String          @unique
   companyName        String
   companyDescription String?
   websiteURL         String?
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
-  user               User          @relation(fields: [userID], references: [userID])
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  user               User            @relation(fields: [userID], references: [userID])
   interviewer        Interviewer[]
   interviews         Interview[]
   Category           Category[]
+  companySurvey      CompanyServey[]
+}
+
+model CompanyServey {
+  serveyId  String   @id @default(cuid())
+  question  String
+  answer    String[]
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [companyID])
 }
 
 // model Interview {

@@ -2,10 +2,11 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiOkResponse, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Auth, GetUser } from 'src/auth/decorators';
 import { User } from './entities/user.entity';
 import { Role } from '@prisma/client';
+import { SaveSurveyDto } from "./dto/create-survey.dto";
 
 @ApiBearerAuth()
 @ApiTags('Users')
@@ -137,4 +138,18 @@ export class UserController {
     return this.userService.findCandidateDetailsById(candidateId);
   }
 
+  @Post('user/servey')
+  @ApiOperation({
+    summary: 'SAVE SURVEY',
+    description: 'Save surveys for a candidate or company.',
+  })
+  @ApiBody({ type: SaveSurveyDto })
+  @ApiResponse({ status: 201, description: 'Surveys saved successfully.' })
+  @ApiResponse({ status: 400, description: 'Bad request (e.g., invalid role or data).' })
+  @ApiResponse({ status: 404, description: 'Candidate or company not found.' })
+  @ApiResponse({ status: 500, description: 'Server error.' })
+  @Auth(Role.COMPANY, Role.CANDIDATE)
+  async saveSurvey(@Body() dto: SaveSurveyDto) {
+      return await this.userService.saveSurvey(dto);
+  }
 }
