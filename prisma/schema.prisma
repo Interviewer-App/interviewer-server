@@ -217,7 +217,7 @@ model Candidate {
   interviews         CandidateOnInterviews[]
   interviewResponses Answer[]
   userServey         CandidateServey[]
-
+  invitations CandidateInvitation[]
   Scheduling Scheduling[]
 }
 
@@ -310,6 +310,7 @@ model Interview {
   candidates         CandidateOnInterviews[]
   CategoryAssignment CategoryAssignment[]
   scheduling         Scheduling[]
+  invitations CandidateInvitation[]
 }
 
 model InterviewerOnInterviews {
@@ -523,4 +524,20 @@ model CategoryScore {
   categoryAssignment CategoryAssignment @relation(fields: [assignmentId], references: [assignmentId])
 
   @@unique([sessionId, assignmentId])
+}
+
+model CandidateInvitation {
+  invitationID   String    @id @default(cuid())
+  candidateID    String
+  interviewID    String
+  status         InvitationStatus @default(PENDING)
+  sentAt         DateTime  @default(now())
+  message        String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  candidate  Candidate  @relation(fields: [candidateID], references: [profileID])
+  interview  Interview  @relation(fields: [interviewID], references: [interviewID])
+
+  @@unique([candidateID, interviewID])
 }
