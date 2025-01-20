@@ -541,3 +541,9 @@ model CandidateInvitation {
 
   @@unique([candidateID, interviewID])
 }
+
+enum InvitationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
