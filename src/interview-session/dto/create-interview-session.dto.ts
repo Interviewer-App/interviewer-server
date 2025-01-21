@@ -45,11 +45,12 @@ export class CreateInterviewSessionDto {
   @ApiProperty({
     description: "Interview Category",
     nullable: false,
-    required: true,
+    required: false,
     enum: InterviewCategory,
     example: InterviewCategory.Technical,
   })
   @IsEnum(InterviewCategory)
+  @IsOptional()
   interviewCategory: InterviewCategory;
 
   @ApiProperty({

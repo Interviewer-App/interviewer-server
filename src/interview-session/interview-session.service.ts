@@ -86,7 +86,7 @@ export class InterviewSessionService {
           candidateId: dto.candidateId,
           scheduledDate: dto.scheduledDate,
           scheduledAt: dto.scheduledAt,
-          interviewCategory: dto.interviewCategory,
+          interviewCategory: 'Technical',
           interviewStatus: dto.interviewStatus,
         },
       });
