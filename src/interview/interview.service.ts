@@ -703,6 +703,7 @@ export class InterviewService {
                 data:{
                     candidateID: getUser.candidate.profileID,
                     interviewID: dto.interviewId,
+                    scheduleId: bookSchedule.scheduleID,
                     message: message,
                 }
             })
@@ -879,8 +880,21 @@ export class InterviewService {
                 take,
                 where: { interviewID },
                 include: {
-                    candidate: true,
-                    interview: true,
+                    candidate: {
+                        include: {
+                            user: true,
+                        }
+                    },
+                    interview: {
+                        include: {
+                            company:{
+                                include: {
+                                    user: true,
+                                }
+                            }
+                        }
+                    },
+                    Scheduling: true,
                 },
             });
 
