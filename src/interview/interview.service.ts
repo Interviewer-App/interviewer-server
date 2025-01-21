@@ -838,6 +838,13 @@ export class InterviewService {
     async getInvitationsByInterviewId(interviewID: string) {
 
         try {
+            const interview = await this.prisma.interview.findUnique({
+                where: { interviewID: interviewID },
+            })
+            if (!interview) {
+                this.logger.warn(`Interview with ID ${interviewID} not found`);
+                throw new NotFoundException(`Interview with ID ${interviewID} not found`);
+            }
             const invitations = await this.prisma.candidateInvitation.findMany({
                 where: { interviewID },
                 include: {
