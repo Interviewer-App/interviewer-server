@@ -758,23 +758,37 @@ export class InterviewService {
                     schedules: [],
                 };
             }
-            const schedulesByDate = schedules.reduce((acc, schedule) => {
+            // Group schedules by date and transform the data
+            const groupedSchedules = schedules.reduce((acc, schedule) => {
+                // Extract the date part from the startTime
                 const date = new Date(schedule.startTime).toISOString().split('T')[0];
 
-                if (!acc[date]) {
-                    acc[date] = [];
+                // Find or create the group for this date
+                let dateGroup = acc.find((group) => group.date.startsWith(date));
+                if (!dateGroup) {
+                    dateGroup = {
+                        date: schedule.startTime.toISOString(), // Use the full ISO string for the date
+                        schedules: [],
+                    };
+                    acc.push(dateGroup);
                 }
 
-                acc[date].push(schedule);
+                // Add the schedule to the corresponding date group
+                dateGroup.schedules.push({
+                    id: schedule.scheduleID,
+                    start: schedule.startTime.toISOString(),
+                    end: schedule.endTime.toISOString(),
+                    isBooked: schedule.isBooked,
+                });
 
                 return acc;
-            }, {} as Record<string, typeof schedules>);
+            }, [] as Array<{ date: string; schedules: Array<{ id: string; start: string; end: string; isBooked: boolean }> }>);
 
             this.logger.log(`Schedules fetched and grouped by date for interview ID: ${interviewId}`);
 
             return {
                 message: 'Schedules fetched successfully',
-                schedulesByDate,
+                schedulesByDate: groupedSchedules,
             };
         } catch (error) {
             if (error instanceof NotFoundException || error instanceof BadRequestException) {
