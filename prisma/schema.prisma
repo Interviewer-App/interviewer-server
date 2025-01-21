@@ -217,8 +217,8 @@ model Candidate {
   interviews         CandidateOnInterviews[]
   interviewResponses Answer[]
   userServey         CandidateServey[]
-  invitations CandidateInvitation[]
-  Scheduling Scheduling[]
+  invitations        CandidateInvitation[]
+  Scheduling         Scheduling[]
 }
 
 model CandidateServey {
@@ -310,7 +310,7 @@ model Interview {
   candidates         CandidateOnInterviews[]
   CategoryAssignment CategoryAssignment[]
   scheduling         Scheduling[]
-  invitations CandidateInvitation[]
+  invitations        CandidateInvitation[]
 }
 
 model InterviewerOnInterviews {
@@ -398,9 +398,10 @@ model Scheduling {
   createdAt                 DateTime @default(now())
   updatedAt                 DateTime @updatedAt
 
-  interviewSession InterviewSession? @relation(fields: [sessionID], references: [sessionId])
-  interview        Interview         @relation(fields: [interviewId], references: [interviewID])
-  candidate        Candidate?        @relation(fields: [candidateId], references: [profileID])
+  interviewSession InterviewSession?    @relation(fields: [sessionID], references: [sessionId])
+  interview        Interview            @relation(fields: [interviewId], references: [interviewID])
+  candidate        Candidate?           @relation(fields: [candidateId], references: [profileID])
+  invitation       CandidateInvitation?
 
   @@unique([interviewId, candidateId])
 }
@@ -527,17 +528,19 @@ model CategoryScore {
 }
 
 model CandidateInvitation {
-  invitationID   String    @id @default(cuid())
-  candidateID    String
-  interviewID    String
-  status         InvitationStatus @default(PENDING)
-  sentAt         DateTime  @default(now())
-  message        String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  invitationID String           @id @default(cuid())
+  candidateID  String
+  interviewID  String
+  scheduleId   String           @unique
+  status       InvitationStatus @default(PENDING)
+  sentAt       DateTime         @default(now())
+  message      String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 
   candidate  Candidate  @relation(fields: [candidateID], references: [profileID])
   interview  Interview  @relation(fields: [interviewID], references: [interviewID])
+  Scheduling Scheduling @relation(fields: [scheduleId], references: [scheduleID])
 
   @@unique([candidateID, interviewID])
 }
