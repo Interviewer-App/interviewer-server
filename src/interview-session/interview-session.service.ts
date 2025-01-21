@@ -1,4 +1,10 @@
-import { Injectable, InternalServerErrorException, Logger, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException
+} from "@nestjs/common";
 import { CreateInterviewSessionDto } from './dto/create-interview-session.dto';
 import { UpdateInterviewSessionDto } from './dto/update-interview-session.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -54,6 +60,26 @@ export class InterviewSessionService {
         where: { interviewId: dto.interviewId },
       });
 
+      const bookedSchedule = await this.prisma.scheduling.findUnique({
+        where: {
+          interviewId_candidateId: {
+            interviewId: dto.interviewId,
+            candidateId: dto.candidateId,
+          },
+          isBooked: true,
+        }
+      })
+
+      if (!bookedSchedule) {
+        this.logger.warn(`There is no schedule booked for this candidate for this interview`);
+        throw new NotFoundException(`There is no schedule booked for this candidate id ${dto.candidateId} for this interview id ${dto.candidateId}`);
+      }
+
+      if (bookedSchedule.sessionID) {
+        this.logger.warn(`Schedule ${bookedSchedule.scheduleID} is already mapped to session ${bookedSchedule.sessionID}`);
+        throw new BadRequestException(`Schedule ${bookedSchedule.scheduleID} is already mapped to an existing session.`);
+      }
+
       const interviewSession = await this.prisma.interviewSession.create({
         data: {
           interviewId: dto.interviewId,
@@ -76,6 +102,13 @@ export class InterviewSessionService {
           });
         })
       );
+
+      await this.prisma.scheduling.update({
+        where: { scheduleID: bookedSchedule.scheduleID },
+        data: {
+          sessionID: interviewSession.sessionId,
+        },
+      });
 
       await this.prisma.interview.update({
         where: { interviewID: dto.interviewId },
