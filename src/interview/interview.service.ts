@@ -759,12 +759,11 @@ export class InterviewService {
                     schedules: [],
                 };
             }
-            // Group schedules by date and transform the data
             const groupedSchedules = schedules.reduce((acc, schedule) => {
-                // Extract the date part from the startTime
+
                 const date = new Date(schedule.startTime).toISOString().split('T')[0];
 
-                // Find or create the group for this date
+
                 let dateGroup = acc.find((group) => group.date.startsWith(date));
                 if (!dateGroup) {
                     dateGroup = {
@@ -774,7 +773,7 @@ export class InterviewService {
                     acc.push(dateGroup);
                 }
 
-                // Add the schedule to the corresponding date group
+
                 dateGroup.schedules.push({
                     id: schedule.scheduleID,
                     start: schedule.startTime.toISOString(),
@@ -790,6 +789,44 @@ export class InterviewService {
             return {
                 message: 'Schedules fetched successfully',
                 schedulesByDate: groupedSchedules,
+            };
+        } catch (error) {
+            if (error instanceof NotFoundException || error instanceof BadRequestException) {
+                throw error;
+            }
+            this.logger.error(`GET: Error fetching schedules: ${error.message}`);
+            throw new InternalServerErrorException('Failed to fetch schedules');
+        }
+    }
+
+    async findSchedulesByInterviewIdForCompany(interviewId: string) {
+        this.logger.log(`GET: Fetching schedules for interview ID: ${interviewId}`);
+
+        try {
+            const interview = await this.prisma.interview.findUnique({
+                where: { interviewID: interviewId },
+            });
+
+            if (!interview) {
+                this.logger.warn(`Interview with ID ${interviewId} not found`);
+                throw new NotFoundException(`Interview with ID ${interviewId} not found`);
+            }
+
+            const schedules = await this.prisma.scheduling.findMany({
+                where: { interviewId: interviewId },
+            });
+
+            if (!schedules || schedules.length === 0) {
+                this.logger.warn(`No schedules found for interview ID: ${interviewId}`);
+                return {
+                    message: 'No schedules found for this interview',
+                    schedules: [],
+                };
+            }
+
+            return {
+                message: 'Schedules fetched successfully',
+                schedules,
             };
         } catch (error) {
             if (error instanceof NotFoundException || error instanceof BadRequestException) {

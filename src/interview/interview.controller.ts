@@ -173,10 +173,24 @@ export class InterviewController {
     @ApiResponse({ status: 201, description: 'Created'})
     @ApiResponse({ status: 400, description: 'Bad request' })
     @ApiResponse({ status: 401, description: 'Unauthorized' })
-    @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
+    @ApiResponse({ status: 500, description: 'Server error' })
     @Auth(Role.COMPANY,Role.CANDIDATE)
     findSchedulesByInterviewId(@Param('interviewId') interviewId: string) {
         return this.interviewService.findSchedulesByInterviewId(interviewId);
+    }
+
+    @Get('schedules/company/:interviewId')
+    @ApiOperation({
+        summary: 'GET ALL SCHEDULES OF THE INTERVIEW',
+        description: 'Private endpoint to Get all schedules of the interview. It is allowed only by "admin" users'
+    })
+    @ApiResponse({ status: 201, description: 'Created'})
+    @ApiResponse({ status: 400, description: 'Bad request' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 500, description: 'Server error' })
+    @Auth(Role.COMPANY,Role.CANDIDATE)
+    findSchedulesByInterviewIdForCompany(@Param('interviewId') interviewId: string) {
+        return this.interviewService.findSchedulesByInterviewIdForCompany(interviewId);
     }
 
     @Post('book-schedule')
