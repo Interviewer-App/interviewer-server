@@ -758,10 +758,23 @@ export class InterviewService {
                     schedules: [],
                 };
             }
+            const schedulesByDate = schedules.reduce((acc, schedule) => {
+                const date = new Date(schedule.startTime).toISOString().split('T')[0];
+
+                if (!acc[date]) {
+                    acc[date] = [];
+                }
+
+                acc[date].push(schedule);
+
+                return acc;
+            }, {} as Record<string, typeof schedules>);
+
+            this.logger.log(`Schedules fetched and grouped by date for interview ID: ${interviewId}`);
 
             return {
                 message: 'Schedules fetched successfully',
-                schedules,
+                schedulesByDate,
             };
         } catch (error) {
             if (error instanceof NotFoundException || error instanceof BadRequestException) {
