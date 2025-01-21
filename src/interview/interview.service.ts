@@ -835,9 +835,11 @@ export class InterviewService {
         }
     }
 
-    async getInvitationsByInterviewId(interviewID: string) {
+    async getInvitationsByInterviewId(interviewID: string, page: number, limit: number) {
 
         try {
+            const skip = (page - 1) * limit;
+            const take = Number(limit);
             const interview = await this.prisma.interview.findUnique({
                 where: { interviewID: interviewID },
             })
@@ -846,6 +848,8 @@ export class InterviewService {
                 throw new NotFoundException(`Interview with ID ${interviewID} not found`);
             }
             const invitations = await this.prisma.candidateInvitation.findMany({
+                skip,
+                take,
                 where: { interviewID },
                 include: {
                     candidate: true,
@@ -857,17 +861,20 @@ export class InterviewService {
                 this.logger.warn(`No invitations found for interview ID: ${interviewID}`);
                 throw new NotFoundException(`No invitations found for interview ID ${interviewID}`);
             }
+            const total = await this.prisma.candidateInvitation.count({
+                  where: {
+                      interviewID: interviewID,
+                  }
+              }
+            );
 
-            return invitations.map((invitation) => ({
-                invitationID: invitation.invitationID,
-                candidateID: invitation.candidateID,
-                interviewID: invitation.interviewID,
-                status: invitation.status,
-                sentAt: invitation.sentAt,
-                message: invitation.message,
-                createdAt: invitation.createdAt,
-                updatedAt: invitation.updatedAt,
-            }));
+            return {
+                invitations,
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+            };
         } catch (error) {
             this.logger.error(`Error fetching invitations for interview ID ${interviewID}: ${error.message}`);
 

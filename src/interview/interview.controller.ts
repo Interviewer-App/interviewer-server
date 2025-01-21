@@ -193,7 +193,7 @@ export class InterviewController {
         return this.interviewService.bookInterviewSchedule(bookScheduleDto);
     }
 
-    @Get('invitations/:interviewID')
+    @Get('invitations/:interviewID/:page/:limit')
     @ApiOperation({ summary: 'Get all invitations for a specific interview' })
     @ApiParam({ name: 'interviewID', description: 'ID of the interview', type: String })
     @ApiResponse({
@@ -203,8 +203,10 @@ export class InterviewController {
     @ApiResponse({ status: 404, description: 'No invitations found for the interview' })
     async getInvitationsByInterviewId(
       @Param('interviewID') interviewID: string,
+      @Param('page') page: number,
+      @Param('limit') limit: number,
     ) {
-        return this.interviewService.getInvitationsByInterviewId(interviewID);
+        return this.interviewService.getInvitationsByInterviewId(interviewID,page,limit);
     }
 
     @Get('schedules/candidate/:candidateId')
