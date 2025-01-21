@@ -878,4 +878,45 @@ export class InterviewService {
             throw new InternalServerErrorException('An error occurred while fetching invitations.');
         }
     }
+
+    async findSchedulesByCandidateId(candidateId: string) {
+        this.logger.log(`GET: Fetching schedules for candidate ID: ${candidateId}`);
+
+        try {
+            const candidate = await this.prisma.candidate.findUnique({
+                where: { profileID: candidateId },
+            });
+
+            if (!candidate) {
+                this.logger.warn(`Candidate with ID ${candidateId} not found`);
+                throw new NotFoundException(`Candidate with ID ${candidateId} not found`);
+            }
+
+            const schedules = await this.prisma.scheduling.findMany({
+                where: {
+                    candidateId: candidateId ,
+                    isBooked: true,
+                },
+            });
+
+            if (!schedules || schedules.length === 0) {
+                this.logger.warn(`No schedules found for interview ID: ${candidateId}`);
+                return {
+                    message: 'No schedules found for this candidate',
+                    schedules: [],
+                };
+            }
+
+            return {
+                message: 'Schedules fetched successfully',
+                schedules,
+            };
+        } catch (error) {
+            if (error instanceof NotFoundException || error instanceof BadRequestException) {
+                throw error;
+            }
+            this.logger.error(`GET: Error fetching schedules: ${error.message}`);
+            throw new InternalServerErrorException('Failed to fetch schedules');
+        }
+    }
 }
