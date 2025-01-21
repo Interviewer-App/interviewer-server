@@ -859,6 +859,20 @@ export class InterviewService {
                 throw new BadRequestException('This schedule is already booked');
             }
 
+            const scheduleExist = await this.prisma.scheduling.findUnique({
+                where: {
+                    interviewId_candidateId: {
+                        interviewId: dto.interviewId,
+                        candidateId: dto.candidateId,
+                    }
+                },
+            })
+
+            if(scheduleExist) {
+                this.logger.warn(`Another schedule with ID ${scheduleExist.scheduleID} booked for this interview ID: ${dto.interviewId}`);
+                throw new BadRequestException(`Another schedule with ID ${scheduleExist.scheduleID} booked for this interview ID: ${dto.interviewId}`)
+            }
+
             const candidate = await this.prisma.candidate.findUnique({
                 where: { profileID: dto.candidateId },
             });
