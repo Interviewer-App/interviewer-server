@@ -303,6 +303,15 @@ export class UserService {
           ),
         );
 
+        await this.prisma.candidate.update({
+          where: {
+            profileID: dto.id,
+          },
+          data: {
+            isSurveyCompleted: true,
+          }
+        })
+
         return {
           message: 'Candidate surveys saved successfully',
           surveys: savedSurveys,
@@ -327,6 +336,15 @@ export class UserService {
             }),
           ),
         );
+
+        await this.prisma.company.update({
+          where: {
+            companyID: dto.id,
+          },
+          data: {
+            isSurveyCompleted: true,
+          }
+        })
 
         return {
           message: 'Company surveys saved successfully',

@@ -202,16 +202,17 @@ model User {
 }
 
 model Candidate {
-  profileID       String          @id @default(cuid())
-  userID          String          @unique
-  user            User            @relation(fields: [userID], references: [userID])
-  skillHighlights String
-  experience      String
-  availability    String
-  status          CandidateStatus @default(APPLIED)
-  resumeURL       String
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  profileID         String          @id @default(cuid())
+  userID            String          @unique
+  user              User            @relation(fields: [userID], references: [userID])
+  skillHighlights   String
+  experience        String
+  availability      String
+  status            CandidateStatus @default(APPLIED)
+  resumeURL         String
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  isSurveyCompleted Boolean         @default(false)
 
   sessions           InterviewSession[]
   interviews         CandidateOnInterviews[]
@@ -261,6 +262,7 @@ model Company {
   websiteURL         String?
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
+  isSurveyCompleted  Boolean         @default(false)
   user               User            @relation(fields: [userID], references: [userID])
   interviewer        Interviewer[]
   interviews         Interview[]
@@ -431,6 +433,7 @@ model Question {
   questionCategory     String?
   questionText         String
   explanation          String?
+  isAnswered           Boolean          @default(false)
   estimatedTimeMinutes Int              @default(0)
   aiContext            String?
   diffcultyLevel       String?

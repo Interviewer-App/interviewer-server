@@ -237,6 +237,8 @@ export class AuthService {
       }
     });
 
+    console.log(existingUser);
+
     if (existingUser) {
 
       if (!(existingUser.providerAccountId === dto.providerAccountId)) {

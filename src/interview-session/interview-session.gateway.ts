@@ -70,6 +70,9 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
       const questions = await this.fetchQuestionsForSession(sessionId);
       console.log(questions);
       this.server.to(`session-${sessionId}`).emit('questions', { questions });
+      const question = await this.fetchQuestionsForUser(sessionId);
+      console.log(question);
+      this.server.to(`session-${sessionId}`).emit('question', { question });
       const categoryScores = await this.fetchCategoryScores(sessionId);
       console.log(categoryScores);
       this.server.to(`session-${sessionId}`).emit('categoryScores', { categoryScores });
@@ -248,6 +251,15 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
   ) {
     const { sessionId, questionId, candidateId, answerText, questionText , questionNumber , numOfQuestions} = data;
     console.log(data);
+
+    await this.prisma.question.update({
+      where: {
+        questionID: questionId
+      },
+      data: {
+        isAnswered: true,
+      }
+    })
     
     let answer = await this.prisma.answer.findUnique({
       where: { questionID: questionId },
@@ -371,11 +383,36 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     const { sessionId, followUpQuestion } = data;
 
     console.log(`Received nextQuestion event for session ${sessionId}`);
+    let question;
+
+    if(followUpQuestion){
+      question = await this.prisma.question.create({
+        data: {
+          questionText: followUpQuestion,
+          type: 'OPEN_ENDED',
+          estimatedTimeMinutes: 5,
+          usageFrequency: 0,
+          interviewSession: {
+            connect: {
+              sessionId: sessionId,
+            },
+          },
+        },
+      });
+    } else {
+      question = await this.fetchQuestionsForUser(sessionId);
+    }
+
 
     const message = {
       type: followUpQuestion ? 'followUpQuestion' : 'navigateToNextQuestion',
-      followUpQuestion,
+      question,
     };
+
+    this.server.to(`session-${sessionId}`).emit('question', { question });
+
+    const questions = await this.fetchQuestionsForSession(sessionId);
+    this.server.to(`session-${sessionId}`).emit('questions', { questions });
 
     this.server.to(`session-${sessionId}`).emit('navigateNextQuestion', message);
 
@@ -414,5 +451,16 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     });
 
     return session?.questions || [];
+  }
+
+  private async fetchQuestionsForUser(sessionId: string) {
+    const question = await this.prisma.question.findFirst({
+      where: {
+        sessionID: sessionId,
+        isAnswered: false,
+      }
+    });
+
+    return question ? question : null;
   }
 }
