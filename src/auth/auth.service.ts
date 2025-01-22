@@ -188,6 +188,7 @@ export class AuthService {
       delete user.password;
 
       const { company, candidate, ...cleanedUser } = user;
+
       let extraInfo = {};
       if (user.role === 'COMPANY' && user.company) {
         extraInfo = {
@@ -203,11 +204,11 @@ export class AuthService {
 
       this.logger.log(`POST: auth/login: Usuario aceptado: ${user.email}`);
       return {
-        // user: {
-        //   ...cleanedUser,
-        //   ...extraInfo
-        // },
-        user: user,
+        user: {
+          ...user,
+          ...extraInfo
+        },
+
         token: this.getJwtToken({
           id: user.userID,
           role: user.role
