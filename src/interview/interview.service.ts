@@ -996,6 +996,10 @@ export class InterviewService {
                     candidateId: candidateId ,
                     isBooked: true,
                 },
+                include: {
+                    interview: true,
+                    invitation: true,
+                }
             });
 
             if (!schedules || schedules.length === 0) {
