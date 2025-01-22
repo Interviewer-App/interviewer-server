@@ -198,7 +198,7 @@ export class AuthService {
       } else if (user.role === 'CANDIDATE' && user.candidate) {
         extraInfo = {
           candidateID: candidate.profileID,
-          isSurveyCompleted: company.isSurveyCompleted
+          isSurveyCompleted: candidate.isSurveyCompleted,
         };
       }
 
