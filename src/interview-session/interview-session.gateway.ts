@@ -303,7 +303,7 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
 
     this.submitCategoryScore(dataScore);
 
-    this.notifyAnswerSubmission(sessionId, questionId, candidateId, questionText, answerText, metrics, questionNumber, numOfQuestions, totalScore);
+    await this.notifyAnswerSubmission(sessionId, questionId, candidateId, questionText, answerText, metrics, questionNumber, numOfQuestions, totalScore);
   }
   
   private async findCategoryScoreId(category:string,sessionId: string) {
@@ -352,7 +352,7 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     return total;
   }
 
-  private notifyAnswerSubmission(
+  private async notifyAnswerSubmission(
     sessionId: string,
     questionId: string,
     candidateId: string,
@@ -373,6 +373,8 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
       numOfQuestions,
       totalScore,
     });
+    const questions = await this.fetchQuestionsForSession(sessionId);
+    this.server.to(`session-${sessionId}`).emit('questions', { questions });
   }
 
   @SubscribeMessage('nextQuestion')
@@ -447,7 +449,17 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     // Fetch questions from the database using Prisma
     const session = await this.prisma.interviewSession.findUnique({
       where: { sessionId },
-      include: { questions: true },
+      include: {
+        questions: {
+          include: {
+            interviewResponses: {
+              include: {
+                score: true,
+              }
+            }
+          }
+        }
+      },
     });
 
     return session?.questions || [];
