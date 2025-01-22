@@ -93,12 +93,14 @@ export class AuthService {
               select: {
                 companyID: true,
                 companyName: true,
+                isSurveyCompleted: true,
               },
             },
             candidate: {
               select: {
                 profileID: true,
                 user: true,
+                isSurveyCompleted: true,
               },
             },
           },
@@ -153,10 +155,16 @@ export class AuthService {
           password: true,
           role: true,
           company: {
-            select: { companyID: true },
+            select: {
+              companyID: true,
+              isSurveyCompleted: true,
+            },
           },
           candidate: {
-            select: { profileID: true },
+            select: {
+              profileID: true,
+              isSurveyCompleted: true,
+            },
           },
           createdAt: true,
           provider: true,
@@ -182,17 +190,24 @@ export class AuthService {
       const { company, candidate, ...cleanedUser } = user;
       let extraInfo = {};
       if (user.role === 'COMPANY' && user.company) {
-        extraInfo = { companyID: company.companyID };
+        extraInfo = {
+          companyID: company.companyID,
+          isSurveyCompleted: company.isSurveyCompleted,
+        };
       } else if (user.role === 'CANDIDATE' && user.candidate) {
-        extraInfo = { candidateID: candidate.profileID };
+        extraInfo = {
+          candidateID: candidate.profileID,
+          isSurveyCompleted: company.isSurveyCompleted
+        };
       }
 
       this.logger.log(`POST: auth/login: Usuario aceptado: ${user.email}`);
       return {
-        user: {
-          ...cleanedUser,
-          ...extraInfo
-        },
+        // user: {
+        //   ...cleanedUser,
+        //   ...extraInfo
+        // },
+        user: user,
         token: this.getJwtToken({
           id: user.userID,
           role: user.role
@@ -224,11 +239,13 @@ export class AuthService {
           select: {
             companyID: true,
             companyName: true,
+            isSurveyCompleted: true,
           },
         },
         candidate: {
           select: {
             profileID: true,
+            isSurveyCompleted: true,
           },
         },
         createdAt: true,
@@ -295,11 +312,13 @@ export class AuthService {
             select: {
               companyID: true,
               companyName: true,
+              isSurveyCompleted: true,
             },
           },
           candidate: {
             select: {
               profileID: true,
+              isSurveyCompleted: true,
             },
           },
         },
