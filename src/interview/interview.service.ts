@@ -997,7 +997,11 @@ export class InterviewService {
                     isBooked: true,
                 },
                 include: {
-                    interview: true,
+                    interview: {
+                        include: {
+                            company: true,
+                        }
+                    },
                     invitation: true,
                 }
             });
