@@ -246,10 +246,10 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
 
   @SubscribeMessage('submitAnswer')
   async handleSubmitAnswer(
-    @MessageBody() data: { sessionId: string, questionId: string, candidateId: string, answerText: string, questionText: string, questionNumber: number, numOfQuestions: number },
+    @MessageBody() data: { sessionId: string, questionId: string, candidateId: string, answerText: string, questionText: string },
     @ConnectedSocket() client: Socket
   ) {
-    const { sessionId, questionId, candidateId, answerText, questionText , questionNumber , numOfQuestions} = data;
+    const { sessionId, questionId, candidateId, answerText, questionText } = data;
     console.log(data);
 
     await this.prisma.question.update({
@@ -303,7 +303,7 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
 
     this.submitCategoryScore(dataScore);
 
-    await this.notifyAnswerSubmission(sessionId, questionId, candidateId, questionText, answerText, metrics, questionNumber, numOfQuestions, totalScore);
+    await this.notifyAnswerSubmission(sessionId, questionId, candidateId, questionText, answerText, metrics, totalScore);
   }
   
   private async findCategoryScoreId(category:string,sessionId: string) {
@@ -359,8 +359,6 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     questionText: string,
     answerText: string,
     metrics: any,
-    questionNumber: number,
-    numOfQuestions: number,
     totalScore: any,
   ) {
     this.server.to(`session-${sessionId}`).emit('answerSubmitted', {
@@ -369,8 +367,6 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
       questionText,
       answerText,
       metrics,
-      questionNumber,
-      numOfQuestions,
       totalScore,
     });
     const questions = await this.fetchQuestionsForSession(sessionId);
