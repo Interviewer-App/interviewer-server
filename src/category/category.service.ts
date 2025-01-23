@@ -501,31 +501,39 @@ export class CategoryService {
     }
   }
 
-  async getAssignedCategories(interviewId: string) {
-    this.logger.log(`GET: Fetching category Assignment for interview ID: ${interviewId}`);
+  async getAssignedCategories(sessionId: string) {
+    this.logger.log(`GET: Fetching category Assignment for session ID: ${sessionId}`);
 
     try {
-      const interview = await this.prisma.interview.findUnique({
+      const session = await this.prisma.interviewSession.findUnique({
         where: {
-          interviewID: interviewId,
+          sessionId: sessionId,
         }
       })
 
-      if(!interview) {
-        this.logger.warn(`No interview found for interview ID: ${interviewId}`);
-        throw new NotFoundException(`No interview found for interview ID: ${interviewId}`);
+      if(!session) {
+        this.logger.warn(`No session found for session ID: ${sessionId}`);
+        throw new NotFoundException(`No session found for session ID: ${sessionId}`);
       }
-      const categoryAssignments = await this.prisma.categoryAssignment.findMany({
-        where: { interviewId: interviewId },
+      const categoryScores = await this.prisma.categoryScore.findMany({
+        where: { sessionId: sessionId },
         include: {
-            category: true,
+            categoryAssignment: {
+              include: {
+                category: true,
+              }
+            }
         },
       });
 
-      if (!categoryAssignments || categoryAssignments.length === 0) {
-        this.logger.warn(`No category Assignments found for interview ID: ${interviewId}`);
-        throw new NotFoundException(`No category Assignments found for interview ID: ${interviewId}`);
+      if (!categoryScores || categoryScores.length === 0) {
+        this.logger.warn(`No category Assignments found for session ID: ${sessionId}`);
+        throw new NotFoundException(`No category Assignments found for session ID: ${sessionId}`);
       }
+
+      const categoryAssignments = categoryScores.map((categoryScore) => {
+        return categoryScore.categoryAssignment;
+      })
 
       return {
         message: 'Category scores fetched successfully',
