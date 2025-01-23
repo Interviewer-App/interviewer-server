@@ -166,6 +166,7 @@ enum Role {
   ADMIN
   INTERVIEWER
   COMPANY
+  COMPANY_TEAM
 }
 
 enum CandidateStatus {
@@ -196,6 +197,7 @@ model User {
   admin             Admin?
   candidate         Candidate?
   company           Company?
+  companyTeam       CompanyTeam?
   interviewer       Interviewer?
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
@@ -264,10 +266,26 @@ model Company {
   updatedAt          DateTime        @updatedAt
   isSurveyCompleted  Boolean         @default(false)
   user               User            @relation(fields: [userID], references: [userID])
+  companyTeam        CompanyTeam[]   @relation("CompanySubUsers")
   interviewer        Interviewer[]
   interviews         Interview[]
   Category           Category[]
   companySurvey      CompanyServey[]
+}
+
+model CompanyTeam {
+  companyTeamId   String   @id @default(cuid())
+  userID          String   @unique
+  user            User     @relation(fields: [userID], references: [userID])
+  teamRole        TeamRole
+  parentCompanyId String?
+  parentCompany   Company? @relation("CompanySubUsers", fields: [parentCompanyId], references: [companyID])
+}
+
+enum TeamRole {
+  COMPANY_ADMIN
+  COMPANY_EDITOR
+  COMPANY_VIEWER
 }
 
 model CompanyServey {
