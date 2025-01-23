@@ -536,7 +536,7 @@ export class CategoryService {
       })
 
       return {
-        message: 'Category scores fetched successfully',
+        message: 'Category assignments fetched successfully',
         categoryAssignments,
       };
     } catch (error) {
