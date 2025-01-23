@@ -413,6 +413,9 @@ export class CategoryService {
         categoryScores,
       };
     } catch (error) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
       this.logger.error(`GET: Error fetching category scores: ${error.message}`);
       throw new InternalServerErrorException('Server error occurred');
     }
@@ -444,6 +447,9 @@ export class CategoryService {
         categoryScore: updatedCategoryScore,
       };
     } catch (error) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
       this.logger.error(`PATCH: Error updating category score: ${error.message}`);
       throw new InternalServerErrorException('Server error occurred');
     }
@@ -487,7 +493,49 @@ export class CategoryService {
         session
       };
     } catch (error) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
       this.logger.error(`GET: Error calculating total score: ${error.message}`);
+      throw new InternalServerErrorException('Server error occurred');
+    }
+  }
+
+  async getAssignedCategories(interviewId: string) {
+    this.logger.log(`GET: Fetching category Assignment for interview ID: ${interviewId}`);
+
+    try {
+      const interview = await this.prisma.interview.findUnique({
+        where: {
+          interviewID: interviewId,
+        }
+      })
+
+      if(!interview) {
+        this.logger.warn(`No interview found for interview ID: ${interviewId}`);
+        throw new NotFoundException(`No interview found for interview ID: ${interviewId}`);
+      }
+      const categoryAssignments = await this.prisma.categoryAssignment.findMany({
+        where: { interviewId: interviewId },
+        include: {
+            category: true,
+        },
+      });
+
+      if (!categoryAssignments || categoryAssignments.length === 0) {
+        this.logger.warn(`No category Assignments found for interview ID: ${interviewId}`);
+        throw new NotFoundException(`No category Assignments found for interview ID: ${interviewId}`);
+      }
+
+      return {
+        message: 'Category scores fetched successfully',
+        categoryAssignments,
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
+      this.logger.error(`GET: Error fetching category scores: ${error.message}`);
       throw new InternalServerErrorException('Server error occurred');
     }
   }

@@ -194,4 +194,17 @@ export class CategoryController {
   async calculateTotalScore(@Param('sessionId') sessionId: string) {
       return await this.categoryService.calculateTotalScore(sessionId);
   }
+  @Get('category-assigned/:interviewId')
+  @ApiOperation({
+    summary: 'GET CATEGORY ASSIGNMENT FOR INTERVIEW',
+    description: 'Public endpoint to fetch a category assignments by interview id.',
+  })
+  @ApiParam({ name: 'interviewId', description: 'Interview ID', type: 'string' })
+  @ApiResponse({ status: 200, description: 'Category fetched successfully.' })
+  @ApiResponse({ status: 404, description: 'Category not found.' })
+  @ApiResponse({ status: 500, description: 'Server error.' })
+  @Auth(Role.COMPANY)
+  async getAssignedCategories(@Param('interviewId') interviewId: string) {
+    return await this.categoryService.getAssignedCategories(interviewId);
+  }
 }
