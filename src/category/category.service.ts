@@ -433,7 +433,10 @@ export class CategoryService {
 
       const updatedCategoryScore = await this.prisma.categoryScore.update({
         where: { categoryScoreId: categoryScoreId },
-        data: { score: dto.score },
+        data: {
+          score: dto.score,
+          note: dto.note,
+        },
       });
 
       return {

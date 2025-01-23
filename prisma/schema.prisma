@@ -521,6 +521,7 @@ model CategoryScore {
   sessionId       String
   assignmentId    String
   score           Float    @default(0)
+  note            String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
