@@ -492,6 +492,42 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     // Notify other participants that someone has left
     this.server.to(`session-${sessionId}`).emit('participantLeft', { userId });
   }
+  
+  @SubscribeMessage('endInterviewSession')
+  async handleEndInterviewSession(
+    @MessageBody() data: { sessionId: string, userId: string },
+    @ConnectedSocket() client: Socket
+  ) {
+    const { sessionId, userId } = data;
+
+    const question = this.fetchQuestionsForUser(sessionId);
+    if(!question) {
+      await this.updateSessionStatus(sessionId);
+    }
+
+    const totalScore = await this.calculateTotalScore(sessionId);
+    this.logger.log(`Total score calculated successfully: ${JSON.stringify(totalScore)}`);
+
+    const categoryScores = await this.fetchCategoryScores(sessionId);
+    this.logger.log(`Category scores fetched successfully: ${JSON.stringify(categoryScores)}`);
+
+    this.server.to(`session-${sessionId}`).emit('categoryScores', { categoryScores });
+    this.server.to(`session-${sessionId}`).emit('totalScore', { totalScore });
+    
+    this.handleLeaveInterviewSession({ sessionId, userId }, client);
+
+  }
+
+  private async updateSessionStatus(sessionId: string) {
+
+    this.logger.log(`Session is suceesfully completed ${sessionId}. Triggering update session status...`);
+
+
+    await this.prisma.interviewSession.update({
+      where: { sessionId: sessionId },
+      data: { interviewStatus: 'completed' },
+    });
+  }
 
   private leaveAllRooms(client: Socket) {
     const rooms = Object.keys(client.rooms);
