@@ -1040,4 +1040,56 @@ export class InterviewService {
             throw new InternalServerErrorException('Failed to fetch schedules');
         }
     }
+
+    async findSchedulesOverviewByCandidateId(candidateId: string) {
+        this.logger.log(`GET: Fetching schedules for candidate ID: ${candidateId}`);
+
+        try {
+            const candidate = await this.prisma.candidate.findUnique({
+                where: { profileID: candidateId },
+            });
+
+            if (!candidate) {
+                this.logger.warn(`Candidate with ID ${candidateId} not found`);
+                throw new NotFoundException(`Candidate with ID ${candidateId} not found`);
+            }
+
+            const totalSchedules = await this.prisma.scheduling.count({
+                where: {
+                    candidateId: candidateId ,
+                    isBooked: true,
+                },
+            });
+
+            const completedSchedules = await this.prisma.scheduling.count({
+                where: {
+                    candidateId: candidateId ,
+                    isBooked: true,
+                    interviewSession: {
+                        interviewStatus: "completed",
+                    }
+                }
+            })
+
+            if (!totalSchedules || totalSchedules == 0) {
+                this.logger.warn(`No schedules found for interview ID: ${candidateId}`);
+                return {
+                    message: 'No schedules found for this candidate',
+                    schedules: [],
+                };
+            }
+
+            return {
+                message: 'Schedules fetched successfully',
+                total:totalSchedules,
+                completed:completedSchedules,
+            };
+        } catch (error) {
+            if (error instanceof NotFoundException || error instanceof BadRequestException) {
+                throw error;
+            }
+            this.logger.error(`GET: Error fetching schedules: ${error.message}`);
+            throw new InternalServerErrorException('Failed to fetch schedules');
+        }
+    }
 }
