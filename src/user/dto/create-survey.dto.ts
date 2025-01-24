@@ -27,13 +27,13 @@ export class SurveyQuestionDto {
 
 export class SaveSurveyDto {
   @ApiProperty({
-    description: 'Role of the user (candidate or company)',
-    example: 'candidate',
-    enum: ['candidate', 'company'],
+    description: 'Role of the user (CANDIDATE or COMPANY)',
+    example: 'CANDIDATE',
+    enum: ['CANDIDATE', 'COMPANY'],
   })
   @IsString()
   @IsNotEmpty()
-  role: 'candidate' | 'company';
+  role: 'CANDIDATE' | 'COMPANY';
 
   @ApiProperty({
     description: 'ID of the candidate or company',

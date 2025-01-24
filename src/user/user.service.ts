@@ -282,7 +282,7 @@ export class UserService {
         answer: Array.isArray(survey.answer) ? survey.answer : [survey.answer],
       }));
 
-      if (dto.role === 'candidate') {
+      if (dto.role === 'CANDIDATE') {
         const candidate = await this.prisma.candidate.findUnique({
           where: { profileID: dto.id },
         });
@@ -316,7 +316,7 @@ export class UserService {
           message: 'Candidate surveys saved successfully',
           surveys: savedSurveys,
         };
-      } else if (dto.role === 'company') {
+      } else if (dto.role === 'COMPANY') {
         const company = await this.prisma.company.findUnique({
           where: { companyID: dto.id },
         });
