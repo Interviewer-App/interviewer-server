@@ -166,7 +166,6 @@ enum Role {
   ADMIN
   INTERVIEWER
   COMPANY
-  COMPANY_TEAM
 }
 
 enum CandidateStatus {
@@ -194,9 +193,10 @@ model User {
   provider          String?
   providerAccountId String?
   role              Role         @default(CANDIDATE)
+  companyId         String?
   admin             Admin?
   candidate         Candidate?
-  company           Company?
+  company           Company?     @relation(fields: [companyId], references: [companyID])
   companyTeam       CompanyTeam?
   interviewer       Interviewer?
   createdAt         DateTime     @default(now())
@@ -256,17 +256,32 @@ model Interviewer {
   InterviewerOnInterviews InterviewerOnInterviews[]
 }
 
+// model Company {
+//   companyID          String          @id @default(cuid())
+//   userID             String          @unique
+//   companyName        String
+//   companyDescription String?
+//   websiteURL         String?
+//   createdAt          DateTime        @default(now())
+//   updatedAt          DateTime        @updatedAt
+//   isSurveyCompleted  Boolean         @default(false)
+//   user               User            @relation(fields: [userID], references: [userID])
+//   companyTeam        CompanyTeam[]   @relation("CompanySubUsers")
+//   interviewer        Interviewer[]
+//   interviews         Interview[]
+//   Category           Category[]
+//   companySurvey      CompanyServey[]
+// }
+
 model Company {
   companyID          String          @id @default(cuid())
-  userID             String          @unique
   companyName        String
   companyDescription String?
   websiteURL         String?
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
   isSurveyCompleted  Boolean         @default(false)
-  user               User            @relation(fields: [userID], references: [userID])
-  companyTeam        CompanyTeam[]   @relation("CompanySubUsers")
+  user               User[]
   interviewer        Interviewer[]
   interviews         Interview[]
   Category           Category[]
@@ -274,18 +289,16 @@ model Company {
 }
 
 model CompanyTeam {
-  companyTeamId   String   @id @default(cuid())
-  userID          String   @unique
-  user            User     @relation(fields: [userID], references: [userID])
-  teamRole        TeamRole
-  parentCompanyId String?
-  parentCompany   Company? @relation("CompanySubUsers", fields: [parentCompanyId], references: [companyID])
+  companyTeamId String   @id @default(cuid())
+  userID        String   @unique
+  user          User     @relation(fields: [userID], references: [userID])
+  teamRole      TeamRole
 }
 
 enum TeamRole {
-  COMPANY_ADMIN
-  COMPANY_EDITOR
-  COMPANY_VIEWER
+  INTERVIEWER
+  HIRING_MANAGER
+  ADMIN
 }
 
 model CompanyServey {

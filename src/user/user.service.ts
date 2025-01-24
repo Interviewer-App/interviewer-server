@@ -13,9 +13,12 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { User } from './entities/user.entity';
-import { Role } from '@prisma/client';
+import { Role, TeamRole } from "@prisma/client";
 import { take } from "rxjs";
 import { SaveSurveyDto } from "./dto/create-survey.dto";
+import { RegisterTeamMemberDto } from "./dto/register-team-member.dto";
+import { CreateEmailServerDto } from "../email-server/dto/create-email-server.dto";
+import { EmailServerService } from "../email-server/email-server.service";
 
 
 @Injectable()
@@ -25,7 +28,7 @@ export class UserService {
 
   constructor(
     private prisma: PrismaService,
-
+    private emailService: EmailServerService
   ) { }
 
   async create(dto: CreateUserDto) {
@@ -362,11 +365,11 @@ export class UserService {
     }
   }
 
-  async getSurveys(role: 'candidate' | 'company', id: string) {
+  async getSurveys(role: 'CANDIDATE' | 'COMPANY', id: string) {
     this.logger.log(`Fetching surveys for ${role} with ID: ${id}`);
 
     try {
-      if (role === 'candidate') {
+      if (role === 'CANDIDATE') {
         const candidate = await this.prisma.candidate.findUnique({
           where: { profileID: id },
         });
@@ -383,7 +386,7 @@ export class UserService {
           message: 'Candidate surveys fetched successfully',
           surveys,
         };
-      } else if (role === 'company') {
+      } else if (role === 'COMPANY') {
         const company = await this.prisma.company.findUnique({
           where: { companyID: id },
         });
@@ -410,6 +413,109 @@ export class UserService {
       this.logger.error(`Error fetching surveys: ${error.message}`);
       throw new InternalServerErrorException('Failed to fetch surveys');
     }
+  }
+
+  async createCompanyTeamMember(dto: RegisterTeamMemberDto){
+    this.logger.log(`POST: user/register: Register user started`);
+    dto.email = dto.email.toLowerCase().trim();
+
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (existingUser) {
+      this.logger.warn(`POST: user/register: User already exists: ${dto.email}`);
+      throw new BadRequestException('User with this email already exists');
+    }
+    const password = this.generateRandomPassword();
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    try {
+      const userData = {
+        firstName: dto.firstname,
+        lastName: dto.lastname,
+        email: dto.email,
+        password: hashedPassword,
+        role: Role.COMPANY,
+      };
+
+
+      const newuser = await this.prisma.user.create({
+        data: {
+          ...userData,
+          companyId: dto.companyId,
+          companyTeam: {
+            create: {
+              teamRole: dto.teamRole
+            },
+          },
+        },
+        select: {
+          userID: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          role: true,
+          createdAt: true,
+          company: {
+            select: {
+              companyID: true,
+              companyName: true,
+              isSurveyCompleted: true,
+            },
+          },
+          companyTeam: {
+            select: {
+              teamRole: true,
+            }
+          }
+        },
+      });
+
+      if(newuser) {
+        const message = `
+              Dear ${newuser.firstName} ${newuser.lastName},
+              
+              You have been registered with below temporary credentials for ${newuser.companyTeam.teamRole} Company Role:
+              Email: ${newuser.email}
+              Password: ${password}
+              
+              Please use these credentials to log in and change your password later.
+              
+              Best regards,
+              Your Company Team
+              `;
+
+        const emailDto = new CreateEmailServerDto();
+        emailDto.body = message;
+        emailDto.to = newuser.email;
+        emailDto.subject = `Your Company User Account Credentials for ${newuser.companyTeam.teamRole} Role`;
+
+        await this.emailService.sendMailSandBox(emailDto);
+      }
+
+      return {
+        message: 'New team role created successfully,and credentials send to the user',
+        user: newuser,
+      };
+    } catch (error) {
+      if (error.code === 'P2002') {
+        this.logger.warn(`POST: auth/register: User already exists: ${dto.email}`);
+        throw new BadRequestException('User already exists');
+      }
+      this.logger.error(`POST: auth/register: error: ${error}`);
+      throw new InternalServerErrorException('Server error');
+    }
+
+  }
+
+  private generateRandomPassword(): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()';
+    let password = '';
+    for (let i = 0; i < 12; i++) {
+      password += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return password;
   }
 }
 

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from "@nestjs/common";
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, Logger } from "@nestjs/common";
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -7,6 +7,9 @@ import { Auth, GetUser } from 'src/auth/decorators';
 import { User } from './entities/user.entity';
 import { Role } from '@prisma/client';
 import { SaveSurveyDto } from "./dto/create-survey.dto";
+import { LoginResponse } from "../auth/interfaces";
+import { RegisterUserDto } from "../auth/dto/register-user.dto";
+import { RegisterTeamMemberDto } from "./dto/register-team-member.dto";
 
 @ApiBearerAuth()
 @ApiTags('Users')
@@ -160,9 +163,9 @@ export class UserController {
   })
   @ApiQuery({
     name: 'role',
-    description: 'Role of the user (candidate or company)',
-    example: 'candidate',
-    enum: ['candidate', 'company'],
+    description: 'Role of the user (CANDIDATE or COMPANY)',
+    example: 'CANDIDATE',
+    enum: ['CANDIDATE', 'COMPANY'],
   })
   @ApiQuery({
     name: 'id',
@@ -174,9 +177,22 @@ export class UserController {
   @ApiResponse({ status: 404, description: 'Candidate or company not found.' })
   @ApiResponse({ status: 500, description: 'Server error.' })
   async getSurveys(
-    @Query('role') role: 'candidate' | 'company',
+    @Query('role') role: 'CANDIDATE' | 'COMPANY',
     @Query('id') id: string,
   ) {
       return await this.userService.getSurveys(role, id);
+  }
+
+  @Post('register/team/member')
+  @ApiOperation({
+    summary: 'REGISTER TEAM MEMBER',
+    description: 'Private endpoint to register a new member to company team.'
+  })
+  @ApiResponse({status: 201, description: 'Ok'})
+  @ApiResponse({status: 400, description: 'Bad request'})
+  @ApiResponse({status: 500, description: 'Server error'})
+  register(@Body() registerTeamMemberDto: RegisterTeamMemberDto) {
+    Logger.log(`Register`);
+    return this.userService.createCompanyTeamMember(registerTeamMemberDto);
   }
 }
