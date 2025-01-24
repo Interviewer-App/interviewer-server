@@ -14,14 +14,13 @@ import { AnswersService } from "../answers/answers.service";
 import { CategoryService } from "../category/category.service";
 import { UpdateCategoryScoreDto } from "../category/dto/update-category-score.dto";
 import { Logger, NotFoundException } from "@nestjs/common";
-
 @WebSocketGateway({ cors: true })
 export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
 
   private readonly logger = new Logger('InterviewSessionSocket');
   // Track active interview sessions
-  private activeSessions: Map<string, Set<string>> = new Map(); // sessionId -> Set of participantIds (candidate and company)
+  private activeSessions: Map<string, Set<{ userId: string, role: string }>> = new Map(); // sessionId -> Set of participantIds (candidate and company)
 
   constructor(private prisma: PrismaService, private aiService : AiService, private answerService:AnswersService, private categoryService:CategoryService) {}
 
@@ -39,7 +38,6 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     @MessageBody() data: { sessionId: string, userId: string, role: string },
     @ConnectedSocket() client: Socket
   ) {
-
     if (!client) {
       throw new Error('Client is undefined');
     }
@@ -56,30 +54,75 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     if (!this.activeSessions.has(sessionId)) {
       this.activeSessions.set(sessionId, new Set());
     }
-    this.activeSessions.get(sessionId).add(userId);
+    this.activeSessions.get(sessionId).add({ userId, role });
 
     // Notify other participants that someone has joined
     this.server.to(`session-${sessionId}`).emit('participantJoined', { userId, role });
+    
+    const isStarted = await this.checkSessionStarted(sessionId);
+    
+    if(isStarted) {
+      await this.notifyJoinSession(sessionId);
+    } else {
+      if (role == 'CANDIDATE') {
+        client.broadcast.emit('joinedParticipants', { sessionId, userId });
+      }
 
-    if(role == 'CANDIDATE') {
-      client.broadcast.emit('joinedParticipants', { sessionId, userId });
+      
+      const participants = this.activeSessions.get(sessionId);
+      const hasCandidate = Array.from(participants).some(
+        (p) => p.role === 'CANDIDATE',
+      );
+      const hasCompany = Array.from(participants).some(
+        (p) => p.role === 'COMPANY',
+      );
+      if (hasCandidate && hasCompany) {
+        await this.triggerDatabaseCall(sessionId);
+      }
+      if (role === 'COMPANY') {
+        await this.notifyJoinSession(sessionId);
+      }
     }
+  }
 
-    // If the company starts the session, fetch and send questions to the room
-    if (role === 'COMPANY') {
-      const questions = await this.fetchQuestionsForSession(sessionId);
-      console.log(questions);
-      this.server.to(`session-${sessionId}`).emit('questions', { questions });
-      const question = await this.fetchQuestionsForUser(sessionId);
-      console.log(question);
-      this.server.to(`session-${sessionId}`).emit('question', { question });
-      const categoryScores = await this.fetchCategoryScores(sessionId);
-      console.log(categoryScores);
-      this.server.to(`session-${sessionId}`).emit('categoryScores', { categoryScores });
-      const totalScore = await this.calculateTotalScore(sessionId);
-      console.log(totalScore);
-      this.server.to(`session-${sessionId}`).emit('totalScore', { totalScore });
+  async notifyJoinSession(sessionId: string): Promise<void> {
+    const questions = await this.fetchQuestionsForSession(sessionId);
+    console.log(questions);
+    this.server.to(`session-${sessionId}`).emit('questions', { questions });
+    const question = await this.fetchQuestionsForUser(sessionId);
+    console.log(question);
+    this.server.to(`session-${sessionId}`).emit('question', { question });
+    const categoryScores = await this.fetchCategoryScores(sessionId);
+    console.log(categoryScores);
+    this.server.to(`session-${sessionId}`).emit('categoryScores', { categoryScores });
+    const totalScore = await this.calculateTotalScore(sessionId);
+    console.log(totalScore);
+    this.server.to(`session-${sessionId}`).emit('totalScore', { totalScore });
+  }
+  
+  async checkSessionStarted(sessionId: string) {
+    const status = await this.prisma.interviewSession.findUnique({
+      where: { sessionId },
+      select: {
+        interviewStatus: true,
+      }
+    });
+    if (!status) {
+      return false;
+    }else {
+      return status.interviewStatus != 'toBeConducted';
     }
+  }
+
+  async triggerDatabaseCall(sessionId: string) {
+ 
+    this.logger.log(`Both CANDIDATE and COMPANY have joined session ${sessionId}. Triggering database call...`);
+
+
+    await this.prisma.interviewSession.update({
+      where: { sessionId: sessionId },
+      data: { interviewStatus: 'ongoing' },
+    });
   }
 
   private async fetchCategoryScores(sessionId: string) {
@@ -424,12 +467,26 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
   ) {
     const { sessionId, userId } = data;
 
-    // Leave the session room
     client.leave(`session-${sessionId}`);
 
-    // Remove the participant from the active session
     if (this.activeSessions.has(sessionId)) {
-      this.activeSessions.get(sessionId).delete(userId);
+      const participants = this.activeSessions.get(sessionId);
+
+      let participantToDelete: { userId: string; role: string } | undefined;
+      for (const participant of participants) {
+        if (participant.userId === userId) {
+          participantToDelete = participant;
+          break;
+        }
+      }
+
+      if (participantToDelete) {
+        participants.delete(participantToDelete);
+      }
+
+      if (participants.size === 0) {
+        this.activeSessions.delete(sessionId);
+      }
     }
 
     // Notify other participants that someone has left
