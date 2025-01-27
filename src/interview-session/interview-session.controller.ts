@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { InterviewSessionService } from './interview-session.service';
 import { CreateInterviewSessionDto } from './dto/create-interview-session.dto';
 import { UpdateInterviewSessionDto } from './dto/update-interview-session.dto';
@@ -203,6 +203,10 @@ export class InterviewSessionController {
     return this.interviewSessionService.createQuestions(createQuestionsDto);
   }
 
+  @Get('stream-token')
+  getStreamToken(@Query('userId') userId: string) {
+    return { token: this.interviewSessionService.createToken(userId) };
+  }
   //
   // @Patch(':id')
   // update(@Param('id') id: string, @Body() updateInterviewSessionDto: UpdateInterviewSessionDto) {
