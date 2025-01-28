@@ -11,6 +11,7 @@ COPY . .
 
 RUN npm install prisma --save-dev
 RUN npx prisma generate
+RUN npx prisma migrate resolve --applied "20250128042800_test1222"
 RUN npx prisma migrate deploy
 RUN npm run build
 
