@@ -517,5 +517,51 @@ export class UserService {
     }
     return password;
   }
+
+  async findCompanyTeamByCompanyId(companyId: string) {
+    try {
+      this.logger.log(`Fetching company team members for company ID: ${companyId}`);
+
+      const company = await this.prisma.company.findUnique({
+        where: { companyID: companyId },
+        include: {
+          user: {
+            include: {
+              companyTeam: true,
+            },
+          },
+        },
+      });
+
+      if (!company) {
+        this.logger.warn(`Company with ID ${companyId} not found`);
+        throw new NotFoundException(`Company with ID ${companyId} not found`);
+      }
+
+      // Sort team members so that ADMIN comes first
+      const sortedTeamMembers = company.user
+        .filter((user) => user.companyTeam) // Filter users with a company team role
+        .sort((a, b) => {
+          if (a.companyTeam.teamRole === 'ADMIN') return -1; // ADMIN comes first
+          if (b.companyTeam.teamRole === 'ADMIN') return 1;
+          return 0;
+        })
+        .map((user) => ({
+          userId: user.userID,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          role: user.companyTeam.teamRole,
+        }));
+
+      this.logger.log(`Successfully fetched company team members for company ID: ${companyId}`);
+      return sortedTeamMembers;
+    } catch (error) {
+
+      this.logger.error(`Error fetching company team members for company ID: ${companyId}`, error.stack);
+      throw error;
+
+    }
+  }
 }
 
