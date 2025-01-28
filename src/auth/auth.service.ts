@@ -8,7 +8,7 @@ import { JwtPayload } from './interfaces/jwt-payload.interface';
 
 import { PrismaService } from 'src/prisma/prisma.service';
 import { User } from 'src/user/entities/user.entity';
-import { Role } from '@prisma/client';
+import { Role, TeamRole } from "@prisma/client";
 import { first, last } from 'rxjs';
 import { ProviderUserDto } from './dto/provider-user.dto';
 
@@ -72,6 +72,11 @@ export class AuthService {
                   companyName:  dto.companyname, // Ensure company name is provided
                 },
               },
+              companyTeam: {
+                  create: {
+                    teamRole: TeamRole.ADMIN
+                  },
+              },
             }),
             ...(dto.role === Role.CANDIDATE && {
               candidate: {
@@ -95,6 +100,11 @@ export class AuthService {
                 companyName: true,
                 isSurveyCompleted: true,
               },
+            },
+            companyTeam: {
+              select: {
+                teamRole: true,
+              }
             },
             candidate: {
               select: {
@@ -159,6 +169,11 @@ export class AuthService {
               companyID: true,
               isSurveyCompleted: true,
             },
+          },
+          companyTeam: {
+            select: {
+              teamRole: true,
+            }
           },
           candidate: {
             select: {
@@ -243,6 +258,11 @@ export class AuthService {
             isSurveyCompleted: true,
           },
         },
+        companyTeam: {
+          select: {
+            teamRole: true,
+          }
+        },
         candidate: {
           select: {
             profileID: true,
@@ -287,6 +307,11 @@ export class AuthService {
                 companyName:  dto.companyname, // Ensure company name is provided
               },
             },
+            companyTeam: {
+              create: {
+                teamRole: TeamRole.ADMIN
+              },
+            },
           }),
           ...(dto.role === Role.CANDIDATE && {
             candidate: {
@@ -315,6 +340,11 @@ export class AuthService {
               companyName: true,
               isSurveyCompleted: true,
             },
+          },
+          companyTeam: {
+            select: {
+              teamRole: true,
+            }
           },
           candidate: {
             select: {

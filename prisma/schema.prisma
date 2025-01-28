@@ -193,9 +193,11 @@ model User {
   provider          String?
   providerAccountId String?
   role              Role         @default(CANDIDATE)
+  companyId         String?
   admin             Admin?
   candidate         Candidate?
-  company           Company?
+  company           Company?     @relation(fields: [companyId], references: [companyID])
+  companyTeam       CompanyTeam?
   interviewer       Interviewer?
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
@@ -254,20 +256,49 @@ model Interviewer {
   InterviewerOnInterviews InterviewerOnInterviews[]
 }
 
+// model Company {
+//   companyID          String          @id @default(cuid())
+//   userID             String          @unique
+//   companyName        String
+//   companyDescription String?
+//   websiteURL         String?
+//   createdAt          DateTime        @default(now())
+//   updatedAt          DateTime        @updatedAt
+//   isSurveyCompleted  Boolean         @default(false)
+//   user               User            @relation(fields: [userID], references: [userID])
+//   companyTeam        CompanyTeam[]   @relation("CompanySubUsers")
+//   interviewer        Interviewer[]
+//   interviews         Interview[]
+//   Category           Category[]
+//   companySurvey      CompanyServey[]
+// }
+
 model Company {
   companyID          String          @id @default(cuid())
-  userID             String          @unique
   companyName        String
   companyDescription String?
   websiteURL         String?
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
   isSurveyCompleted  Boolean         @default(false)
-  user               User            @relation(fields: [userID], references: [userID])
+  user               User[]
   interviewer        Interviewer[]
   interviews         Interview[]
   Category           Category[]
   companySurvey      CompanyServey[]
+}
+
+model CompanyTeam {
+  companyTeamId String   @id @default(cuid())
+  userID        String   @unique
+  user          User     @relation(fields: [userID], references: [userID])
+  teamRole      TeamRole
+}
+
+enum TeamRole {
+  INTERVIEWER
+  HIRING_MANAGER
+  ADMIN
 }
 
 model CompanyServey {
