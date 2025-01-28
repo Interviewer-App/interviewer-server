@@ -1083,6 +1083,7 @@ export class InterviewService {
                 message: 'Schedules fetched successfully',
                 total:totalSchedules,
                 completed:completedSchedules,
+                pending: totalSchedules-completedSchedules,
             };
         } catch (error) {
             if (error instanceof NotFoundException || error instanceof BadRequestException) {
