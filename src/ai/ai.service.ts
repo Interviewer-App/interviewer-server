@@ -466,8 +466,9 @@ export class AiService {
       const analysis = await this.generateComparisonAnalysis(comparisonData);
 
       return {
-        comparison: analysis,
-        rawData: comparisonData
+        // comparison: analysis,
+        // rawData: comparisonData
+        ...analysis,
       };
     } catch (error) {
       this.logger.error(`Error comparing sessions: ${error.message}`, error.stack);
@@ -552,123 +553,43 @@ export class AiService {
       ${JSON.stringify(data.session2, null, 2)}
       
       Provide response in this JSON format:
+      Return JSON:
       {
-        "comparisonPoints": string[],
-        "summary": string,
-        "recommendedCandidate": "session1" | "session2",
-        "reasons": string[]
+        "overall": {
+          "score": {c1: num, c2: num, diff: num},
+          "time": {c1: num, c2: num, diff: str}
+        },
+        "categories": [{
+          "name": str,
+          "metrics": [{
+            "metric": str,
+            "c1": str|num, 
+            "c2": str|num,
+            "note": str,
+            "importance": str
+          }]
+        }],
+        "strengths": {
+          "c1": {strengths: str[], weaknesses: str[]},
+          "c2": {strengths: str[], weaknesses: str[]}
+        },
+        "experience": {
+          "projects": {c1: str, c2: str, comparison: str},
+          "education": {c1: str, c2: str, relevance: str}
+        },
+        "recommendation": {
+          "best": "c1"|"c2",
+          "reason": str,
+          "factors": str[],
+          "confidence": "high"|"med"|"low"  
+        },
+        "summary": {
+          "technical": str,
+          "culture": str,
+          "growth": str
+        }
       }
     `;
-
-    // const prompt2 = `Analyze these two interview candidates and provide a detailed comparison.
-    //   Consider the following factors:
-    //
-    //   1. Technical Skills:
-    //   - Coding question scores
-    //   - Algorithmic complexity handling
-    //   - Language proficiency
-    //   - Technical knowledge depth
-    //
-    //   2. Problem Solving:
-    //   - Approach to complex questions
-    //   - Optimization capabilities
-    //   - Error handling strategies
-    //   - Time efficiency
-    //
-    //   3. Communication Skills:
-    //   - Clarity of explanations
-    //   - Response structure
-    //   - Technical terminology usage
-    //   - Non-technical explanation ability
-    //
-    //   4. Behavioral Attributes:
-    //   - Confidence indicators
-    //   - Stress management
-    //   - Cultural fit indicators
-    //   - Growth mindset signs
-    //
-    //   5. Experience Relevance:
-    //   - Years of relevant experience
-    //   - Key projects/skills matching position
-    //   - Education background relevance
-    //   - Certifications/training
-    //
-    //   6. Quantitative Metrics:
-    //   - Total score comparison
-    //   - Category-wise score breakdown
-    //   - Average response time
-    //   - Question completion rate
-    //
-    //   For each comparison aspect, provide:
-    //   - Metric name
-    //   - Candidate 1 value
-    //   - Candidate 2 value
-    //   - Comparison note
-    //   - Importance level (low/medium/high)
-    //
-    //   Provide response in this JSON format:
-    //   {
-    //     "overallComparison": {
-    //       "totalScore": {
-    //         "session1": number,
-    //         "session2": number,
-    //         "difference": number,
-    //         "percentageDifference": string
-    //       },
-    //       "timeEfficiency": {
-    //         "session1": number,
-    //         "session2": number,
-    //         "timeDifference": string
-    //       }
-    //     },
-    //     "categoryBreakdown": [
-    //       {
-    //         "categoryName": string,
-    //         "metrics": [
-    //           {
-    //             "metricName": string,
-    //             "session1Value": string | number,
-    //             "session2Value": string | number,
-    //             "comparisonNote": string,
-    //             "importance": string
-    //           }
-    //         ]
-    //       }
-    //     ],
-    //     "strengthsWeaknesses": {
-    //       "session1": {
-    //         "strengths": string[],
-    //         "weaknesses": string[]
-    //       },
-    //       "session2": {
-    //         "strengths": string[],
-    //         "weaknesses": string[]
-    //       }
-    //     },
-    //     "experienceAnalysis": {
-    //       "relevantExperience": {
-    //         "session1": string,
-    //         "session2": string,
-    //         "comparison": string
-    //       },
-    //       "education": {
-    //         "session1": string,
-    //         "session2": string,
-    //         "relevance": string
-    //       }
-    //     },
-    //     "recommendation": {
-    //       "recommendedCandidate": "session1" | "session2",
-    //       "primaryReason": string,
-    //       "keyFactors": string[],
-    //       "confidenceLevel": "high" | "medium" | "low"
-    //     },
-    //     "summary": {
-    //       "technicalComparison": string,
-    //       "culturalFit": string,
-    //       "growthPotential": string
-    //     }
-    //   }`;
 
     try {
       const model = this.genAI.getGenerativeModel({ model: 'gemini-pro' });
