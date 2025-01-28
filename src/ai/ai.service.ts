@@ -10,6 +10,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AnalyzeQuestionDto } from './dto/analyze-question.dto';
 import { AnalyzeCandidateDto } from './dto/analyze-candidate.dto';
+import { ComparisonBodyDto } from "./dto/comparison-body.dto";
 
 @Injectable()
 export class AiService {
@@ -134,10 +135,7 @@ export class AiService {
   //   }
   // }
 
-  async generateQuestions(
-    id: string,
-    dto: GenerateQuestionsDto,
-  ): Promise<any> {
+  async generateQuestions(id: string, dto: GenerateQuestionsDto): Promise<any> {
     this.logger.log(`POST: interview/generate-and-add-questions: Started`);
 
     const model = this.genAI.getGenerativeModel({
@@ -193,7 +191,12 @@ export class AiService {
       const content = result.response.text();
 
       // Parse the generated content into JSON
-      let questions: { question: string; type: string; estimated_time: string; explanation:string }[] = [];
+      let questions: {
+        question: string;
+        type: string;
+        estimated_time: string;
+        explanation: string;
+      }[] = [];
 
       try {
         questions = JSON.parse(content);
@@ -221,9 +224,13 @@ export class AiService {
           return this.prisma.question.create({
             data: {
               questionText: q.question,
-              type: q.type.toUpperCase() === 'OPEN-ENDED' ? 'OPEN_ENDED' : 'CODING',
+              type:
+                q.type.toUpperCase() === 'OPEN-ENDED' ? 'OPEN_ENDED' : 'CODING',
               explanation: q.explanation,
-              estimatedTimeMinutes: parseInt(q.estimated_time.match(/\d+/)?.[0] || "0", 10),
+              estimatedTimeMinutes: parseInt(
+                q.estimated_time.match(/\d+/)?.[0] || '0',
+                10,
+              ),
               aiContext: `Generated for ${dto.jobRole} (${dto.skillLevel})`,
               usageFrequency: 0,
               interviewSession: {
@@ -236,16 +243,23 @@ export class AiService {
         }),
       );
 
-      this.logger.log(`POST: interview/generate-and-add-questions: Questions generated and saved successfully`);
+      this.logger.log(
+        `POST: interview/generate-and-add-questions: Questions generated and saved successfully`,
+      );
       return {
         message: 'Questions generated and saved successfully',
         questions,
       };
     } catch (error) {
-      if (error instanceof NotFoundException || error instanceof InternalServerErrorException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof InternalServerErrorException
+      ) {
         throw error;
       }
-      this.logger.error(`POST: interview/generate-and-add-questions: Error: ${error.message}`);
+      this.logger.error(
+        `POST: interview/generate-and-add-questions: Error: ${error.message}`,
+      );
       throw new InternalServerErrorException('Server error occurred');
     }
   }
@@ -428,5 +442,252 @@ export class AiService {
       );
     }
     this.logger.error(`${method}: Prisma error: ${error.message}`);
+  }
+
+  async compareSessions(comparisonBodyDto: ComparisonBodyDto) {
+    try {
+      const sessionId1 = comparisonBodyDto.sessionId1;
+      const sessionId2 = comparisonBodyDto.sessionId2;
+
+      const [session1, session2] = await Promise.all([
+        this.getSessionWithDetails(sessionId1),
+        this.getSessionWithDetails(sessionId2),
+      ]);
+
+      if (!session1 || !session2) {
+        throw new NotFoundException('One or both sessions not found');
+      }
+
+      const comparisonData = {
+        session1: this.formatSessionData(session1),
+        session2: this.formatSessionData(session2),
+      };
+
+      const analysis = await this.generateComparisonAnalysis(comparisonData);
+
+      return {
+        comparison: analysis,
+        rawData: comparisonData
+      };
+    } catch (error) {
+      this.logger.error(`Error comparing sessions: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  private async getSessionWithDetails(sessionId: string) {
+    return this.prisma.interviewSession.findUnique({
+      where: { sessionId },
+      include: {
+        candidate: {
+          include: {
+            user: true
+          }
+        },
+        interview: true,
+        questions: {
+          include: {
+            interviewResponses: {
+              include: {
+                score: true
+              }
+            }
+          }
+        },
+        CategoryScore: {
+          include: {
+            categoryAssignment: {
+              include: {
+                category: true
+              }
+            }
+          }
+        },
+        scheduling: true
+      }
+    });
+  }
+
+  private formatSessionData(session: any) {
+    return {
+      candidate: {
+        name: `${session.candidate.user.firstName} ${session.candidate.user.lastName}`,
+        // experience: session.candidate.profile.experience,
+        // skills: session.candidate.profile.skills,
+        // education: session.candidate.profile.education,
+      },
+      interview: {
+        totalScore: session.score,
+        timeConsumed: session.timeConsumed,
+        categories: session.CategoryScore.map(cs => ({
+          name: cs.categoryAssignment.category.categoryName,
+          score: cs.score,
+          note: cs.note
+        })),
+        responses: session.questions.map(q => ({
+          question: q.questionText,
+          answer: q.interviewResponses?.responseText,
+          score: q.interviewResponses?.score?.score,
+          time: q.interviewResponses?.responseTime
+        }))
+      }
+    };
+  }
+
+  private async generateComparisonAnalysis(data: any) {
+    const prompt = `
+      Analyze these two interview candidates and provide a detailed comparison. 
+      Consider the following factors:
+      - Technical skills (based on coding questions and scores)
+      - Problem-solving approach (based on response times and answer quality)
+      - Communication skills (based on open-ended question responses)
+      - Category-wise performance
+      - Overall interview performance
+      - Experience and education background
+
+      Candidate 1 Data:
+      ${JSON.stringify(data.session1, null, 2)}
+
+      Candidate 2 Data:
+      ${JSON.stringify(data.session2, null, 2)}
+      
+      Provide response in this JSON format:
+      {
+        "comparisonPoints": string[],
+        "summary": string,
+        "recommendedCandidate": "session1" | "session2",
+        "reasons": string[]
+      }
+    `;
+
+    // const prompt2 = `Analyze these two interview candidates and provide a detailed comparison.
+    //   Consider the following factors:
+    //
+    //   1. Technical Skills:
+    //   - Coding question scores
+    //   - Algorithmic complexity handling
+    //   - Language proficiency
+    //   - Technical knowledge depth
+    //
+    //   2. Problem Solving:
+    //   - Approach to complex questions
+    //   - Optimization capabilities
+    //   - Error handling strategies
+    //   - Time efficiency
+    //
+    //   3. Communication Skills:
+    //   - Clarity of explanations
+    //   - Response structure
+    //   - Technical terminology usage
+    //   - Non-technical explanation ability
+    //
+    //   4. Behavioral Attributes:
+    //   - Confidence indicators
+    //   - Stress management
+    //   - Cultural fit indicators
+    //   - Growth mindset signs
+    //
+    //   5. Experience Relevance:
+    //   - Years of relevant experience
+    //   - Key projects/skills matching position
+    //   - Education background relevance
+    //   - Certifications/training
+    //
+    //   6. Quantitative Metrics:
+    //   - Total score comparison
+    //   - Category-wise score breakdown
+    //   - Average response time
+    //   - Question completion rate
+    //
+    //   For each comparison aspect, provide:
+    //   - Metric name
+    //   - Candidate 1 value
+    //   - Candidate 2 value
+    //   - Comparison note
+    //   - Importance level (low/medium/high)
+    //
+    //   Provide response in this JSON format:
+    //   {
+    //     "overallComparison": {
+    //       "totalScore": {
+    //         "session1": number,
+    //         "session2": number,
+    //         "difference": number,
+    //         "percentageDifference": string
+    //       },
+    //       "timeEfficiency": {
+    //         "session1": number,
+    //         "session2": number,
+    //         "timeDifference": string
+    //       }
+    //     },
+    //     "categoryBreakdown": [
+    //       {
+    //         "categoryName": string,
+    //         "metrics": [
+    //           {
+    //             "metricName": string,
+    //             "session1Value": string | number,
+    //             "session2Value": string | number,
+    //             "comparisonNote": string,
+    //             "importance": string
+    //           }
+    //         ]
+    //       }
+    //     ],
+    //     "strengthsWeaknesses": {
+    //       "session1": {
+    //         "strengths": string[],
+    //         "weaknesses": string[]
+    //       },
+    //       "session2": {
+    //         "strengths": string[],
+    //         "weaknesses": string[]
+    //       }
+    //     },
+    //     "experienceAnalysis": {
+    //       "relevantExperience": {
+    //         "session1": string,
+    //         "session2": string,
+    //         "comparison": string
+    //       },
+    //       "education": {
+    //         "session1": string,
+    //         "session2": string,
+    //         "relevance": string
+    //       }
+    //     },
+    //     "recommendation": {
+    //       "recommendedCandidate": "session1" | "session2",
+    //       "primaryReason": string,
+    //       "keyFactors": string[],
+    //       "confidenceLevel": "high" | "medium" | "low"
+    //     },
+    //     "summary": {
+    //       "technicalComparison": string,
+    //       "culturalFit": string,
+    //       "growthPotential": string
+    //     }
+    //   }`;
+
+    try {
+      const model = this.genAI.getGenerativeModel({ model: 'gemini-pro' });
+      const result = await model.generateContent(prompt);
+      const response = await result.response.text();
+
+
+      let analysis;
+      try {
+        analysis = JSON.parse(response);
+      } catch (e) {
+        this.logger.error('Failed to parse Gemini response', e);
+        throw new Error('Failed to parse analysis response');
+      }
+
+      return analysis;
+    } catch (error) {
+      this.logger.error('Gemini API error:', error);
+      throw new Error('Failed to generate comparison analysis');
+    }
   }
 }

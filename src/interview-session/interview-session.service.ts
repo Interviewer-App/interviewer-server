@@ -759,4 +759,51 @@ export class InterviewSessionService {
        throw new InternalServerErrorException("Server error occurred");
      }
   }
+
+  async findCompletedSessionsByInterviewId(interviewId: string) {
+    try {
+
+      const interview = await this.prisma.interview.findUnique({
+        where: { interviewID: interviewId },
+      });
+
+      if (!interview) {
+        this.logger.warn(`GET: Interview with ID ${interviewId} not found`);
+        throw new NotFoundException(`Interview with ID ${interviewId} not found. Please check the interview ID.`);
+      }
+
+      const allInterviewSessions = await this.prisma.interviewSession.findMany({
+        where: {
+          interviewId: interviewId,
+          interviewStatus: 'completed',
+        },
+        select: {
+          sessionId: true,
+          interviewId: true,
+          candidateId: true,
+          interviewStatus: true,
+          score: true,
+          candidate: {
+            include: {
+              user: true,
+            },
+          },
+        },
+      });
+
+      if (!allInterviewSessions || allInterviewSessions.length === 0) {
+        this.logger.warn(`GET: No completed sessions found for interview ID: ${interviewId}`);
+        return [];
+      }
+
+
+      return allInterviewSessions;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`GET: error: ${error}`);
+      throw new InternalServerErrorException('Server error');
+    }
+  }
 }

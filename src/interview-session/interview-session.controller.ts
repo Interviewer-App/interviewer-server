@@ -207,6 +207,21 @@ export class InterviewSessionController {
   getStreamToken(@Query('userId') userId: string) {
     return { token: this.interviewSessionService.createToken(userId) };
   }
+
+  @Get('comparison/:interviewId')
+  @ApiOperation({
+    summary: 'GET ALL COMPLETED SESSIONS LIST BY INTERVIEW ID',
+    description: 'Private endpoint to Get all completed sessions for given interview id. It is allowed only by "company" users'
+  })
+  @ApiResponse({ status: 201, description: 'Created' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
+  @Auth(Role.COMPANY)
+  findCompletedSessionsByInterviewId(@Param('interviewId') interviewId: string) {
+    return this.interviewSessionService.findCompletedSessionsByInterviewId(interviewId);
+  }
+  
   //
   // @Patch(':id')
   // update(@Param('id') id: string, @Body() updateInterviewSessionDto: UpdateInterviewSessionDto) {
