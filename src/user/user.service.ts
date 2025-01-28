@@ -581,5 +581,41 @@ export class UserService {
       throw error;
     }
   }
+
+  async findCompanyDetailsById(companyId: string) {
+    try{
+      const company = await this.prisma.company.findUnique({
+        where:{
+          companyID: companyId,
+        },
+        include: {
+          user: {
+            include: {
+              companyTeam: true,
+            }
+          }
+        }
+      })
+
+      const { user, ...companyDetails } = company;
+      const adminUser = user.filter((user) => {
+        return user.companyTeam.teamRole === 'ADMIN';
+      })
+      if (!company) {
+        throw new NotFoundException(`Company with id ${companyId} not found`);
+      }
+      return {
+        ...companyDetails,
+        adminUser,
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.prismaErrorHanler(error, "Get", companyId);
+      this.logger.error(`GET: error: ${error}`);
+      throw new InternalServerErrorException('Server error');
+    }
+  }
 }
 

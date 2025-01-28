@@ -280,6 +280,11 @@ model Company {
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
   isSurveyCompleted  Boolean         @default(false)
+  linkedInUrl        String?
+  githubUrl          String?
+  facebookUrl        String?
+  twitterUrl         String?
+  discordUrl         String?
   user               User[]
   interviewer        Interviewer[]
   interviews         Interview[]

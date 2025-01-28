@@ -208,4 +208,17 @@ export class UserController {
   findCompanyTeamByCompanyId(@Param('companyId') companyId: string, @Param('page') page: number,@Param('limit') limit: number) {
     return this.userService.findCompanyTeamByCompanyId(companyId, page, limit);
   }
+
+  @Get('company/details/:companyId')
+  @ApiOperation({
+    summary: 'GET COMPANY DETAILS BY COMPANY ID',
+    description: 'Private endpoint to get company details by Id.'
+  })
+  @ApiResponse({status: 200, description: 'Ok'})
+  @ApiResponse({status: 401, description: 'Unauthorized'})
+  @ApiResponse({status: 500, description: 'Server error'})             //Swagger
+  @Auth(Role.COMPANY, Role.CANDIDATE)
+  findCompanyDetailsById(@Param('companyId') companyId: string) {
+    return this.userService.findCompanyDetailsById(companyId);
+  }
 }
