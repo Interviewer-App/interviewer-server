@@ -11,6 +11,7 @@ import { Role } from '@prisma/client';
 import { GenerateQuestionsDto } from './dto/generate-questions.dto';
 import { AnalyzeQuestionDto } from './dto/analyze-question.dto';
 import { AnalyzeCandidateDto } from './dto/analyze-candidate.dto';
+import { ComparisonBodyDto } from "./dto/comparison-body.dto";
 
 
 @ApiBearerAuth()
@@ -61,6 +62,20 @@ export class AiController {
     @Auth(Role.COMPANY)
     analyzeCandidate(@Body() AnalyzecandidateDto: AnalyzeCandidateDto) {
     return this.aiService.analyzeCandidate(AnalyzecandidateDto);
+    }
+
+    @Post('candidate-comparison')
+    @ApiOperation({
+        summary: 'COMPARE TWO CANDIDATES WHO COMPLETED SESSION',
+        description: 'Private endpoint to analyze and compare two candidates who completed the session'
+    })
+    @ApiResponse({ status: 201, description: 'Created'})
+    @ApiResponse({ status: 400, description: 'Bad request' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 500, description: 'Server error' })
+    @Auth(Role.COMPANY)
+    compareCandidate(@Body() comparisonBodyDto: ComparisonBodyDto) {
+        return this.aiService.compareSessions(comparisonBodyDto);
     }
 
 }
