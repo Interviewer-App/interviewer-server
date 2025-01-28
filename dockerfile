@@ -11,6 +11,8 @@ COPY . .
 
 RUN npm install prisma --save-dev
 RUN npx prisma generate
+RUN npx prisma migrate dev
+RUN npx prisma db push
 RUN npm run build
 
 # Final stage
