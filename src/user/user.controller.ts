@@ -196,7 +196,7 @@ export class UserController {
     return this.userService.createCompanyTeamMember(registerTeamMemberDto);
   }
 
-  @Get('company/team/:companyId')
+  @Get('company/team/:page/:limit/:companyId')
   @ApiOperation({
     summary: 'GET COMPANY TEAM MEMBERS BY COMPANY ID',
     description: 'Private endpoint to company team members by company id'
@@ -205,7 +205,7 @@ export class UserController {
   @ApiResponse({status: 401, description: 'Unauthorized'})
   @ApiResponse({status: 500, description: 'Server error'})             //Swagger
   @Auth(Role.COMPANY)
-  findCompanyTeamByCompanyId(@Param('companyId') companyId: string) {
-    return this.userService.findCompanyTeamByCompanyId(companyId);
+  findCompanyTeamByCompanyId(@Param('companyId') companyId: string, @Param('page') page: number,@Param('limit') limit: number) {
+    return this.userService.findCompanyTeamByCompanyId(companyId, page, limit);
   }
 }

@@ -13,8 +13,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { User } from './entities/user.entity';
-import { Role, TeamRole } from "@prisma/client";
-import { take } from "rxjs";
+import { Prisma, Role, TeamRole } from "@prisma/client";
 import { SaveSurveyDto } from "./dto/create-survey.dto";
 import { RegisterTeamMemberDto } from "./dto/register-team-member.dto";
 import { CreateEmailServerDto } from "../email-server/dto/create-email-server.dto";
@@ -518,9 +517,13 @@ export class UserService {
     return password;
   }
 
-  async findCompanyTeamByCompanyId(companyId: string) {
+  async findCompanyTeamByCompanyId(companyId: string, page: number, limit: number) {
     try {
       this.logger.log(`Fetching company team members for company ID: ${companyId}`);
+
+      if (page < 1 || limit < 1) {
+        throw new BadRequestException('Page and limit must be greater than 0');
+      }
 
       const company = await this.prisma.company.findUnique({
         where: { companyID: companyId },
@@ -538,11 +541,10 @@ export class UserService {
         throw new NotFoundException(`Company with ID ${companyId} not found`);
       }
 
-      // Sort team members so that ADMIN comes first
       const sortedTeamMembers = company.user
-        .filter((user) => user.companyTeam) // Filter users with a company team role
+        .filter((user) => user.companyTeam)
         .sort((a, b) => {
-          if (a.companyTeam.teamRole === 'ADMIN') return -1; // ADMIN comes first
+          if (a.companyTeam.teamRole === 'ADMIN') return -1;
           if (b.companyTeam.teamRole === 'ADMIN') return 1;
           return 0;
         })
@@ -554,13 +556,29 @@ export class UserService {
           role: user.companyTeam.teamRole,
         }));
 
+      const startIndex = (page - 1) * limit;
+      const endIndex = page * limit;
+      const paginatedTeamMembers = sortedTeamMembers.slice(startIndex, endIndex);
+
       this.logger.log(`Successfully fetched company team members for company ID: ${companyId}`);
-      return sortedTeamMembers;
+      return {
+        team: paginatedTeamMembers,
+        total: sortedTeamMembers.length,
+        page,
+        limit,
+        totalPages: Math.ceil(sortedTeamMembers.length / limit),
+      };
     } catch (error) {
-
       this.logger.error(`Error fetching company team members for company ID: ${companyId}`, error.stack);
-      throw error;
 
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') {
+          throw new NotFoundException(`Company with ID ${companyId} not found`);
+        }
+        throw new Error('An error occurred while fetching company team members');
+      }
+
+      throw error;
     }
   }
 }
