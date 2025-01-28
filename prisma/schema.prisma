@@ -446,6 +446,7 @@ enum interviewCategory {
 
 enum interviewStatus {
   toBeConducted
+  ongoing
   completed
 }
 

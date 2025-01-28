@@ -12,16 +12,27 @@ import { arrayNotEmpty, isNotEmpty } from "class-validator";
 import { UpdateQuestionDto } from "./dto/update-question.dto";
 import { CreateQuestionDto } from "./dto/create-question.dto";
 // import { ProducerService } from '../kafka/producer/producer.service';
+import { StreamClient } from '@stream-io/node-sdk';
 
 @Injectable()
 export class InterviewSessionService {
 
   private readonly logger = new Logger('InterviewService');
+  private streamClient: StreamClient;
 
   constructor(
     private prisma: PrismaService,
     // private readonly _kafka: ProducerService,
-  ) { }
+  ) { 
+    this.streamClient = new StreamClient(
+      process.env.STREAM_API_KEY,
+      process.env.STREAM_API_SECRET,
+    );
+  }
+
+  createToken(userId: string): string {
+    return this.streamClient.createToken(userId);
+  }
 
   async create(dto: CreateInterviewSessionDto) {
     this.logger.log(`POST: interview/create: New interview started`);
