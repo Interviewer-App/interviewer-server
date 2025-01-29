@@ -18,6 +18,7 @@ import { SaveSurveyDto } from "./dto/create-survey.dto";
 import { RegisterTeamMemberDto } from "./dto/register-team-member.dto";
 import { CreateEmailServerDto } from "../email-server/dto/create-email-server.dto";
 import { EmailServerService } from "../email-server/email-server.service";
+import { UpdateCandidateDto } from "./dto/update-candidate.dto";
 
 
 @Injectable()
@@ -620,6 +621,81 @@ export class UserService {
       this.prismaErrorHanler(error, "Get", companyId);
       this.logger.error(`GET: error: ${error}`);
       throw new InternalServerErrorException('Server error');
+    }
+  }
+
+  async updateCandidateDetailsById(candidateId: string, dto: UpdateCandidateDto) {
+
+    try {
+      const candidate = await this.prisma.candidate.findUnique({
+        where: { profileID: candidateId },
+      });
+
+      if (!candidate) {
+        throw new NotFoundException('Candidate not found');
+      }
+
+      const candidateDetails = await this.prisma.candidate.update({
+        where: {
+          profileID: candidateId,
+        },
+        data: {
+          skillHighlights: dto.skillHighlights,
+          experience: dto.experience,
+          availability: dto.availability,
+          resumeURL: dto.resumeURL,
+          linkedInUrl: dto.linkedInUrl,
+          githubUrl: dto.githubUrl,
+          facebookUrl: dto.facebookUrl,
+          twitterUrl: dto.twitterUrl,
+          discordUrl: dto.discordUrl,
+        },
+        include: {
+          user: true,
+        },
+      });
+
+      const userDetails = await this.prisma.user.update({
+        where: {
+          userID: candidateDetails.user.userID,
+        },
+        data: {
+          firstName: dto.firstName,
+          lastName: dto.lastName,
+          username: dto.username,
+          dob: dto.dob,
+          gender: dto.gender,
+          contactNo: dto.contactNo,
+        },
+        select: {
+          userID: true,
+          firstName: true,
+          lastName: true,
+          username: true,
+          dob: true,
+          gender: true,
+          contactNo: true,
+        }
+      });
+
+      const { user, ...candidateProfile } = candidateDetails;
+
+      return {
+        message: 'Updated candidate details successfully',
+        ...candidateProfile,
+        userDetails,
+      };
+    } catch (error) {
+
+      if (error instanceof NotFoundException) {
+        throw error;
+      } else if (error.code === 'P2025') {
+        throw new NotFoundException('Candidate or user not found');
+      } else if (error.code === 'P2002') {
+        throw new BadRequestException('Unique constraint violation: Data already exists');
+      } else {
+        throw new InternalServerErrorException('Failed to update candidate details');
+      }
     }
   }
 }

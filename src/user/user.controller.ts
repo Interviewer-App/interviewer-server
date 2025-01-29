@@ -10,6 +10,7 @@ import { SaveSurveyDto } from "./dto/create-survey.dto";
 import { LoginResponse } from "../auth/interfaces";
 import { RegisterUserDto } from "../auth/dto/register-user.dto";
 import { RegisterTeamMemberDto } from "./dto/register-team-member.dto";
+import { UpdateCandidateDto } from "./dto/update-candidate.dto";
 
 @ApiBearerAuth()
 @ApiTags('Users')
@@ -220,5 +221,18 @@ export class UserController {
   @Auth(Role.COMPANY, Role.CANDIDATE)
   findCompanyDetailsById(@Param('companyId') companyId: string) {
     return this.userService.findCompanyDetailsById(companyId);
+  }
+
+  @Patch('candidate/details/:candidateId')
+  @ApiOperation({
+    summary: 'UPDATE CANDIDATE DETAILS BY CANDIDATE ID',
+    description: 'Private endpoint to update candidate details by Id.'
+  })
+  @ApiResponse({status: 200, description: 'Ok'})
+  @ApiResponse({status: 401, description: 'Unauthorized'})
+  @ApiResponse({status: 500, description: 'Server error'})             //Swagger
+  @Auth(Role.COMPANY, Role.CANDIDATE)
+  updateCandidateDetailsById(@Param('candidateId') candidateId: string, @Body() updateCandidateDto: UpdateCandidateDto) {
+    return this.userService.updateCandidateDetailsById(candidateId, updateCandidateDto);
   }
 }
