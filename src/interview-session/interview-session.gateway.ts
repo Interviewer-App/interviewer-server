@@ -58,7 +58,7 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
 
     // Notify other participants that someone has joined
     this.server.to(`session-${sessionId}`).emit('participantJoined', { userId, role });
-    
+
     const isStarted = await this.checkSessionStarted(sessionId);
     
     if(isStarted) {
@@ -83,6 +83,25 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
         await this.notifyJoinSession(sessionId);
       }
     }
+  }
+
+  @SubscribeMessage('join-video-session')
+  async handleJoinInterviewVideoSession(
+    @MessageBody() data: { sessionId: string; peerId: string; },
+    @ConnectedSocket() client: Socket
+  ) {
+    const { sessionId, peerId } = data;
+    
+    // Join the specified session room
+    await client.join(sessionId);
+
+    console.log(`Peer ${peerId} joined session ${sessionId}  ============================================================`);
+    
+    // Notify all clients in the room about new peer
+    this.server.to(sessionId).emit('peer-joined', {
+      joinedSessionId: sessionId,
+      peerId: peerId, // Using userId as peerId
+    });
   }
 
   async notifyJoinSession(sessionId: string): Promise<void> {

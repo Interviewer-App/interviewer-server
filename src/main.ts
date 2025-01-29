@@ -40,6 +40,7 @@ export async function bootstrap() {
       origin: [
         'http://localhost:3000',
         'https://interviewappclient.netlify.app',
+        'https://interviewer-web-kappa.vercel.app',
         '*',
       ],
       methods: ['GET','HEAD','PUT','PATCH','POST','DELETE','OPTIONS'],
