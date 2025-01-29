@@ -14,7 +14,6 @@ ENV DATABASE_URL=postgresql://coullax:npg_QtjwuSHzx0d8@ep-lively-band-a2hohwse.e
 
 RUN npm install prisma --save-dev
 RUN npx prisma generate
-RUN npx prisma migrate resolve --applied "20250129064614_uiui"
 RUN npx prisma migrate deploy
 RUN npm run build
 
