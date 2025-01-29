@@ -9,9 +9,11 @@ RUN npm install
 
 COPY . .
 
+ENV DATABASE_URL=postgresql://coullax:npg_QtjwuSHzx0d8@ep-lively-band-a2hohwse.eu-central-1.pg.koyeb.app/koyebdb?sslmode=require&pgbouncer=true&connect_timeout=10&schema=public
+
+
 RUN npm install prisma --save-dev
 RUN npx prisma generate
-# RUN npx prisma migrate resolve --applied "20250128042800_test1222"
 RUN npx prisma migrate deploy
 RUN npm run build
 
