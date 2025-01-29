@@ -1093,4 +1093,38 @@ export class InterviewService {
             throw new InternalServerErrorException('Failed to fetch schedules');
         }
     }
+
+    async getInterviewScheduleStats(interviewId: string) {
+        const interview = await this.prisma.interview.findUnique({
+            where: { interviewID: interviewId },
+        });
+
+        if (!interview) {
+            throw new NotFoundException('Interview not found');
+        }
+
+        const totalSchedules = await this.prisma.scheduling.count({
+            where: { interviewId },
+        });
+
+        const bookedSchedules = await this.prisma.scheduling.count({
+            where: { interviewId, isBooked: true },
+        });
+
+        const completedSchedules = await this.prisma.interviewSession.count({
+            where: { interviewId: interviewId, interviewStatus: 'completed' },
+        });
+
+        const schedulesWithInvitations = await this.prisma.scheduling.count({
+            where: { interviewId, invitation: { isNot: null } },
+        });
+
+        return {
+            interviewId,
+            totalSchedules,
+            bookedSchedules,
+            completedSchedules,
+            schedulesWithInvitations,
+        };
+    }
 }
