@@ -1095,36 +1095,51 @@ export class InterviewService {
     }
 
     async getInterviewScheduleStats(interviewId: string) {
-        const interview = await this.prisma.interview.findUnique({
-            where: { interviewID: interviewId },
-        });
+        try {
 
-        if (!interview) {
-            throw new NotFoundException('Interview not found');
+            if (!interviewId || typeof interviewId !== 'string') {
+                throw new BadRequestException('Invalid interview ID');
+            }
+
+            const interview = await this.prisma.interview.findUnique({
+                where: { interviewID: interviewId },
+            });
+
+            if (!interview) {
+                throw new NotFoundException('Interview not found');
+            }
+
+            const totalSchedules = await this.prisma.scheduling.count({
+                where: { interviewId },
+            });
+
+            const bookedSchedules = await this.prisma.scheduling.count({
+                where: { interviewId, isBooked: true },
+            });
+
+            const completedSchedules = await this.prisma.interviewSession.count({
+                where: { interviewId, interviewStatus: 'completed' },
+            });
+
+            const schedulesWithInvitations = await this.prisma.scheduling.count({
+                where: { interviewId, invitation: { isNot: null } },
+            });
+
+            return {
+                interviewId,
+                totalSchedules,
+                bookedSchedules,
+                completedSchedules,
+                schedulesWithInvitations,
+            };
+        } catch (error) {
+            if (error instanceof NotFoundException || error instanceof BadRequestException) {
+                throw error;
+            } else if (error.code === 'P2025') {
+                throw new NotFoundException('Interview not found');
+            } else {
+                throw new InternalServerErrorException('Failed to fetch interview schedule stats');
+            }
         }
-
-        const totalSchedules = await this.prisma.scheduling.count({
-            where: { interviewId },
-        });
-
-        const bookedSchedules = await this.prisma.scheduling.count({
-            where: { interviewId, isBooked: true },
-        });
-
-        const completedSchedules = await this.prisma.interviewSession.count({
-            where: { interviewId: interviewId, interviewStatus: 'completed' },
-        });
-
-        const schedulesWithInvitations = await this.prisma.scheduling.count({
-            where: { interviewId, invitation: { isNot: null } },
-        });
-
-        return {
-            interviewId,
-            totalSchedules,
-            bookedSchedules,
-            completedSchedules,
-            schedulesWithInvitations,
-        };
     }
 }
