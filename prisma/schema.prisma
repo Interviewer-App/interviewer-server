@@ -214,6 +214,11 @@ model Candidate {
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
   isSurveyCompleted Boolean         @default(false)
+  linkedInUrl       String?
+  githubUrl         String?
+  facebookUrl       String?
+  twitterUrl        String?
+  discordUrl        String?
 
   sessions           InterviewSession[]
   interviews         CandidateOnInterviews[]
