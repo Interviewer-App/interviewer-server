@@ -246,6 +246,11 @@ export class UserService {
           skillHighlights: true,
           experience: true,
           availability: true,
+          linkedInUrl: true,
+          githubUrl: true,
+          facebookUrl: true,
+          twitterUrl: true,
+          discordUrl: true,
           user: {
             select:{
               firstName: true,
