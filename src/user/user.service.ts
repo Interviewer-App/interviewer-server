@@ -19,6 +19,7 @@ import { RegisterTeamMemberDto } from "./dto/register-team-member.dto";
 import { CreateEmailServerDto } from "../email-server/dto/create-email-server.dto";
 import { EmailServerService } from "../email-server/email-server.service";
 import { UpdateCandidateDto } from "./dto/update-candidate.dto";
+import { UpdateCompanyDto } from "./dto/update-company.dto";
 
 
 @Injectable()
@@ -695,6 +696,74 @@ export class UserService {
         throw new BadRequestException('Unique constraint violation: Data already exists');
       } else {
         throw new InternalServerErrorException('Failed to update candidate details');
+      }
+    }
+  }
+
+  async updateCompanyDetailsById(companyId: string, dto: UpdateCompanyDto) {
+    try {
+      const company = await this.prisma.company.findUnique({
+        where: { companyID: companyId },
+        include: {
+          user: {
+            where: {
+              companyTeam: {
+                teamRole: 'ADMIN',
+              },
+            },
+          },
+        },
+      });
+
+      if (!company) {
+        throw new NotFoundException('Company not found');
+      }
+
+      const updatedCompany = await this.prisma.company.update({
+        where: {
+          companyID: companyId,
+        },
+        data: {
+          companyName: dto.companyName,
+          companyDescription: dto.companyDescription,
+          websiteURL: dto.websiteUrl,
+          linkedInUrl: dto.linkedInUrl,
+          githubUrl: dto.githubUrl,
+          facebookUrl: dto.facebookUrl,
+          twitterUrl: dto.twitterUrl,
+          discordUrl: dto.discordUrl,
+        },
+      });
+
+      let updatedAdmin;
+      if (dto.contactNo && company.user.length > 0) {
+        const adminUser = company.user[0];
+        updatedAdmin = await this.prisma.user.update({
+          where: {
+            userID: adminUser.userID,
+          },
+          data: {
+            contactNo: dto.contactNo,
+          },
+        });
+      }
+
+      return {
+        message: 'Updated company details successfully',
+        company: updatedCompany,
+        admin: updatedAdmin,
+      };
+    } catch (error) {
+
+      if (error instanceof NotFoundException) {
+        throw error;
+      } else if (error.code === 'P2025') {
+
+        throw new NotFoundException('Company or admin user not found');
+      } else if (error.code === 'P2002') {
+        throw new BadRequestException('Unique constraint violation: Data already exists');
+      } else {
+        throw new InternalServerErrorException('Failed to update company details');
       }
     }
   }
