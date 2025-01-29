@@ -9,7 +9,7 @@ RUN npm install
 
 COPY . .
 
-ENV DATABASE_URL=postgresql://coullax:npg_QtjwuSHzx0d8@ep-lively-band-a2hohwse.eu-central-1.pg.koyeb.app/koyebdb?sslmode=require&pgbouncer=true&connect_timeout=10&schema=public
+ENV DATABASE_URL=postgresql://coullax:npg_QtjwuSHzx0d8@ep-lively-band-a2hohwse.eu-central-1.pg.koyeb.app/koyebdb?sslmode=require&pgbouncer=true&connect_timeout=10
 
 
 RUN npm install prisma --save-dev
