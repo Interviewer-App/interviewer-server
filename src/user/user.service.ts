@@ -745,13 +745,17 @@ export class UserService {
           data: {
             contactNo: dto.contactNo,
           },
+          select: {
+            userID: true,
+            contactNo: true,
+          }
         });
       }
 
       return {
         message: 'Updated company details successfully',
-        company: updatedCompany,
-        admin: updatedAdmin,
+        ...updatedCompany,
+        ...updatedAdmin,
       };
     } catch (error) {
 
