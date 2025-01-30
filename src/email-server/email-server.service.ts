@@ -54,7 +54,7 @@ export class EmailServerService implements MailService{
     // }
    async sendMailSandBox(email: CreateEmailServerDto): Promise<void> {
      const templateFile = path.join(__dirname, '../../src/email-server/template/notification.pug');
-     const fileImg = path.join(__dirname, '../../public/interview.jpg');
+     const fileImg = path.join(__dirname, '../../src/email-server/public/interview.jpg');
      const imageData = readFileSync(fileImg).toString('base64');
 
      const data = {
