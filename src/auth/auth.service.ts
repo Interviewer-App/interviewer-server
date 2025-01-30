@@ -1,4 +1,10 @@
-import { BadRequestException, Injectable, InternalServerErrorException, Logger  } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException
+} from "@nestjs/common";
 import { JwtService } from '@nestjs/jwt';
 
 import * as bcrypt from 'bcrypt';
@@ -11,6 +17,8 @@ import { User } from 'src/user/entities/user.entity';
 import { Role, TeamRole } from "@prisma/client";
 import { first, last } from 'rxjs';
 import { ProviderUserDto } from './dto/provider-user.dto';
+import { CreateEmailServerDto } from "../email-server/dto/create-email-server.dto";
+import { EmailServerService } from "../email-server/email-server.service";
 
 
 @Injectable()
@@ -20,8 +28,8 @@ export class AuthService {
 
   constructor(
     private prisma: PrismaService,
-    private readonly jwtService: JwtService
-
+    private readonly jwtService: JwtService,
+    private emailService: EmailServerService
   ) { }
 
 
@@ -416,6 +424,95 @@ export class AuthService {
   }
 
 
+  async forgotPassword(email: string) {
+    this.logger.log(`POST: user/forgot-password: Forgot password request started for email: ${email}`);
+
+    try {
+      if (!email || typeof email !== 'string' ) {
+        this.logger.warn(`POST: user/forgot-password: Invalid email format: ${email}`);
+        throw new BadRequestException('Invalid email format');
+      }
+
+      email = email.toLowerCase().trim();
+
+
+      const existingUser = await this.prisma.user.findUnique({
+        where: { email: email },
+      });
+
+      if (!existingUser) {
+        this.logger.warn(`POST: user/forgot-password: User not found: ${email}`);
+        throw new NotFoundException('User with this email not found');
+      }
+
+
+      const password = this.generateRandomPassword();
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+
+      const user = await this.prisma.user.update({
+        where: {
+          email: email,
+        },
+        data: {
+          password: hashedPassword,
+        },
+      });
+
+      if (user) {
+        const message = `
+          Dear ${user.firstName} ${user.lastName},
+          
+          Your password has been updated due to a forgot password request:
+          Email: ${user.email}
+          Password: ${password}
+          
+          Please use these credentials to log in.
+          
+          Best regards,
+          Admin Team
+        `;
+
+        const emailDto = new CreateEmailServerDto();
+        emailDto.body = message;
+        emailDto.to = user.email;
+        emailDto.subject = `Your updated new password`;
+
+        await this.emailService.sendMailSandBox(emailDto);
+
+        this.logger.log(`POST: user/forgot-password: Password reset successfully for email: ${email}`);
+
+        return {
+          message: `Mr./Mrs. ${user.firstName}, Your password has been reset successfully. Check your email for the new password.`,
+          user: user.email,
+        };
+      }
+    } catch (error) {
+      this.logger.error(`POST: user/forgot-password: Error occurred: ${error.message}`);
+
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      } else {
+
+        throw new InternalServerErrorException('Failed to process forgot password request');
+      }
+    }
+  }
+
+  private validateEmail(email: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
+  
+
+  private generateRandomPassword(): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()';
+    let password = '';
+    for (let i = 0; i < 12; i++) {
+      password += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return password;
+  }
 }
 
 

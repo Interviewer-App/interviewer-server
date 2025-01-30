@@ -10,6 +10,7 @@ import { LoginUserDto } from './dto/login-user.dto';
 import { User } from 'src/user/entities/user.entity';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { ProviderUserDto } from './dto/provider-user.dto';
+import { ForgotPasswordDto } from "./dto/forgot-password.dto";
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -97,6 +98,18 @@ export class AuthController {
     @Param('email') email: string
   ){
     return this.authService.userAvailability(email);
+  }
+
+  @Post('forgot-password')
+  @ApiOperation({
+    summary: 'FORGOT PASSWORD',
+    description: 'Public endpoint to reset forgot password'
+  })
+  @ApiResponse({status: 200, description: 'Ok'})
+  @ApiResponse({status: 400, description: 'Bad request'})
+  @ApiResponse({status: 500, description: 'Server error'})
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    return await this.authService.forgotPassword(forgotPasswordDto.email);
   }
 
 
