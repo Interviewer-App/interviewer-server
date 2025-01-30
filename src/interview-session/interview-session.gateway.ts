@@ -519,10 +519,8 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
   ) {
     const { sessionId, userId } = data;
 
-    const question = this.fetchQuestionsForUser(sessionId);
-    if(!question) {
-      await this.updateSessionStatus(sessionId);
-    }
+    // const question = this.fetchQuestionsForUser(sessionId);
+    await this.updateSessionStatus(sessionId);
 
     const totalScore = await this.calculateTotalScore(sessionId);
     this.logger.log(`Total score calculated successfully: ${JSON.stringify(totalScore)}`);
