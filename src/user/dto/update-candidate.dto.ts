@@ -5,6 +5,7 @@ import {
   IsUrl,
   IsDateString,
   IsPhoneNumber,
+  ValidateIf,
 } from 'class-validator';
 
 export class UpdateCandidateDto {
@@ -15,6 +16,7 @@ export class UpdateCandidateDto {
     type: String,
   })
   @IsOptional()
+  @ValidateIf((obj, value) => value !== "")
   @IsString()
   firstName?: string;
 
@@ -25,6 +27,7 @@ export class UpdateCandidateDto {
     type: String,
   })
   @IsOptional()
+  @ValidateIf((obj, value) => value !== "")
   @IsString()
   lastName?: string;
 
@@ -35,6 +38,7 @@ export class UpdateCandidateDto {
     type: String,
   })
   @IsOptional()
+  @ValidateIf((obj, value) => value !== "")
   @IsString()
   username?: string;
 
@@ -46,6 +50,7 @@ export class UpdateCandidateDto {
     example: "2000-12-31T12:00:00Z",
   })
   @IsOptional()
+  @ValidateIf((obj, value) => value !== "")
   @IsDateString()
   dob?: string;
 
@@ -56,6 +61,7 @@ export class UpdateCandidateDto {
     type: String,
   })
   @IsOptional()
+  @ValidateIf((obj, value) => value !== "")
   @IsString()
   gender?: string;
 
@@ -66,6 +72,7 @@ export class UpdateCandidateDto {
     type: String,
   })
   @IsOptional()
+  @ValidateIf((obj, value) => value !== "")
   @IsPhoneNumber()
   contactNo?: string;
 
@@ -76,6 +83,7 @@ export class UpdateCandidateDto {
     type: String,
   })
   @IsOptional()
+  @ValidateIf((obj, value) => value !== "")
   @IsString()
   skillHighlights?: string;
 
@@ -86,6 +94,7 @@ export class UpdateCandidateDto {
     type: String,
   })
   @IsOptional()
+  @ValidateIf((obj, value) => value !== "")
   @IsString()
   experience?: string;
 
@@ -96,6 +105,7 @@ export class UpdateCandidateDto {
     type: String,
   })
   @IsOptional()
+  @ValidateIf((obj, value) => value !== "")
   @IsString()
   availability?: string;
 
@@ -106,6 +116,7 @@ export class UpdateCandidateDto {
     type: String,
   })
   @IsOptional()
+  @ValidateIf((obj, value) => value !== "")
   @IsUrl()
   resumeURL?: string;
 
@@ -116,6 +127,7 @@ export class UpdateCandidateDto {
     type: String,
   })
   @IsOptional()
+  @ValidateIf((obj, value) => value !== "")
   @IsUrl()
   linkedInUrl?: string;
 
@@ -126,6 +138,7 @@ export class UpdateCandidateDto {
     type: String,
   })
   @IsOptional()
+  @ValidateIf((obj, value) => value !== "")
   @IsUrl()
   githubUrl?: string;
 
@@ -136,6 +149,7 @@ export class UpdateCandidateDto {
     type: String,
   })
   @IsOptional()
+  @ValidateIf((obj, value) => value !== "")
   @IsUrl()
   facebookUrl?: string;
 
@@ -146,6 +160,7 @@ export class UpdateCandidateDto {
     type: String,
   })
   @IsOptional()
+  @ValidateIf((obj, value) => value !== "")
   @IsUrl()
   twitterUrl?: string;
 
@@ -156,6 +171,7 @@ export class UpdateCandidateDto {
     type: String,
   })
   @IsOptional()
+  @ValidateIf((obj, value) => value !== "")
   @IsUrl()
   discordUrl?: string;
 }

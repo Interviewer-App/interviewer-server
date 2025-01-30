@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsOptional, IsPhoneNumber, IsString, IsUrl } from "class-validator";
+import { IsOptional, IsPhoneNumber, IsString, IsUrl, ValidateIf } from "class-validator";
 
 export class UpdateCompanyDto {
   @ApiProperty({
@@ -9,6 +9,7 @@ export class UpdateCompanyDto {
     type: String,
   })
   @IsOptional()
+  @ValidateIf((obj, value) => value !== "")
   @IsString()
   companyName?: string;
 
@@ -19,6 +20,7 @@ export class UpdateCompanyDto {
     type: String,
   })
   @IsOptional()
+  @ValidateIf((obj, value) => value !== "")
   @IsString()
   companyDescription?: string;
 
@@ -29,9 +31,9 @@ export class UpdateCompanyDto {
     type: String,
   })
   @IsOptional()
+  @ValidateIf((obj, value) => value !== "")
   @IsPhoneNumber()
   contactNo?: string;
-
 
   @ApiProperty({
     description: 'Website URL of the company',
@@ -40,6 +42,7 @@ export class UpdateCompanyDto {
     type: String,
   })
   @IsOptional()
+  @ValidateIf((obj, value) => value !== "")
   @IsUrl()
   websiteUrl?: string;
 
@@ -50,6 +53,7 @@ export class UpdateCompanyDto {
     type: String,
   })
   @IsOptional()
+  @ValidateIf((obj, value) => value !== "")
   @IsUrl()
   linkedInUrl?: string;
 
@@ -60,6 +64,7 @@ export class UpdateCompanyDto {
     type: String,
   })
   @IsOptional()
+  @ValidateIf((obj, value) => value !== "")
   @IsUrl()
   githubUrl?: string;
 
@@ -70,6 +75,7 @@ export class UpdateCompanyDto {
     type: String,
   })
   @IsOptional()
+  @ValidateIf((obj, value) => value !== "")
   @IsUrl()
   facebookUrl?: string;
 
@@ -80,6 +86,7 @@ export class UpdateCompanyDto {
     type: String,
   })
   @IsOptional()
+  @ValidateIf((obj, value) => value !== "")
   @IsUrl()
   twitterUrl?: string;
 
@@ -90,6 +97,7 @@ export class UpdateCompanyDto {
     type: String,
   })
   @IsOptional()
+  @ValidateIf((obj, value) => value !== "")
   @IsUrl()
   discordUrl?: string;
 }
