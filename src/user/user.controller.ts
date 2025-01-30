@@ -198,6 +198,20 @@ export class UserController {
     return this.userService.createCompanyTeamMember(registerTeamMemberDto);
   }
 
+  @Delete('delete/team/:userId')
+  @ApiOperation({
+    summary: 'DELETE TEAM MEMBER BY ID',
+    description: 'Private endpoint to delete team member by Id. <ul><li>The "user" role is permitted to remove only their own information.</li><li>The "admin" role has the privilege to delete any user</li></ul>'
+  })
+  @ApiOkResponse({content: {"application/json": {example: {"message": "User deleted"}}}})
+  @ApiResponse({status: 400, description: 'Bad request'})
+  @ApiResponse({status: 401, description: 'Unauthorized'})
+  @ApiResponse({status: 500, description: 'Server error'})             //Swagger
+  @Auth(Role.ADMIN, Role.COMPANY)
+  deleteMember(@Param('userId') id: string) {
+    return this.userService.deleteMember(id);
+  }
+
   @Get('company/team/:page/:limit/:companyId')
   @ApiOperation({
     summary: 'GET COMPANY TEAM MEMBERS BY COMPANY ID',

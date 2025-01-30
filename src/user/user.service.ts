@@ -1,5 +1,5 @@
 import {
-  BadRequestException,
+  BadRequestException, ForbiddenException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -769,6 +769,51 @@ export class UserService {
       } else {
         throw new InternalServerErrorException('Failed to update company details');
       }
+    }
+  }
+
+  async deleteMember(id: string) {
+    try {
+
+      const companyTeamMember = await this.prisma.companyTeam.findUnique({
+        where: {
+          userID: id,
+        },
+        select: {
+          companyTeamId: true,
+          teamRole: true,
+        },
+      });
+
+      if (companyTeamMember && companyTeamMember.teamRole !== TeamRole.ADMIN) {
+        // Step 3: Delete the CompanyTeam entry
+        await this.prisma.companyTeam.delete({
+          where: {
+            companyTeamId: companyTeamMember.companyTeamId,
+          },
+        });
+
+        const deletedUser = await this.prisma.user.delete({
+          where: {
+            userID: id,
+          },
+          select: {
+            userID: true,
+            email: true,
+          },
+        });
+
+        this.logger.warn(`DELETE: ${JSON.stringify(deletedUser)}`);
+        return { message: "User deleted" };
+      } else {
+        // If the user is an ADMIN or not part of a CompanyTeam, do not delete
+        this.logger.warn(`DELETE: User with ID ${id} is an ADMIN or not part of a CompanyTeam. Deletion aborted.`);
+        throw new ForbiddenException('Cannot delete ADMIN users or users not part of a CompanyTeam.');
+      }
+    } catch (error) {
+      this.prismaErrorHanler(error, "DELETE", id);
+      this.logger.error(`DELETE: error: ${error}`);
+      throw new InternalServerErrorException('Server error');
     }
   }
 }
