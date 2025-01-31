@@ -16,6 +16,7 @@ import { CategoryModule } from './category/category.module';
 import { EmailServerModule } from './email-server/email-server.module';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { PugAdapter } from '@nestjs-modules/mailer/dist/adapters/pug.adapter';
+import { UploadModule } from './upload/upload.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { PugAdapter } from '@nestjs-modules/mailer/dist/adapters/pug.adapter';
         },
       },
     }),
+    UploadModule,
     // KafkaModule,
   ],
   controllers:[AppController],
