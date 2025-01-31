@@ -1,7 +1,7 @@
-import { Controller, Post, UploadedFile, UseInterceptors, Param, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Post, UploadedFile, UseInterceptors, Param, ParseUUIDPipe, Get } from "@nestjs/common";
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadService } from './upload.service';
-import { ApiConsumes, ApiBody, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiConsumes, ApiBody, ApiParam, ApiResponse, ApiTags, ApiOperation } from "@nestjs/swagger";
 
 @ApiTags('Upload') // Add a tag for Swagger documentation
 @Controller('upload')
@@ -38,5 +38,15 @@ export class UploadController {
     @Param('candidateId') candidateId: string,
   ) {
     return await this.fileUploadService.uploadFile(file, candidateId);
+  }
+
+  @Get('resume-url/:candidateId')
+  @ApiOperation({ summary: 'Get the resume URL of a candidate by profileID' })
+  @ApiResponse({ status: 200, description: 'Resume URL fetched successfully', type: String })
+  @ApiResponse({ status: 404, description: 'Candidate not found' })
+  async getResumeUrl(@Param('candidateId') candidateId: string) {
+
+      return await this.fileUploadService.getResumeUrl(candidateId);
+
   }
 }

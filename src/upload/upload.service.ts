@@ -70,4 +70,25 @@ export class UploadService {
       throw new InternalServerErrorException('Failed to upload file. Please try again later.');
     }
   }
+
+  async getResumeUrl(profileID: string): Promise<string> {
+    if (!profileID || typeof profileID !== 'string') {
+      throw new BadRequestException('Invalid profileID');
+    }
+
+    const candidate = await this.prisma.candidate.findUnique({
+      where: { profileID },
+      select: { resumeURL: true },
+    });
+
+    if (!candidate) {
+      throw new NotFoundException(`Candidate with profileID ${profileID} not found`);
+    }
+
+    if (!candidate.resumeURL) {
+      throw new NotFoundException(`Resume URL not found for candidate with profileID ${profileID}`);
+    }
+
+    return candidate.resumeURL;
+  }
 }
