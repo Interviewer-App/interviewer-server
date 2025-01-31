@@ -11,6 +11,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AnalyzeQuestionDto } from './dto/analyze-question.dto';
 import { AnalyzeCandidateDto } from './dto/analyze-candidate.dto';
 import { ComparisonBodyDto } from "./dto/comparison-body.dto";
+import { AnalyzeCvDto } from "./dto/analyze-cv.dto";
 
 @Injectable()
 export class AiService {
@@ -610,5 +611,36 @@ export class AiService {
       this.logger.error('Gemini API error:', error);
       throw new Error('Failed to generate comparison analysis');
     }
+  }
+
+  async analyzeCV(dto: AnalyzeCvDto) {
+    const model = this.genAI.getGenerativeModel({
+      model: 'gemini-2.0-flash-exp',
+    });
+
+    const generationConfig = {
+      temperature: 1,
+      topP: 0.95,
+      topK: 40,
+      maxOutputTokens: 8192,
+      responseMimeType: 'application/json',
+    };
+
+    const prompt = `
+          Please refer this URL first
+          URL-https://storage.googleapis.com/inerview_app_candidate_cv/1738311621556_Resume.pdf
+          give me brief introduction about this content
+        `;
+
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig,
+    });
+
+    const content = result.response.text();
+
+    const response = JSON.parse(content);
+
+    return response;
   }
 }

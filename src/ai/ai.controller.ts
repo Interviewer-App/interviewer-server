@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param } from '@nestjs/common';
+import { Controller, Post, Body, Param, Get } from "@nestjs/common";
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -12,6 +12,7 @@ import { GenerateQuestionsDto } from './dto/generate-questions.dto';
 import { AnalyzeQuestionDto } from './dto/analyze-question.dto';
 import { AnalyzeCandidateDto } from './dto/analyze-candidate.dto';
 import { ComparisonBodyDto } from "./dto/comparison-body.dto";
+import { AnalyzeCvDto } from "./dto/analyze-cv.dto";
 
 
 @ApiBearerAuth()
@@ -76,6 +77,20 @@ export class AiController {
     @Auth(Role.COMPANY)
     compareCandidate(@Body() comparisonBodyDto: ComparisonBodyDto) {
         return this.aiService.compareSessions(comparisonBodyDto);
+    }
+
+    @Post('analyze-cv')
+    @ApiOperation({
+        summary: 'analyze cv',
+        description: 'Private endpoint to analyze cv.'
+    })
+    @ApiResponse({ status: 201, description: 'Created' })
+    @ApiResponse({ status: 400, description: 'Bad request' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
+    @Auth(Role.COMPANY, Role.CANDIDATE)
+    analyzeCV(@Body() dto: AnalyzeCvDto) {
+        return this.aiService.analyzeCV(dto);
     }
 
 }
