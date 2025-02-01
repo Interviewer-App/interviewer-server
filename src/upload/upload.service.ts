@@ -2,6 +2,8 @@ import { BadRequestException, Injectable, InternalServerErrorException, NotFound
 import { Storage } from '@google-cloud/storage';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from "../prisma/prisma.service";
+import { AiService } from "../ai/ai.service";
+import { AnalyzeCvDto } from "../ai/dto/analyze-cv.dto";
 
 @Injectable()
 export class UploadService {
@@ -10,7 +12,8 @@ export class UploadService {
 
   constructor(
     private configService: ConfigService,
-    private readonly prisma: PrismaService,) {
+    private readonly prisma: PrismaService,
+    private aiService: AiService) {
     this.storage = new Storage({
       keyFilename: this.configService.get<string>(
         'GOOGLE_APPLICATION_CREDENTIALS',
@@ -59,7 +62,13 @@ export class UploadService {
         data: { resumeURL: fileUrl },
       });
 
-      return { message: 'File uploaded successfully', fileUrl, candidate: updatedCandidate };
+      const analyzeCvDto = new AnalyzeCvDto();
+      analyzeCvDto.Url = fileUrl;
+      analyzeCvDto.candidateId = candidateId;
+
+      const analyzeCv = await this.aiService.analyzeCV(analyzeCvDto);
+
+      return { message: 'File uploaded successfully', fileUrl, candidate: updatedCandidate, analyzeCv };
     } catch (error) {
       console.error('Error uploading file:', error);
 

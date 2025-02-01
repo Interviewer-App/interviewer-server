@@ -755,7 +755,6 @@ export class AiService {
 
       try {
         const parsedResponse = JSON.parse(content);
-        // Validate response structure
         if (!parsedResponse.description || typeof parsedResponse.description !== 'string') {
           throw new Error('Invalid response structure');
         }
