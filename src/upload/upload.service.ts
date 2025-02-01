@@ -71,14 +71,16 @@ export class UploadService {
     }
   }
 
-  async getResumeUrl(profileID: string): Promise<string> {
+  async getResumeUrl(profileID: string): Promise<any> {
     if (!profileID || typeof profileID !== 'string') {
       throw new BadRequestException('Invalid profileID');
     }
 
     const candidate = await this.prisma.candidate.findUnique({
       where: { profileID },
-      select: { resumeURL: true },
+      include: {
+        candidateAnalysis: true,
+      }
     });
 
     if (!candidate) {
@@ -89,6 +91,9 @@ export class UploadService {
       throw new NotFoundException(`Resume URL not found for candidate with profileID ${profileID}`);
     }
 
-    return candidate.resumeURL;
+    return {
+      url: candidate.resumeURL,
+      ...candidate.candidateAnalysis
+    };
   }
 }

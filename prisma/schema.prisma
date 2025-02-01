@@ -226,6 +226,21 @@ model Candidate {
   userServey         CandidateServey[]
   invitations        CandidateInvitation[]
   Scheduling         Scheduling[]
+  candidateAnalysis  CandidateAnalysis?
+}
+
+model CandidateAnalysis {
+  id          String    @id @default(cuid())
+  candidateID String    @unique
+  candidate   Candidate @relation(fields: [candidateID], references: [profileID])
+  summary     String?
+  skills      String[]
+  experience  String[]
+  education   String[]
+  contactInfo Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model CandidateServey {

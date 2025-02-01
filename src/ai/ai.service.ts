@@ -618,10 +618,18 @@ export class AiService {
 
   async analyzeCV(dto: AnalyzeCvDto) {
     try {
-      // 1. Download the PDF from the URL
+
+      const candidate = await this.prisma.candidate.findUnique({
+        where: {
+          profileID: dto.candidateId
+        }
+      })
+      if(!candidate) {
+        this.logger.warn(`No candidate found for this given Candidate ID ${dto.candidateId}`);
+        throw new NotFoundException(`No candidate found for this given Candidate ID ${dto.candidateId}`)
+      }
       const response = await axios.get(dto.Url, { responseType: 'arraybuffer' });
 
-      // 2. Extract text from PDF
       const pdfData = await pdfParse(response.data);
       const extractedText = pdfData.text;
 
@@ -629,48 +637,66 @@ export class AiService {
         throw new Error("PDF extraction failed or content is too short.");
       }
 
-      // 3. Initialize the Gemini model
       const model = this.genAI.getGenerativeModel({
         model: 'gemini-2.0-flash-exp',
       });
 
-      // 4. Create prompt with stricter JSON enforcement
       const prompt = `
-        Analyze the following CV and return only valid JSON. Do not include explanations, code blocks, or extra text.
+      Analyze the following CV and return only valid JSON. Do not include explanations, code blocks, or extra text.
 
-        CV Content:
-        ${extractedText}
+      CV Content:
+      ${extractedText}
 
-        JSON Output Format:
-        {
-            "summary": "Brief overview of the candidate",
-            "skills": ["Skill 1", "Skill 2"],
-            "experience": ["Job 1", "Job 2"],
-            "education": ["Degree 1", "Degree 2"],
-            "contact_info": {
-                "email": "example@example.com",
-                "phone": "123456789"
-            }
-        }
-        `;
+      JSON Output Format:
+      {
+          "summary": "Brief overview of the candidate",
+          "skills": ["Skill 1", "Skill 2"],
+          "experience": ["Job 1", "Job 2"],
+          "education": ["Degree 1", "Degree 2"],
+          "contact_info": {
+              "email": "example@example.com",
+              "phone": "123456789"
+          }
+      }
+      `;
 
-      // 5. Generate response using Gemini
       const result = await model.generateContent({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
       });
 
-      // 6. Get text response
       const content = result.response.text();
       console.log("Raw AI Response:", content); // Debugging
 
-      // 7. Clean and parse JSON
       const cleanedContent = content.replace(/```json|```/g, '').trim();
+      const analysisResult = JSON.parse(cleanedContent);
 
-      return JSON.parse(cleanedContent);
+      const candidateAnalysis = await this.prisma.candidateAnalysis.upsert({
+        where: { candidateID: dto.candidateId },
+        update: {
+          summary: analysisResult.summary,
+          skills: analysisResult.skills,
+          experience: analysisResult.experience,
+          education: analysisResult.education,
+          contactInfo: analysisResult.contact_info,
+        },
+        create: {
+          candidateID: dto.candidateId,
+          summary: analysisResult.summary,
+          skills: analysisResult.skills,
+          experience: analysisResult.experience,
+          education: analysisResult.education,
+          contactInfo: analysisResult.contact_info,
+        },
+      });
+
+      return candidateAnalysis;
 
     } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
       console.error("Error analyzing CV:", error);
-      throw new Error("Failed to analyze CV");
+      throw new InternalServerErrorException("Failed to analyze CV");
     }
   }
 
