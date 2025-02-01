@@ -13,6 +13,7 @@ import { AnalyzeQuestionDto } from './dto/analyze-question.dto';
 import { AnalyzeCandidateDto } from './dto/analyze-candidate.dto';
 import { ComparisonBodyDto } from "./dto/comparison-body.dto";
 import { AnalyzeCvDto } from "./dto/analyze-cv.dto";
+import { GenerateDescriptionDto } from "./dto/generate-description.dto";
 
 
 @ApiBearerAuth()
@@ -87,10 +88,24 @@ export class AiController {
     @ApiResponse({ status: 201, description: 'Created' })
     @ApiResponse({ status: 400, description: 'Bad request' })
     @ApiResponse({ status: 401, description: 'Unauthorized' })
-    @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
+    @ApiResponse({ status: 500, description: 'Server error' })
     @Auth(Role.COMPANY, Role.CANDIDATE)
     analyzeCV(@Body() dto: AnalyzeCvDto) {
         return this.aiService.analyzeCV(dto);
+    }
+
+    @Post('generate-description')
+    @ApiOperation({
+        summary: 'GENERATE DESCRIPTION FOR INTERVIEW',
+        description: 'Private endpoint to generate description.'
+    })
+    @ApiResponse({ status: 201, description: 'Created' })
+    @ApiResponse({ status: 400, description: 'Bad request' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 500, description: 'Server error' })
+    @Auth(Role.COMPANY)
+    generateDescription(@Body() dto: GenerateDescriptionDto) {
+        return this.aiService.generateDescription(dto);
     }
 
 }

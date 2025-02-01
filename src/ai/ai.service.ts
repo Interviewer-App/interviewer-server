@@ -12,6 +12,7 @@ import { AnalyzeQuestionDto } from './dto/analyze-question.dto';
 import { AnalyzeCandidateDto } from './dto/analyze-candidate.dto';
 import { ComparisonBodyDto } from "./dto/comparison-body.dto";
 import { AnalyzeCvDto } from "./dto/analyze-cv.dto";
+import { GenerateDescriptionDto } from "./dto/generate-description.dto";
 
 @Injectable()
 export class AiService {
@@ -642,5 +643,81 @@ export class AiService {
     const response = JSON.parse(content);
 
     return response;
+  }
+
+  async generateDescription(dto: GenerateDescriptionDto): Promise<any> {
+    this.logger.log(`POST: interview/generate-description: Started`);
+    const model = this.genAI.getGenerativeModel({
+      model: 'gemini-2.0-flash-exp',
+    });
+    const generationConfig = {
+      temperature: 0.7,
+      topP: 0.95,
+      topK: 40,
+      maxOutputTokens: 8192,
+      responseMimeType: 'application/json',
+    };
+
+    const usersDescription = dto.description;
+    try {
+      const prompt = `
+        Analyze the following job position description and generate a comprehensive, professional job description 
+        formatted in HTML with JSON encoding. The description should be visually appealing and include:
+
+        Required sections:
+        1. <h2>Position Overview</h2> - Brief introduction about the role
+        2. <h2>Key Responsibilities</h2> - Bullet points of core duties
+        3. <h2>Technical Requirements</h2> - Bullet points of technical skills/technologies
+        4. <h2>Qualifications</h2> - Bullet points of education/experience
+        5. <h2>Preferred Skills</h2> - Bullet points of nice-to-have qualifications
+
+        Formatting rules:
+        - Use <h2> for section headings
+        - Use <ul> and <li> for bullet points
+        - Use <b> for important terms/technologies
+        - Maintain professional tone
+        - Avoid markdown, use only specified HTML tags
+        - Ensure proper HTML nesting and formatting
+
+        Input description: "${usersDescription}"
+
+        Respond ONLY with valid JSON containing the HTML in a 'description' field. 
+
+        Example response format:
+        {
+          "description": "<h2>Position Overview</h2><p>We are seeking...</p><h2>Key Responsibilities</h2><ul><li><b>Develop</b> web applications using...</li></ul>"
+        }
+      `;
+
+      const result = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: generationConfig,
+      });
+
+      const content = result.response.text();
+      this.logger.debug('Generated content:', content);
+
+      try {
+        const parsedResponse = JSON.parse(content);
+        // Validate response structure
+        if (!parsedResponse.description || typeof parsedResponse.description !== 'string') {
+          throw new Error('Invalid response structure');
+        }
+        return parsedResponse;
+      } catch (parseError) {
+        this.logger.error(
+          'Failed to parse response into JSON format',
+          parseError.message,
+          { content }
+        );
+        throw new InternalServerErrorException('Invalid response format from AI service');
+      }
+    } catch (error) {
+      this.logger.error(
+        `POST: interview/generate-description: Error occurred: ${error.message}`,
+        error.stack
+      );
+      throw new InternalServerErrorException('Failed to generate job description');
+    }
   }
 }
