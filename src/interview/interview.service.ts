@@ -1142,4 +1142,84 @@ export class InterviewService {
             }
         }
     }
+
+    async getBookedInterviewSchedules(interviewId: string) {
+        if (!interviewId || typeof interviewId !== 'string') {
+            throw new Error('Invalid interviewId provided');
+        }
+
+        const interview = await this.prisma.interview.findUnique({
+            where: { interviewID: interviewId },
+        });
+
+        if (!interview) {
+            throw new NotFoundException('Interview not found');
+        }
+        try {
+            const schedules = await this.prisma.scheduling.findMany({
+                where: {
+                    interviewId,
+                    isBooked: true,
+                    candidateId: { not: null },
+                },
+                include: {
+                    candidate: {
+                        include: {
+                            user: true
+                        }
+                    },
+                    invitation: {
+                        select: {
+                            invitationID: true,
+                            status: true,
+                            sentAt: true,
+                        },
+                    },
+                },
+            });
+
+            if (!schedules || schedules.length === 0) {
+                return {
+                    success: true,
+                    message: 'No booked schedules found for this interview',
+                    data: [],
+                };
+            }
+
+
+            const formattedSchedules = schedules.map((schedule) => ({
+                scheduleID: schedule.scheduleID,
+                startTime: schedule.startTime,
+                endTime: schedule.endTime,
+                isBooked: schedule.isBooked,
+                candidate: schedule.candidate ? {
+                    candidateId: schedule.candidate.profileID,
+                    fullName: `${schedule.candidate.user.firstName} ${schedule.candidate.user.lastName}`,
+                    email: schedule.candidate.user.email,
+                    phoneNumber: schedule.candidate.user.contactNo,
+                } : null,
+                invitationStatus: schedule.invitation ? {
+                    isInvitationSent: true,
+                    status: schedule.invitation.status,
+                    sentAt: schedule.invitation.sentAt,
+                } : {
+                    isInvitationSent: false,
+                    status: 'NOT_SENT',
+                    sentAt: null,
+                },
+            }));
+
+            return {
+                message: 'Booked schedules retrieved successfully',
+                data: formattedSchedules,
+            };
+        } catch (error) {
+            console.error('Error in getBookedInterviewSchedules:', error);
+
+            if (error instanceof NotFoundException || error instanceof BadRequestException) {
+                throw error;
+            }
+            throw new InternalServerErrorException('Failed to retrieve booked schedules');
+        }
+    }
 }
