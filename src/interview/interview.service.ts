@@ -1143,7 +1143,10 @@ export class InterviewService {
         }
     }
 
-    async getBookedInterviewSchedules(interviewId: string) {
+    async getBookedInterviewSchedules(interviewId: string, page: number, limit: number) {
+        const skip = (page - 1) * limit;
+        const take = Number(limit);
+
         if (!interviewId || typeof interviewId !== 'string') {
             throw new Error('Invalid interviewId provided');
         }
@@ -1157,6 +1160,8 @@ export class InterviewService {
         }
         try {
             const schedules = await this.prisma.scheduling.findMany({
+                skip,
+                take,
                 where: {
                     interviewId,
                     isBooked: true,
@@ -1186,6 +1191,14 @@ export class InterviewService {
                 };
             }
 
+            const total = await this.prisma.scheduling.count({
+                where: {
+                    interviewId,
+                    isBooked: true,
+                    candidateId: { not: null },
+                }
+              }
+            );
 
             const formattedSchedules = schedules.map((schedule) => ({
                 scheduleID: schedule.scheduleID,
@@ -1212,6 +1225,10 @@ export class InterviewService {
             return {
                 message: 'Booked schedules retrieved successfully',
                 data: formattedSchedules,
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
             };
         } catch (error) {
             console.error('Error in getBookedInterviewSchedules:', error);

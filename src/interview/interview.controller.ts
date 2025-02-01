@@ -265,7 +265,7 @@ export class InterviewController {
          return  this.interviewService.getInterviewScheduleStats(interviewId);
     }
 
-    @Get('booked-candidates/:interviewId')
+    @Get('booked-candidates/:interviewId/:page/:limit')
     @ApiOperation({
         summary: 'GET LIST OF THE BOOKED CANDIDATES',
         description: 'Private endpoint to Get all booked schedules for interview with candidate details. It is allowed only by "admin" users'
@@ -275,7 +275,7 @@ export class InterviewController {
     @ApiResponse({ status: 401, description: 'Unauthorized' })
     @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
     @Auth(Role.COMPANY)
-    async getBookedInterviewSchedules(@Param('interviewId') interviewId: string) {
-        return  this.interviewService.getBookedInterviewSchedules(interviewId);
+    async getBookedInterviewSchedules(@Param('interviewId') interviewId: string, @Param('page') page: number, @Param('limit') limit: number) {
+        return  this.interviewService.getBookedInterviewSchedules(interviewId, page, limit);
     }
 }
