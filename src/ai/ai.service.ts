@@ -13,6 +13,8 @@ import { AnalyzeCandidateDto } from './dto/analyze-candidate.dto';
 import { ComparisonBodyDto } from "./dto/comparison-body.dto";
 import { AnalyzeCvDto } from "./dto/analyze-cv.dto";
 import { GenerateDescriptionDto } from "./dto/generate-description.dto";
+import axios from 'axios';
+import * as pdfParse from 'pdf-parse';
 
 @Injectable()
 export class AiService {
@@ -615,35 +617,63 @@ export class AiService {
   }
 
   async analyzeCV(dto: AnalyzeCvDto) {
-    const model = this.genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash-exp',
-    });
+    try {
+      // 1. Download the PDF from the URL
+      const response = await axios.get(dto.Url, { responseType: 'arraybuffer' });
 
-    const generationConfig = {
-      temperature: 1,
-      topP: 0.95,
-      topK: 40,
-      maxOutputTokens: 8192,
-      responseMimeType: 'application/json',
-    };
+      // 2. Extract text from PDF
+      const pdfData = await pdfParse(response.data);
+      const extractedText = pdfData.text;
 
-    const prompt = `
-          Please refer this URL first
-          URL-https://storage.googleapis.com/inerview_app_candidate_cv/1738311621556_Resume.pdf
-          give me brief introduction about this content
+      if (!extractedText || extractedText.length < 50) {
+        throw new Error("PDF extraction failed or content is too short.");
+      }
+
+      // 3. Initialize the Gemini model
+      const model = this.genAI.getGenerativeModel({
+        model: 'gemini-2.0-flash-exp',
+      });
+
+      // 4. Create prompt with stricter JSON enforcement
+      const prompt = `
+        Analyze the following CV and return only valid JSON. Do not include explanations, code blocks, or extra text.
+
+        CV Content:
+        ${extractedText}
+
+        JSON Output Format:
+        {
+            "summary": "Brief overview of the candidate",
+            "skills": ["Skill 1", "Skill 2"],
+            "experience": ["Job 1", "Job 2"],
+            "education": ["Degree 1", "Degree 2"],
+            "contact_info": {
+                "email": "example@example.com",
+                "phone": "123456789"
+            }
+        }
         `;
 
-    const result = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig,
-    });
+      // 5. Generate response using Gemini
+      const result = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      });
 
-    const content = result.response.text();
+      // 6. Get text response
+      const content = result.response.text();
+      console.log("Raw AI Response:", content); // Debugging
 
-    const response = JSON.parse(content);
+      // 7. Clean and parse JSON
+      const cleanedContent = content.replace(/```json|```/g, '').trim();
 
-    return response;
+      return JSON.parse(cleanedContent);
+
+    } catch (error) {
+      console.error("Error analyzing CV:", error);
+      throw new Error("Failed to analyze CV");
+    }
   }
+
 
   async generateDescription(dto: GenerateDescriptionDto): Promise<any> {
     this.logger.log(`POST: interview/generate-description: Started`);
