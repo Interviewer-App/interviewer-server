@@ -479,6 +479,21 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     console.log(`Emitted nextQuestion event to room session-${sessionId}:`, message);
   }
 
+  @SubscribeMessage('typingUpdate')
+  handleTypingUpdate(
+    @MessageBody() data: { sessionId: string; text: string },
+    @ConnectedSocket() client: Socket
+  ) {
+    const { sessionId, text } = data;
+
+    this.server.to(`session-${sessionId}`).emit('typingUpdate', {
+      text,
+      timestamp: new Date().toISOString()
+    });
+
+    this.logger.debug(`Typing update for session ${sessionId}: ${text.substring(0, 20)}...`);
+  }
+
   @SubscribeMessage('leaveInterviewSession')
   handleLeaveInterviewSession(
     @MessageBody() data: { sessionId: string, userId: string },
