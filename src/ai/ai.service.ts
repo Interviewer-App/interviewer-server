@@ -836,8 +836,10 @@ export class AiService {
       {
         "schedules": [
           {
-            "startTime": "ISO_DATE_STRING",
-            "endTime": "ISO_DATE_STRING"
+            key: number++ ,
+            date: ,
+            startTime: hh:mm ,
+            endTime: hh:mm,
           }
         ]
       }
