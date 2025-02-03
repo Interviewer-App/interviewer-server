@@ -14,6 +14,7 @@ import { AnalyzeCandidateDto } from './dto/analyze-candidate.dto';
 import { ComparisonBodyDto } from "./dto/comparison-body.dto";
 import { AnalyzeCvDto } from "./dto/analyze-cv.dto";
 import { GenerateDescriptionDto } from "./dto/generate-description.dto";
+import { GenerateSchedulesDto } from "./dto/generate-schedules.dto";
 
 
 @ApiBearerAuth()
@@ -119,6 +120,20 @@ export class AiController {
     @Auth(Role.COMPANY)
     generateDescription(@Body() dto: GenerateDescriptionDto) {
         return this.aiService.generateDescription(dto);
+    }
+
+    @Post('generate-schedules')
+    @ApiOperation({
+        summary: 'GENERATE SCHEDULES FOR INTERVIEW',
+        description: 'Private endpoint to generate schedules.'
+    })
+    @ApiResponse({ status: 201, description: 'Created' })
+    @ApiResponse({ status: 400, description: 'Bad request' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 500, description: 'Server error' })
+    @Auth(Role.COMPANY)
+    generateSchedules(@Body() dto: GenerateSchedulesDto) {
+        return this.aiService.generateSchedules(dto);
     }
 
 }
