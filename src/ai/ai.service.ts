@@ -822,13 +822,13 @@ export class AiService {
       - Date range: ${dto.startDate} to ${dto.endDate}
       - Daily working hours: ${dto.dailyStartTime} to ${dto.dailyEndTime}
       - Slot duration: ${dto.duration} minutes
-      - Interval between slots: ${dto.intervalMinutes || 'ten'} minutes
+      - One interval for meal for each day: ${dto.intervalMinutes || 'ten'} minutes
       - Non-working dates: ${dto.nonWorkingDates?.join(', ') || 'none'}
 
       Rules:
       1. Skip dates listed in non-working dates
       2. Create slots within working hours for each day
-      3. Maintain specified interval between slots
+      3. Maintain specified interval for each day
       4. Each slot should be exactly ${dto.duration} minutes long
       5. Output in UTC timezone format
 
