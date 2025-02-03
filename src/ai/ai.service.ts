@@ -15,6 +15,7 @@ import { AnalyzeCvDto } from "./dto/analyze-cv.dto";
 import { GenerateDescriptionDto } from "./dto/generate-description.dto";
 import axios from 'axios';
 import * as pdfParse from 'pdf-parse';
+import { GenerateSchedulesDto } from "./dto/generate-schedules.dto";
 
 @Injectable()
 export class AiService {
@@ -798,6 +799,78 @@ export class AiService {
         error.stack
       );
       throw new InternalServerErrorException('Failed to generate job description');
+    }
+  }
+
+  async generateSchedules(dto: GenerateSchedulesDto): Promise<any> {
+    this.logger.log(`POST: interview/generate-schedules: Started`);
+    const model = this.genAI.getGenerativeModel({
+      model: 'gemini-2.0-flash-exp',
+    });
+
+    const generationConfig = {
+      temperature: 0.3,
+      topP: 0.95,
+      topK: 40,
+      maxOutputTokens: 8192,
+      responseMimeType: 'application/json',
+    };
+
+    try {
+      const prompt = `
+      Generate interview time slots based on these parameters:
+      - Date range: ${dto.startDate} to ${dto.endDate}
+      - Daily working hours: ${dto.dailyStartTime} to ${dto.dailyEndTime}
+      - Slot duration: ${dto.duration} minutes
+      - Interval between slots: ${dto.intervalMinutes || 'ten'} minutes
+      - Non-working dates: ${dto.nonWorkingDates?.join(', ') || 'none'}
+
+      Rules:
+      1. Skip dates listed in non-working dates
+      2. Create slots within working hours for each day
+      3. Maintain specified interval between slots
+      4. Each slot should be exactly ${dto.duration} minutes long
+      5. Output in UTC timezone format
+
+      Return ONLY JSON format matching this structure:
+      {
+        "schedules": [
+          {
+            "startTime": "ISO_DATE_STRING",
+            "endTime": "ISO_DATE_STRING"
+          }
+        ]
+      }
+    `;
+
+      const result = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: generationConfig,
+      });
+
+      const content = result.response.text();
+      this.logger.debug('Generated content:', content);
+
+      try {
+        const parsedResponse = JSON.parse(content);
+        if (!Array.isArray(parsedResponse.schedules)) {
+          throw new Error('Invalid response structure');
+        }
+        return parsedResponse;
+      } catch (parseError) {
+        this.logger.error(
+          'Failed to parse response into JSON format',
+          parseError.message,
+          { content }
+        );
+        throw new InternalServerErrorException('Invalid response format from AI service');
+      }
+    } catch (error) {
+      this.logger.error(
+        `POST: interview/generate-schedules: Error occurred: ${error.message}`,
+        error.stack
+      );
+      throw new InternalServerErrorException('Failed to generate schedules');
     }
   }
 }
