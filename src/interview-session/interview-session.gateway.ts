@@ -491,7 +491,7 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
       timestamp: new Date().toISOString()
     });
 
-    this.logger.debug(`Typing update for session ${sessionId}: ${text.substring(0, 20)}...`);
+    // this.logger.debug(`Typing update for session ${sessionId}: ${text.substring(0, 20)}...`);
   }
 
   @SubscribeMessage('leaveInterviewSession')
