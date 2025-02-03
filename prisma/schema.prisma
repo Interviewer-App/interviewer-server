@@ -614,6 +614,8 @@ model CategoryScore {
   interviewSession   InterviewSession   @relation(fields: [sessionId], references: [sessionId])
   categoryAssignment CategoryAssignment @relation(fields: [assignmentId], references: [assignmentId])
   subCategoryScores  SubCategoryScore[]
+
+  @@unique([sessionId, assignmentId])
 }
 
 model SubCategoryScore {
