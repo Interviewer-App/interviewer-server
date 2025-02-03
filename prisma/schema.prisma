@@ -368,6 +368,23 @@ model Interview {
   CategoryAssignment CategoryAssignment[]
   scheduling         Scheduling[]
   invitations        CandidateInvitation[]
+  questions          InterviewQuestions[]
+}
+
+model InterviewQuestions {
+  interviewQuestionID  String       @id @default(cuid())
+  interviewID          String
+  questionCategory     String?
+  questionText         String
+  explanation          String?
+  estimatedTimeMinutes Int          @default(0)
+  aiContext            String?
+  diffcultyLevel       String?
+  type                 QuestionType
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  usageFrequency       Int?
+  interviews           Interview    @relation(fields: [interviewID], references: [interviewID])
 }
 
 model InterviewerOnInterviews {

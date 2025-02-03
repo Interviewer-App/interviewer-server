@@ -1,5 +1,5 @@
 import {
-  BadRequestException,
+  BadRequestException, ConflictException, HttpException, HttpStatus,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -805,5 +805,119 @@ export class InterviewSessionService {
       this.logger.error(`GET: error: ${error}`);
       throw new InternalServerErrorException('Server error');
     }
+  }
+
+  async importQuestions(sessionId: string) {
+    this.logger.log(`Starting question import for session: ${sessionId}`);
+
+    try {
+
+      const session = await this.prisma.interviewSession.findUnique({
+        where: { sessionId },
+        include: { interview: true }
+      });
+
+      if (!session) {
+        throw new NotFoundException(`Session with ID ${sessionId} not found`);
+      }
+
+      if (!session.interviewId || !session.interview) {
+        throw new ConflictException('Session is not associated with a valid interview');
+      }
+
+      const questions = await this.prisma.interviewQuestions.findMany({
+        where: { interviewID: session.interviewId }
+      });
+
+      if (questions.length === 0) {
+        throw new NotFoundException(`No questions found for interview ${session.interviewId}`);
+      }
+
+      const validationErrors = [];
+      questions.forEach((q, index) => {
+        if (!this.isValidQuestionType(q.type)) {
+          validationErrors.push(`Question ${index + 1}: Invalid type '${q.type}'`);
+        }
+        if (!q.questionText || q.questionText.trim().length < 10) {
+          validationErrors.push(`Question ${index + 1}: Text too short (min 10 characters)`);
+        }
+      });
+
+      if (validationErrors.length > 0) {
+        throw new BadRequestException({
+          message: 'Invalid question data',
+          errors: validationErrors
+        });
+      }
+
+      const results = await Promise.allSettled(
+        questions.map(async (q) => {
+          try {
+            return await this.prisma.question.create({
+              data: {
+                questionText: q.questionText,
+                type: q.type,
+                explanation: q.explanation,
+                estimatedTimeMinutes: q.estimatedTimeMinutes || 5,
+                aiContext: q.aiContext,
+                usageFrequency: 0,
+                interviewSession: { connect: { sessionId } }
+              }
+            });
+          } catch (error) {
+            this.logger.error(`Failed to import question: ${q.questionText}`, error.stack);
+            throw new InternalServerErrorException(`Failed to import question: ${q.questionText}`);
+          }
+        })
+      );
+
+      const successfulImports = results.filter(r => r.status === 'fulfilled');
+      const failedImports = results.filter(r => r.status === 'rejected');
+
+      if (failedImports.length > 0) {
+        this.logger.warn(`Partial import completed: ${successfulImports.length} succeeded, ${failedImports.length} failed`);
+        throw new PartialImportException(
+          'Partial question import completed',
+          successfulImports.length,
+          failedImports.length
+        );
+      }
+
+      this.logger.log(`Successfully imported ${successfulImports.length} questions to session ${sessionId}`);
+      return {
+        message: 'All questions imported successfully',
+        count: successfulImports.length
+      };
+
+    } catch (error) {
+      this.logger.error(`Question import failed for session ${sessionId}: ${error.message}`);
+
+      if (
+        error instanceof PartialImportException ||
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException ||
+        error instanceof ConflictException) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException('Failed to import questions');
+    }
+  }
+
+  private isValidQuestionType(type: string): boolean {
+    const validTypes = ['OPEN-ENDED', 'CODING', 'OPEN_ENDED'];
+    return validTypes.includes(type.toUpperCase());
+  }
+
+
+}
+
+export class PartialImportException extends HttpException {
+  constructor(
+    message: string,
+    public readonly successCount: number,
+    public readonly failureCount: number
+  ) {
+    super({ message, successCount, failureCount }, HttpStatus.PARTIAL_CONTENT);
   }
 }

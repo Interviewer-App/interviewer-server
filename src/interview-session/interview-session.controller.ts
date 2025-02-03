@@ -221,6 +221,20 @@ export class InterviewSessionController {
   findCompletedSessionsByInterviewId(@Param('interviewId') interviewId: string) {
     return this.interviewSessionService.findCompletedSessionsByInterviewId(interviewId);
   }
+
+  @Get('import-questions/:sessionId')
+  @ApiOperation({
+    summary: 'IMPORT ALL QUESTIONS FROM INTERVIEW',
+    description: 'Private endpoint to import all questions for session. It is allowed only by "company" users'
+  })
+  @ApiResponse({ status: 201, description: 'Created' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
+  @Auth(Role.COMPANY)
+  importQuestions(@Param('sessionId') sessionId: string) {
+    return this.interviewSessionService.importQuestions(sessionId);
+  }
   
   //
   // @Patch(':id')
