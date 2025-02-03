@@ -18,6 +18,9 @@ import * as process from "node:process";
 import { BookScheduleDto } from "./dto/book-schedule.dto";
 import { AuthService } from "../auth/auth.service";
 import { RegisterUserDto } from "../auth/dto/register-user.dto";
+import { UpdateQuestionDto } from "../interview-session/dto/update-question.dto";
+import { CreateQuestionDto } from "../interview-session/dto/create-question.dto";
+import { CreateInterviewQuestionsDto } from "./dto/create-interview-questions.dto";
 
 
 @Injectable()
@@ -442,6 +445,7 @@ export class InterviewService {
                     interviewSessions: true,
                     CategoryAssignment: true,
                     scheduling: true,
+                    questions: true
                 }
             });
             return {
@@ -460,6 +464,7 @@ export class InterviewService {
                 interviewSessions: interview.interviewSessions,
                 CategoryAssignment: interview.CategoryAssignment,
                 scheduling: interview.scheduling,
+                questions: interview.questions,
                 createdAt: interview.createdAt,
                 updatedAt: interview.updatedAt,
             };
@@ -1237,6 +1242,118 @@ export class InterviewService {
                 throw error;
             }
             throw new InternalServerErrorException('Failed to retrieve booked schedules');
+        }
+    }
+
+    async removeQuestionByQuestionId(questionId: string) {
+
+        try {
+            const questionExist = await this.prisma.interviewQuestions.findUnique({
+                where: { interviewQuestionID: questionId },
+            });
+            if (!questionExist) {
+                throw new NotFoundException(`Question with id ${questionId} not found`);
+            }
+            const deletedQuestion = await this.prisma.interviewQuestions.delete({
+                where: {interviewQuestionID:questionId},
+                select:{
+                    interviewQuestionID: true,
+                }
+            });
+
+            this.logger.warn(`DELETE: ${JSON.stringify(deletedQuestion)}`);
+            return {message: `Question with id ${questionId} deleted`}
+
+        } catch (error) {
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
+            this.prismaErrorHandler(error, "DELETE", questionId);
+            this.logger.error(`DELETE: error: ${error}`);
+            throw new InternalServerErrorException('Server error');
+        }
+    }
+
+    async updateQuestionById(questionId: string, dto: UpdateQuestionDto) {
+        this.logger.log(`POST: question/update: Question update started`);
+
+        try {
+            const questionExist = await this.prisma.interviewQuestions.findUnique({
+                where: { interviewQuestionID: questionId },
+            });
+            if (!questionExist) {
+                throw new NotFoundException(`Question with id ${questionId} not found`);
+            }
+            const question = await this.prisma.interviewQuestions.update({
+                where:{interviewQuestionID:questionId},
+                data: {
+                    questionText:dto.question,
+                    type:dto.type.toUpperCase() === 'OPEN_ENDED' ? 'OPEN_ENDED' : 'CODING',
+                    estimatedTimeMinutes:dto.estimatedTimeInMinutes
+                },
+            });
+
+            this.logger.log(
+              `POST: question/update: Question ${question.interviewQuestionID} updated successfully`
+            );
+
+            return {
+                message: `Question for ID ${question.interviewQuestionID} updated successfully`,
+                question,
+            };
+        } catch (error) {
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
+            // Custom Prisma error handler
+            this.prismaErrorHandler(error, "PATCH", questionId);
+            this.logger.error(`POST: question/update: Error: ${error.message}`);
+            throw new InternalServerErrorException("Server error occurred");
+        }
+    }
+
+    async createQuestions(dto: CreateInterviewQuestionsDto) {
+        this.logger.log(`POST: Question/create: New Question creating started`);
+
+        try {
+            const interview = await this.prisma.interview.findUnique({
+                where: { interviewID: dto.interviewId },
+            });
+            if (!interview) {
+                throw new NotFoundException(`Interview with id ${dto.interviewId} not found`);
+            }
+
+            const question = await this.prisma.interviewQuestions.create({
+                data: {
+                    questionText: dto.question,
+                    type: dto.type.toUpperCase() === 'OPEN-ENDED' ? 'OPEN_ENDED' : 'CODING',
+                    estimatedTimeMinutes: dto.estimatedTimeInMinutes,
+                    usageFrequency: 0,
+                    interviews: {
+                        connect: {
+                            interviewID: dto.interviewId,
+                        },
+                    },
+                },
+            });
+
+
+            this.logger.log(
+              `POST: interview/create: Question ${question.interviewQuestionID} created successfully`
+            );
+
+            return {
+                message: "Question created successfully",
+                question,
+            };
+        } catch (error) {
+            // Custom Prisma error handler
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
+            this.prismaErrorHandler(error, "POST", dto.interviewId);
+            this.logger.error(`POST: Question/create: Error: ${error.message}`);
+            throw new InternalServerErrorException("Server error occurred");
         }
     }
 }

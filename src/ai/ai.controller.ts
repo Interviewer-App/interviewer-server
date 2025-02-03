@@ -37,6 +37,19 @@ export class AiController {
         return this.aiService.generateQuestions(id,GenerateQuestionsDto);
     }
 
+    @Post('generate-questions-interview/:interviewId')
+    @ApiOperation({
+        summary: 'GENERATE QUESTIONS',
+        description: 'Private endpoint to generate questions.'
+    })
+    @ApiResponse({ status: 201, description: 'Created', isArray: true })
+    @ApiResponse({ status: 400, description: 'Bad request' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
+    @Auth(Role.COMPANY)
+    generateQuestionsForInterview(@Param('interviewId') id: string, @Body() GenerateQuestionsDto: GenerateQuestionsDto) {
+        return this.aiService.generateQuestionsForInterview(id,GenerateQuestionsDto);
+    }
 
     @Post('analiyze-question')
     @ApiOperation({

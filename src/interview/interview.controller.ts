@@ -8,6 +8,9 @@ import { InterviewStatus, Role } from "@prisma/client";
 import { UpdateInterviewDto } from './dto/update-interview.dto';
 import { EmailInvitationDto } from "./dto/email-invitation.dto";
 import { BookScheduleDto } from "./dto/book-schedule.dto";
+import { UpdateQuestionDto } from "../interview-session/dto/update-question.dto";
+import { CreateQuestionDto } from "../interview-session/dto/create-question.dto";
+import { CreateInterviewQuestionsDto } from "./dto/create-interview-questions.dto";
 
 @ApiBearerAuth()
 @ApiTags('Interview')
@@ -277,5 +280,47 @@ export class InterviewController {
     @Auth(Role.COMPANY)
     async getBookedInterviewSchedules(@Param('interviewId') interviewId: string, @Param('page') page: number, @Param('limit') limit: number) {
         return  this.interviewService.getBookedInterviewSchedules(interviewId, page, limit);
+    }
+
+    @Delete('question/:questionId')
+    @ApiOperation({
+        summary: '  DELETE QUESTIONS BY QUESTION ID',
+        description: 'Private endpoint to delete questions by question id. It is allowed only by "admin" users'
+    })
+    @ApiResponse({ status: 201, description: 'Deleted'})
+    @ApiResponse({ status: 400, description: 'Bad request' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
+    @Auth(Role.COMPANY)
+    removeQuestionByQuestionId(@Param('questionId') questionId: string) {
+        return this.interviewService.removeQuestionByQuestionId(questionId);
+    }
+
+    @Patch('question/:questionId')
+    @ApiOperation({
+        summary: 'UPDATE QUESTION BY ID',
+        description: 'Private endpoint to update QUESTION data by questionId.'
+    })
+    @ApiResponse({status: 200, description: 'Ok', type: UpdateQuestionDto})
+    @ApiResponse({status: 400, description: 'Bad request'})
+    @ApiResponse({status: 401, description: 'Unauthorized'})
+    @ApiResponse({status: 500, description: 'Server error'})             //Swagger
+    @Auth(Role.COMPANY)
+    updateQuestionById(@Param('questionId') questionId: string, @Body() updateQuestionDto: UpdateQuestionDto) {
+        return this.interviewService.updateQuestionById( questionId, updateQuestionDto);
+    }
+
+    @Post('question')
+    @ApiOperation({
+        summary: 'CREATE QUESTIONS',
+        description: 'Private endpoint to Create a new Questions. It is allowed only by "company" users'
+    })
+    @ApiResponse({ status: 201, description: 'Created'})
+    @ApiResponse({ status: 400, description: 'Bad request' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
+    @Auth(Role.COMPANY)
+    createQuestions(@Body() createInterviewQuestionsDto: CreateInterviewQuestionsDto) {
+        return this.interviewService.createQuestions(createInterviewQuestionsDto);
     }
 }

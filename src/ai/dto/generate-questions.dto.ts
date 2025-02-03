@@ -42,25 +42,25 @@ export class GenerateQuestionsDto {
   @IsNotEmpty()
   skillLevel: SkillLevel;
 
-  @ApiProperty({
-    description: 'The culture of the company',
-    example: 'Innovative and collaborative',
-    nullable: true,
-    required: false,
-  })
-  @IsString()
-  @IsOptional()
-  companyCulture?: string;
-
-  @ApiProperty({
-    description: 'The aim or mission of the company',
-    example: 'To revolutionize the tech industry',
-    nullable: true,
-    required: false,
-  })
-  @IsString()
-  @IsOptional()
-  companyAim?: string;
+  // @ApiProperty({
+  //   description: 'The culture of the company',
+  //   example: 'Innovative and collaborative',
+  //   nullable: true,
+  //   required: false,
+  // })
+  // @IsString()
+  // @IsOptional()
+  // companyCulture?: string;
+  //
+  // @ApiProperty({
+  //   description: 'The aim or mission of the company',
+  //   example: 'To revolutionize the tech industry',
+  //   nullable: true,
+  //   required: false,
+  // })
+  // @IsString()
+  // @IsOptional()
+  // companyAim?: string;
 
   @ApiProperty({
     description: 'The type of questions to generate',
