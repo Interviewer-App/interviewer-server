@@ -37,9 +37,22 @@ export class InterviewService {
         this.logger.log(`POST: interview/create: New interview started`);
 
         try {
+            // Validate total percentage
             const totalPercentage = dto.categoryAssignments.reduce((sum, assignment) => sum + assignment.percentage, 0);
             if (totalPercentage !== 100) {
                 throw new BadRequestException('The total percentage of category assignments must be 100.');
+            }
+
+            // Validate subcategory percentages
+            for (const assignment of dto.categoryAssignments) {
+                if (assignment.subAssignments && assignment.subAssignments.length > 0) {
+                    const subTotal = assignment.subAssignments.reduce((sum, sub) => sum + sub.percentage, 0);
+                    if (subTotal !== 100) {
+                        throw new BadRequestException(
+                          `Subcategory percentages for category ${assignment.categoryId} must sum to 100.`
+                        );
+                    }
+                }
             }
 
             const company = await this.prisma.company.findUnique({
@@ -60,12 +73,16 @@ export class InterviewService {
                     endDate: dto.endDate,
                     status: dto.status,
                     CategoryAssignment: {
-                        createMany: {
-                            data: dto.categoryAssignments.map(assignment => ({
-                                categoryId: assignment.categoryId,
-                                percentage: assignment.percentage,
-                            })),
-                        },
+                        create: dto.categoryAssignments.map(assignment => ({
+                            categoryId: assignment.categoryId,
+                            percentage: assignment.percentage,
+                            SubCategoryAssignment: assignment.subAssignments ? {
+                                create: assignment.subAssignments.map(sub => ({
+                                    name: sub.name,
+                                    percentage: sub.percentage
+                                }))
+                            } : undefined
+                        })),
                     },
                     scheduling: {
                         create: dto.schedules.map((schedule) => ({
@@ -76,7 +93,11 @@ export class InterviewService {
                     },
                 },
                 include: {
-                    CategoryAssignment: true,
+                    CategoryAssignment: {
+                        include: {
+                            SubCategoryAssignment: true
+                        }
+                    },
                     scheduling: true,
                 },
             });
@@ -104,6 +125,7 @@ export class InterviewService {
         try {
             const interviewExist = await this.prisma.interview.findUnique({
                 where: { interviewID: id },
+                include: { CategoryAssignment: true }
             });
 
             if (!interviewExist) {
@@ -111,41 +133,57 @@ export class InterviewService {
             }
 
             const sessionExist = await this.prisma.interviewSession.findMany({
-                where: {interviewId: id},
-            })
-            if(sessionExist.length > 0){
-                if(dto.status!=null||dto.status!=undefined){
+                where: { interviewId: id },
+            });
+
+            if (sessionExist.length > 0) {
+                if (dto.status != null || dto.status != undefined) {
                     const updateStatus = await this.prisma.interview.update({
-                        where: {
-                            interviewID: id,
-                        },
-                        data: {
-                            status: dto.status,
-                        },
-                        include: {
-                            CategoryAssignment: true,
-                        },
-                    })
+                        where: { interviewID: id },
+                        data: { status: dto.status },
+                        include: { CategoryAssignment: true },
+                    });
                     return {
                         message: 'Interview status updated successfully',
                         updateStatus,
                     };
                 }
-                throw new BadRequestException('Cannot update this interview.Candidates already joined to this interview');
+                throw new BadRequestException('Cannot update this interview. Candidates already joined to this interview');
             }
 
-            if(dto.categoryAssignments!=undefined){
+            if (dto.categoryAssignments != undefined) {
+                // Validate category percentages
                 const totalPercentage = dto.categoryAssignments.reduce((sum, assignment) => sum + assignment.percentage, 0);
                 if (totalPercentage !== 100) {
                     throw new BadRequestException('The total percentage of category assignments must be 100.');
                 }
 
+                for (const assignment of dto.categoryAssignments) {
+                    if (assignment.subAssignments && assignment.subAssignments.length > 0) {
+                        const subTotal = assignment.subAssignments.reduce((sum, sub) => sum + sub.percentage, 0);
+                        if (subTotal !== 100) {
+                            throw new BadRequestException(
+                              `Subcategory percentages for category ${assignment.categoryId} must sum to 100.`
+                            );
+                        }
+                    }
+                }
+
+                await this.prisma.subCategoryAssignment.deleteMany({
+                    where: {
+                        categoryAssignment: {
+                            interviewId: id
+                        }
+                    }
+                });
+
+                // Then delete categories
                 await this.prisma.categoryAssignment.deleteMany({
                     where: { interviewId: id },
                 });
             }
 
-            if(dto.schedules!=undefined){
+            if (dto.schedules != undefined) {
                 await this.prisma.scheduling.deleteMany({
                     where: {
                         interviewId: id,
@@ -165,24 +203,38 @@ export class InterviewService {
                     startDate: dto.startDate,
                     endDate: dto.endDate,
                     status: dto.status,
-                    ...(dto.categoryAssignments!=undefined && {CategoryAssignment: {
-                        createMany: {
-                            data: dto.categoryAssignments.map((assignment) => ({
+                    ...(dto.categoryAssignments != undefined && {
+                        CategoryAssignment: {
+                            create: dto.categoryAssignments.map(assignment => ({
                                 categoryId: assignment.categoryId,
                                 percentage: assignment.percentage,
+                                ...(assignment.subAssignments && {
+                                    SubCategoryAssignment: {
+                                        create: assignment.subAssignments.map(sub => ({
+                                            name: sub.name,
+                                            percentage: sub.percentage
+                                        }))
+                                    }
+                                })
                             })),
-                        },
-                    }}),
-                        ...(dto.schedules!=undefined && {scheduling: {
-                        create: dto.schedules.map((schedule) => ({
-                            startTime: schedule.startTime,
-                            endTime: schedule.endTime,
-                            isBooked: false,
-                        })),
-                    }}),
+                        }
+                    }),
+                    ...(dto.schedules != undefined && {
+                        scheduling: {
+                            create: dto.schedules.map((schedule) => ({
+                                startTime: schedule.startTime,
+                                endTime: schedule.endTime,
+                                isBooked: false,
+                            })),
+                        }
+                    }),
                 },
                 include: {
-                    CategoryAssignment: true,
+                    CategoryAssignment: {
+                        include: {
+                            SubCategoryAssignment: true
+                        }
+                    },
                     scheduling: true,
                 },
             });
@@ -218,7 +270,11 @@ export class InterviewService {
                     interviewers: true,
                     candidates: true,
                     interviewSessions: true,
-                    CategoryAssignment: true,
+                    CategoryAssignment: {
+                        include: {
+                            SubCategoryAssignment: true,
+                        }
+                    },
                     scheduling: true,
                 }
             });
@@ -318,7 +374,11 @@ export class InterviewService {
                     interviewers: true,
                     candidates: true,
                     interviewSessions: true,
-                    CategoryAssignment: true,
+                    CategoryAssignment: {
+                        include: {
+                            SubCategoryAssignment: true,
+                        }
+                    },
                     scheduling: true,
                 },
             });
@@ -394,7 +454,11 @@ export class InterviewService {
                     interviewers: true,
                     candidates: true,
                     interviewSessions: true,
-                    CategoryAssignment: true,
+                    CategoryAssignment: {
+                        include: {
+                            SubCategoryAssignment: true,
+                        }
+                    },
                     scheduling: true,
                     createdAt: true,
                     updatedAt: true,
@@ -440,7 +504,11 @@ export class InterviewService {
                     interviewers: true,
                     candidates: true,
                     interviewSessions: true,
-                    CategoryAssignment: true,
+                    CategoryAssignment: {
+                        include: {
+                            SubCategoryAssignment: true,
+                        }
+                    },
                     scheduling: true,
                 }
             });

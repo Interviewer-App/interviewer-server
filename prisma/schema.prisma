@@ -565,11 +565,24 @@ model CategoryAssignment {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  interview     Interview       @relation(fields: [interviewId], references: [interviewID])
-  category      Category        @relation(fields: [categoryId], references: [categoryId])
-  CategoryScore CategoryScore[]
+  interview             Interview               @relation(fields: [interviewId], references: [interviewID])
+  category              Category                @relation(fields: [categoryId], references: [categoryId])
+  CategoryScore         CategoryScore[]
+  SubCategoryAssignment SubCategoryAssignment[]
 
   @@unique([interviewId, categoryId])
+}
+
+model SubCategoryAssignment {
+  id                 String             @id @default(cuid())
+  parentAssignmentId String
+  categoryAssignment CategoryAssignment @relation(fields: [parentAssignmentId], references: [assignmentId])
+  name               String
+  percentage         Int
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  SubCategoryScore SubCategoryScore[]
 }
 
 model CategoryScore {
@@ -583,8 +596,21 @@ model CategoryScore {
 
   interviewSession   InterviewSession   @relation(fields: [sessionId], references: [sessionId])
   categoryAssignment CategoryAssignment @relation(fields: [assignmentId], references: [assignmentId])
+  subCategoryScores  SubCategoryScore[]
+}
 
-  @@unique([sessionId, assignmentId])
+model SubCategoryScore {
+  id                    String                @id @default(cuid())
+  categoryScoreId       String
+  categoryScore         CategoryScore         @relation(fields: [categoryScoreId], references: [categoryScoreId])
+  subAssignmentId       String
+  subCategoryAssignment SubCategoryAssignment @relation(fields: [subAssignmentId], references: [id])
+  score                 Float                 @default(0)
+  note                  String?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  @@unique([categoryScoreId, subAssignmentId])
 }
 
 model CandidateInvitation {

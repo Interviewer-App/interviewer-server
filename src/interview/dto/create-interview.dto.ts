@@ -140,6 +140,27 @@ export enum InterviewCategory {
     Behavioural = "Behavioural"
 }
 
+export class SubCategoryAssignmentDto {
+    @ApiProperty({
+        description: "Name of the subcategory",
+        example: "JavaScript Fundamentals",
+        required: true
+    })
+    @IsString()
+    @IsNotEmpty()
+    name: string;
+
+    @ApiProperty({
+        description: "Percentage allocated to this subcategory (relative to parent category)",
+        example: 60,
+        required: true
+    })
+    @IsInt()
+    @Min(1)
+    @Max(100)
+    percentage: number;
+}
+
 export class CategoryAssignmentDto {
     @ApiProperty({
         description: "Category ID",
@@ -163,6 +184,17 @@ export class CategoryAssignmentDto {
     @Min(1)
     @Max(100)
     percentage: number;
+
+    @ApiProperty({
+        description: "Subcategory assignments for this category",
+        required: false,
+        type: [SubCategoryAssignmentDto]
+    })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => SubCategoryAssignmentDto)
+    subAssignments?: SubCategoryAssignmentDto[];
 }
 
 export class ScheduleDto {
