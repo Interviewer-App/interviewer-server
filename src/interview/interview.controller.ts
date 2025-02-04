@@ -11,6 +11,7 @@ import { BookScheduleDto } from "./dto/book-schedule.dto";
 import { UpdateQuestionDto } from "../interview-session/dto/update-question.dto";
 import { CreateQuestionDto } from "../interview-session/dto/create-question.dto";
 import { CreateInterviewQuestionsDto } from "./dto/create-interview-questions.dto";
+import { AddSubCategoryAssignmentDto } from "./dto/add-sub-categories.dto";
 
 @ApiBearerAuth()
 @ApiTags('Interview')
@@ -322,5 +323,38 @@ export class InterviewController {
     @Auth(Role.COMPANY)
     createQuestions(@Body() createInterviewQuestionsDto: CreateInterviewQuestionsDto) {
         return this.interviewService.createQuestions(createInterviewQuestionsDto);
+    }
+
+    @Post('category-assignment/:categoryAssignmentId/subcategory')
+    @ApiOperation({
+        summary: 'ADD NEW SUB CATEGORIES',
+        description: 'Private endpoint to add new sub categories. It is allowed only by "company" users'
+    })
+    @ApiResponse({ status: 201, description: 'Created'})
+    @ApiResponse({ status: 400, description: 'Bad request' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
+    @Auth(Role.COMPANY)
+    async addSubCategoryAssignment(
+      @Param('categoryAssignmentId') categoryAssignmentId: string,
+      @Body() dto: AddSubCategoryAssignmentDto,
+    ) {
+        return this.interviewService.addSubCategoryAssignment(categoryAssignmentId, dto);
+    }
+
+    @Delete('subcategory-assignment/:subCategoryAssignmentId')
+    @ApiOperation({
+        summary: '  DELETE SUB CATEGORIES',
+        description: 'Private endpoint to delete sub categories. It is allowed only by "admin" users'
+    })
+    @ApiResponse({ status: 201, description: 'Deleted'})
+    @ApiResponse({ status: 400, description: 'Bad request' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
+    @Auth(Role.COMPANY)
+    async removeSubCategoryAssignment(
+      @Param('subCategoryAssignmentId') subCategoryAssignmentId: string,
+    ) {
+        return this.interviewService.removeSubCategoryAssignment(subCategoryAssignmentId);
     }
 }

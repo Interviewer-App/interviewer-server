@@ -21,6 +21,7 @@ import { RegisterUserDto } from "../auth/dto/register-user.dto";
 import { UpdateQuestionDto } from "../interview-session/dto/update-question.dto";
 import { CreateQuestionDto } from "../interview-session/dto/create-question.dto";
 import { CreateInterviewQuestionsDto } from "./dto/create-interview-questions.dto";
+import { AddSubCategoryAssignmentDto } from "./dto/add-sub-categories.dto";
 
 
 @Injectable()
@@ -1421,6 +1422,105 @@ export class InterviewService {
             }
             this.prismaErrorHandler(error, "POST", dto.interviewId);
             this.logger.error(`POST: Question/create: Error: ${error.message}`);
+            throw new InternalServerErrorException("Server error occurred");
+        }
+    }
+
+    async addSubCategoryAssignment(
+      categoryAssignmentId: string,
+      dto: AddSubCategoryAssignmentDto
+    ) {
+        this.logger.log(
+          `POST: subcategory-assignment/add: Adding subcategory to category assignment ${categoryAssignmentId}`
+        );
+
+        try {
+
+            const categoryAssignment = await this.prisma.categoryAssignment.findUnique({
+                where: { assignmentId: categoryAssignmentId },
+                include: { SubCategoryAssignment: true },
+            });
+
+            if (!categoryAssignment) {
+                throw new NotFoundException(
+                  `Category assignment with id ${categoryAssignmentId} not found`
+                );
+            }
+
+            const existingSubTotal = categoryAssignment.SubCategoryAssignment.reduce(
+              (sum, sub) => sum + sub.percentage,
+              0
+            );
+            const newTotal = existingSubTotal + dto.percentage;
+
+            if (newTotal > 100) {
+                throw new BadRequestException(
+                  `Adding this subcategory would exceed the 100% limit for subcategories. Current total: ${existingSubTotal}%`
+                );
+            }
+
+            const subCategoryAssignment = await this.prisma.subCategoryAssignment.create({
+                data: {
+                    parentAssignmentId: categoryAssignmentId,
+                    name: dto.name,
+                    percentage: dto.percentage,
+                },
+            });
+
+            this.logger.log(
+              `POST: subcategory-assignment/add: Subcategory ${subCategoryAssignment.id} added successfully`
+            );
+
+            return {
+                message: "Subcategory assignment added successfully",
+                subCategoryAssignment,
+            };
+        } catch (error) {
+            if (error instanceof NotFoundException || error instanceof BadRequestException) {
+                throw error;
+            }
+            this.logger.error(
+              `POST: subcategory-assignment/add: Error: ${error.message}`
+            );
+            throw new InternalServerErrorException("Server error occurred");
+        }
+    }
+
+    async removeSubCategoryAssignment(subCategoryAssignmentId: string) {
+        this.logger.log(
+          `DELETE: subcategory-assignment/remove: Removing subcategory assignment ${subCategoryAssignmentId}`
+        );
+
+        try {
+            const subCategoryAssignment =
+              await this.prisma.subCategoryAssignment.findUnique({
+                  where: { id: subCategoryAssignmentId },
+              });
+
+            if (!subCategoryAssignment) {
+                throw new NotFoundException(
+                  `Subcategory assignment with id ${subCategoryAssignmentId} not found`
+                );
+            }
+
+            await this.prisma.subCategoryAssignment.delete({
+                where: { id: subCategoryAssignmentId },
+            });
+
+            this.logger.log(
+              `DELETE: subcategory-assignment/remove: Subcategory assignment ${subCategoryAssignmentId} removed successfully`
+            );
+
+            return {
+                message: "Subcategory assignment removed successfully",
+            };
+        } catch (error) {
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
+            this.logger.error(
+              `DELETE: subcategory-assignment/remove: Error: ${error.message}`
+            );
             throw new InternalServerErrorException("Server error occurred");
         }
     }
