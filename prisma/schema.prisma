@@ -605,6 +605,7 @@ model SubCategoryAssignment {
 model CategoryScore {
   categoryScoreId String   @id @default(cuid())
   sessionId       String
+  order           Int?
   assignmentId    String
   score           Float    @default(0)
   note            String?

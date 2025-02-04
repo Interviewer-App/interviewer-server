@@ -35,7 +35,7 @@ export class InterviewSessionService {
   }
 
   async create(dto: CreateInterviewSessionDto) {
-    this.logger.log(`POST: interview/create: New interview started`);
+    this.logger.log(`POST: interview-session/create: New session started`);
 
     try {
       const interview = await this.prisma.interview.findUnique({
@@ -67,10 +67,6 @@ export class InterviewSessionService {
         };
       }
 
-      const categoryAssignments = await this.prisma.categoryAssignment.findMany({
-        where: { interviewId: dto.interviewId },
-      });
-
       const bookedSchedule = await this.prisma.scheduling.findUnique({
         where: {
           interviewId_candidateId: {
@@ -79,41 +75,71 @@ export class InterviewSessionService {
           },
           isBooked: true,
         }
-      })
+      });
 
       if (!bookedSchedule) {
-        this.logger.warn(`There is no schedule booked for this candidate for this interview`);
-        throw new NotFoundException(`There is no schedule booked for this candidate id ${dto.candidateId} for this interview id ${dto.candidateId}`);
+        throw new NotFoundException(`No booked schedule found for candidate ${dto.candidateId} in interview ${dto.interviewId}`);
       }
 
       if (bookedSchedule.sessionID) {
-        this.logger.warn(`Schedule ${bookedSchedule.scheduleID} is already mapped to session ${bookedSchedule.sessionID}`);
-        throw new BadRequestException(`Schedule ${bookedSchedule.scheduleID} is already mapped to an existing session.`);
+        throw new BadRequestException(`Schedule ${bookedSchedule.scheduleID} is already mapped to session ${bookedSchedule.sessionID}`);
       }
 
-      const interviewSession = await this.prisma.interviewSession.create({
-        data: {
-          interviewId: dto.interviewId,
-          candidateId: dto.candidateId,
-          scheduledDate: dto.scheduledDate,
-          scheduledAt: dto.scheduledAt,
-          interviewCategory: 'Technical',
-          interviewStatus: dto.interviewStatus,
-        },
+      // Get category assignments with their subcategories
+      const categoryAssignments = await this.prisma.categoryAssignment.findMany({
+        where: { interviewId: dto.interviewId },
+        include: {
+          SubCategoryAssignment: true
+        }
       });
 
+      // Create session and scores in a transaction
+      const [interviewSession] = await this.prisma.$transaction([
+        this.prisma.interviewSession.create({
+          data: {
+            interviewId: dto.interviewId,
+            candidateId: dto.candidateId,
+            scheduledDate: dto.scheduledDate,
+            scheduledAt: dto.scheduledAt,
+            interviewCategory: 'Technical',
+            interviewStatus: dto.interviewStatus,
+          },
+        }),
+
+        // Update scheduling first to lock the schedule
+        this.prisma.scheduling.update({
+          where: { scheduleID: bookedSchedule.scheduleID },
+          data: { sessionID: { set: null } }, // Temporary update to maintain transaction
+        })
+      ]);
+
+      let num = 0;
+      // Create category scores and subcategory scores
       const categoryScores = await Promise.all(
         categoryAssignments.map(async (assignment) => {
-          return this.prisma.categoryScore.create({
+          const categoryScore = await this.prisma.categoryScore.create({
             data: {
               sessionId: interviewSession.sessionId,
               assignmentId: assignment.assignmentId,
               score: 0,
+              order: num++,
+              // Create subcategory scores for each subcategory assignment
+              subCategoryScores: {
+                create: assignment.SubCategoryAssignment.map(subAssignment => ({
+                  subAssignmentId: subAssignment.id,
+                  score: 0
+                }))
+              }
             },
+            include: {
+              subCategoryScores: true
+            }
           });
+          return categoryScore;
         })
       );
 
+      // Finalize scheduling update
       await this.prisma.scheduling.update({
         where: { scheduleID: bookedSchedule.scheduleID },
         data: {
@@ -131,22 +157,24 @@ export class InterviewSessionService {
       });
 
       this.logger.log(
-        `POST: interview-session/create: Interview Session ${interviewSession.sessionId} created successfully`
+        `POST: interview-session/create: Session ${interviewSession.sessionId} created with ${categoryScores.length} category scores`
       );
 
       return {
         message: "Interview session created successfully",
         interviewSession: {
           ...interviewSession,
-          categoryScores,
+          categoryScores: categoryScores.map(score => ({
+            ...score,
+            subCategoryScores: score.subCategoryScores
+          })),
         },
       };
     } catch (error) {
-      if (error instanceof NotFoundException) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
       }
-      this.prismaErrorHandler(error, "POST", dto.interviewId);
-      this.logger.error(`POST: interview/create: Error: ${error.message}`);
+      this.logger.error(`POST: interview-session/create: Error: ${error.message}`);
       throw new InternalServerErrorException("Server error occurred");
     }
   }
@@ -226,7 +254,11 @@ export class InterviewSessionService {
           interview: true,
           scheduling: true,
           questions: true,
-          CategoryScore: true,
+          CategoryScore: {
+            include: {
+              subCategoryScores: true,
+            }
+          },
         },
       });
 
@@ -442,7 +474,11 @@ export class InterviewSessionService {
             interview: true,
             scheduling: true,
             questions: true,
-            CategoryScore: true,
+            CategoryScore: {
+              include: {
+                subCategoryScores: true,
+              }
+            },
         }
       });
 
@@ -487,7 +523,11 @@ export class InterviewSessionService {
           candidate: true,
           interview: true,
           scheduling: true,
-          CategoryScore: true,
+          CategoryScore: {
+            include: {
+              subCategoryScores: true,
+            }
+          },
           questions: {
             include:{
               interviewResponses:{
