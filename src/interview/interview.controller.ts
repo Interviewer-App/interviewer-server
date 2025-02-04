@@ -378,4 +378,20 @@ export class InterviewController {
           dto
         );
     }
+
+    @Get('category-assignment/:categoryAssignmentId/subcategory')
+    @ApiOperation({
+        summary: 'GET LIST OF SUB CATEGORY ASSIGNMENT',
+        description: 'Private endpoint to Get list of sub category assignment.'
+    })
+    @ApiResponse({ status: 200, description: 'Success'})
+    @ApiResponse({ status: 400, description: 'Bad request' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
+    @Auth(Role.COMPANY)
+    async getSubCategoryAssignments(
+      @Param('categoryAssignmentId') categoryAssignmentId: string,
+    ) {
+        return this.interviewService.getSubCategoryAssignments(categoryAssignmentId);
+    }
 }

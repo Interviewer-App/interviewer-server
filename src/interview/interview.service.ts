@@ -1592,4 +1592,52 @@ export class InterviewService {
             throw new InternalServerErrorException("Server error occurred");
         }
     }
+
+    async getSubCategoryAssignments(categoryAssignmentId: string) {
+        this.logger.log(
+          `GET: subcategory-assignment/list: Fetching subcategories for category assignment ${categoryAssignmentId}`
+        );
+
+        try {
+            const categoryAssignment = await this.prisma.categoryAssignment.findUnique({
+                where: { assignmentId: categoryAssignmentId },
+                include: {
+                    SubCategoryAssignment: {
+                        include: {
+                            SubCategoryScore: true
+                        }
+                    }
+                },
+            });
+
+            if (!categoryAssignment) {
+                throw new NotFoundException(
+                  `Category assignment with id ${categoryAssignmentId} not found`
+                );
+            }
+
+            this.logger.log(
+              `GET: subcategory-assignment/list: Found ${categoryAssignment.SubCategoryAssignment.length} subcategories`
+            );
+
+            const subCategoryAssignments = categoryAssignment.SubCategoryAssignment.map(subCategory => ({
+                ...subCategory,
+                hasScore: subCategory.SubCategoryScore.length > 0
+            }));
+
+            return {
+                message: "Subcategory assignments fetched successfully",
+                subCategoryAssignments,
+            };
+        } catch (error) {
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
+            this.logger.error(
+              `GET: subcategory-assignment/list: Error: ${error.message}`
+            );
+            throw new InternalServerErrorException("Server error occurred");
+        }
+    }
+
 }
