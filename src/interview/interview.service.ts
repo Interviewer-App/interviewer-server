@@ -21,6 +21,8 @@ import { RegisterUserDto } from "../auth/dto/register-user.dto";
 import { UpdateQuestionDto } from "../interview-session/dto/update-question.dto";
 import { CreateQuestionDto } from "../interview-session/dto/create-question.dto";
 import { CreateInterviewQuestionsDto } from "./dto/create-interview-questions.dto";
+import { AddSubCategoryAssignmentDto } from "./dto/add-sub-categories.dto";
+import { UpdateSubCategoryAssignmentDto } from "./dto/update-sub-categories.dto";
 
 
 @Injectable()
@@ -40,9 +42,22 @@ export class InterviewService {
         this.logger.log(`POST: interview/create: New interview started`);
 
         try {
+            // Validate total percentage
             const totalPercentage = dto.categoryAssignments.reduce((sum, assignment) => sum + assignment.percentage, 0);
             if (totalPercentage !== 100) {
                 throw new BadRequestException('The total percentage of category assignments must be 100.');
+            }
+
+            // Validate subcategory percentages
+            for (const assignment of dto.categoryAssignments) {
+                if (assignment.subAssignments && assignment.subAssignments.length > 0) {
+                    const subTotal = assignment.subAssignments.reduce((sum, sub) => sum + sub.percentage, 0);
+                    if (subTotal !== 100) {
+                        throw new BadRequestException(
+                          `Subcategory percentages for category ${assignment.categoryId} must sum to 100.`
+                        );
+                    }
+                }
             }
 
             const company = await this.prisma.company.findUnique({
@@ -63,12 +78,16 @@ export class InterviewService {
                     endDate: dto.endDate,
                     status: dto.status,
                     CategoryAssignment: {
-                        createMany: {
-                            data: dto.categoryAssignments.map(assignment => ({
-                                categoryId: assignment.categoryId,
-                                percentage: assignment.percentage,
-                            })),
-                        },
+                        create: dto.categoryAssignments.map(assignment => ({
+                            categoryId: assignment.categoryId,
+                            percentage: assignment.percentage,
+                            SubCategoryAssignment: assignment.subAssignments ? {
+                                create: assignment.subAssignments.map(sub => ({
+                                    name: sub.name,
+                                    percentage: sub.percentage
+                                }))
+                            } : undefined
+                        })),
                     },
                     scheduling: {
                         create: dto.schedules.map((schedule) => ({
@@ -79,7 +98,11 @@ export class InterviewService {
                     },
                 },
                 include: {
-                    CategoryAssignment: true,
+                    CategoryAssignment: {
+                        include: {
+                            SubCategoryAssignment: true
+                        }
+                    },
                     scheduling: true,
                 },
             });
@@ -107,6 +130,7 @@ export class InterviewService {
         try {
             const interviewExist = await this.prisma.interview.findUnique({
                 where: { interviewID: id },
+                include: { CategoryAssignment: true }
             });
 
             if (!interviewExist) {
@@ -114,41 +138,57 @@ export class InterviewService {
             }
 
             const sessionExist = await this.prisma.interviewSession.findMany({
-                where: {interviewId: id},
-            })
-            if(sessionExist.length > 0){
-                if(dto.status!=null||dto.status!=undefined){
+                where: { interviewId: id },
+            });
+
+            if (sessionExist.length > 0) {
+                if (dto.status != null || dto.status != undefined) {
                     const updateStatus = await this.prisma.interview.update({
-                        where: {
-                            interviewID: id,
-                        },
-                        data: {
-                            status: dto.status,
-                        },
-                        include: {
-                            CategoryAssignment: true,
-                        },
-                    })
+                        where: { interviewID: id },
+                        data: { status: dto.status },
+                        include: { CategoryAssignment: true },
+                    });
                     return {
                         message: 'Interview status updated successfully',
                         updateStatus,
                     };
                 }
-                throw new BadRequestException('Cannot update this interview.Candidates already joined to this interview');
+                throw new BadRequestException('Cannot update this interview. Candidates already joined to this interview');
             }
 
-            if(dto.categoryAssignments!=undefined){
+            if (dto.categoryAssignments != undefined) {
+                // Validate category percentages
                 const totalPercentage = dto.categoryAssignments.reduce((sum, assignment) => sum + assignment.percentage, 0);
                 if (totalPercentage !== 100) {
                     throw new BadRequestException('The total percentage of category assignments must be 100.');
                 }
 
+                for (const assignment of dto.categoryAssignments) {
+                    if (assignment.subAssignments && assignment.subAssignments.length > 0) {
+                        const subTotal = assignment.subAssignments.reduce((sum, sub) => sum + sub.percentage, 0);
+                        if (subTotal !== 100) {
+                            throw new BadRequestException(
+                              `Subcategory percentages for category ${assignment.categoryId} must sum to 100.`
+                            );
+                        }
+                    }
+                }
+
+                await this.prisma.subCategoryAssignment.deleteMany({
+                    where: {
+                        categoryAssignment: {
+                            interviewId: id
+                        }
+                    }
+                });
+
+                // Then delete categories
                 await this.prisma.categoryAssignment.deleteMany({
                     where: { interviewId: id },
                 });
             }
 
-            if(dto.schedules!=undefined){
+            if (dto.schedules != undefined) {
                 await this.prisma.scheduling.deleteMany({
                     where: {
                         interviewId: id,
@@ -168,24 +208,38 @@ export class InterviewService {
                     startDate: dto.startDate,
                     endDate: dto.endDate,
                     status: dto.status,
-                    ...(dto.categoryAssignments!=undefined && {CategoryAssignment: {
-                        createMany: {
-                            data: dto.categoryAssignments.map((assignment) => ({
+                    ...(dto.categoryAssignments != undefined && {
+                        CategoryAssignment: {
+                            create: dto.categoryAssignments.map(assignment => ({
                                 categoryId: assignment.categoryId,
                                 percentage: assignment.percentage,
+                                ...(assignment.subAssignments && {
+                                    SubCategoryAssignment: {
+                                        create: assignment.subAssignments.map(sub => ({
+                                            name: sub.name,
+                                            percentage: sub.percentage
+                                        }))
+                                    }
+                                })
                             })),
-                        },
-                    }}),
-                        ...(dto.schedules!=undefined && {scheduling: {
-                        create: dto.schedules.map((schedule) => ({
-                            startTime: schedule.startTime,
-                            endTime: schedule.endTime,
-                            isBooked: false,
-                        })),
-                    }}),
+                        }
+                    }),
+                    ...(dto.schedules != undefined && {
+                        scheduling: {
+                            create: dto.schedules.map((schedule) => ({
+                                startTime: schedule.startTime,
+                                endTime: schedule.endTime,
+                                isBooked: false,
+                            })),
+                        }
+                    }),
                 },
                 include: {
-                    CategoryAssignment: true,
+                    CategoryAssignment: {
+                        include: {
+                            SubCategoryAssignment: true
+                        }
+                    },
                     scheduling: true,
                 },
             });
@@ -221,7 +275,11 @@ export class InterviewService {
                     interviewers: true,
                     candidates: true,
                     interviewSessions: true,
-                    CategoryAssignment: true,
+                    CategoryAssignment: {
+                        include: {
+                            SubCategoryAssignment: true,
+                        }
+                    },
                     scheduling: true,
                 }
             });
@@ -321,7 +379,11 @@ export class InterviewService {
                     interviewers: true,
                     candidates: true,
                     interviewSessions: true,
-                    CategoryAssignment: true,
+                    CategoryAssignment: {
+                        include: {
+                            SubCategoryAssignment: true,
+                        }
+                    },
                     scheduling: true,
                 },
             });
@@ -397,7 +459,11 @@ export class InterviewService {
                     interviewers: true,
                     candidates: true,
                     interviewSessions: true,
-                    CategoryAssignment: true,
+                    CategoryAssignment: {
+                        include: {
+                            SubCategoryAssignment: true,
+                        }
+                    },
                     scheduling: true,
                     createdAt: true,
                     updatedAt: true,
@@ -443,7 +509,11 @@ export class InterviewService {
                     interviewers: true,
                     candidates: true,
                     interviewSessions: true,
-                    CategoryAssignment: true,
+                    CategoryAssignment: {
+                        include: {
+                            SubCategoryAssignment: true,
+                        }
+                    },
                     scheduling: true,
                     questions: true
                 }
@@ -1357,4 +1427,218 @@ export class InterviewService {
             throw new InternalServerErrorException("Server error occurred");
         }
     }
+
+    async addSubCategoryAssignment(
+      categoryAssignmentId: string,
+      dto: AddSubCategoryAssignmentDto
+    ) {
+        this.logger.log(
+          `POST: subcategory-assignment/add: Adding subcategory to category assignment ${categoryAssignmentId}`
+        );
+
+        try {
+
+            const categoryAssignment = await this.prisma.categoryAssignment.findUnique({
+                where: { assignmentId: categoryAssignmentId },
+                include: { SubCategoryAssignment: true },
+            });
+
+            if (!categoryAssignment) {
+                throw new NotFoundException(
+                  `Category assignment with id ${categoryAssignmentId} not found`
+                );
+            }
+
+            const existingSubTotal = categoryAssignment.SubCategoryAssignment.reduce(
+              (sum, sub) => sum + sub.percentage,
+              0
+            );
+            const newTotal = existingSubTotal + dto.percentage;
+
+            if (newTotal > 100) {
+                throw new BadRequestException(
+                  `Adding this subcategory would exceed the 100% limit for subcategories. Current total: ${existingSubTotal}%`
+                );
+            }
+
+            const subCategoryAssignment = await this.prisma.subCategoryAssignment.create({
+                data: {
+                    parentAssignmentId: categoryAssignmentId,
+                    name: dto.name,
+                    percentage: dto.percentage,
+                },
+            });
+
+            this.logger.log(
+              `POST: subcategory-assignment/add: Subcategory ${subCategoryAssignment.id} added successfully`
+            );
+
+            return {
+                message: "Subcategory assignment added successfully",
+                subCategoryAssignment,
+            };
+        } catch (error) {
+            if (error instanceof NotFoundException || error instanceof BadRequestException) {
+                throw error;
+            }
+            this.logger.error(
+              `POST: subcategory-assignment/add: Error: ${error.message}`
+            );
+            throw new InternalServerErrorException("Server error occurred");
+        }
+    }
+
+    async removeSubCategoryAssignment(subCategoryAssignmentId: string) {
+        this.logger.log(
+          `DELETE: subcategory-assignment/remove: Removing subcategory assignment ${subCategoryAssignmentId}`
+        );
+
+        try {
+            const subCategoryAssignment =
+              await this.prisma.subCategoryAssignment.findUnique({
+                  where: { id: subCategoryAssignmentId },
+              });
+
+            if (!subCategoryAssignment) {
+                throw new NotFoundException(
+                  `Subcategory assignment with id ${subCategoryAssignmentId} not found`
+                );
+            }
+
+            await this.prisma.subCategoryAssignment.delete({
+                where: { id: subCategoryAssignmentId },
+            });
+
+            this.logger.log(
+              `DELETE: subcategory-assignment/remove: Subcategory assignment ${subCategoryAssignmentId} removed successfully`
+            );
+
+            return {
+                message: "Subcategory assignment removed successfully",
+            };
+        } catch (error) {
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
+            this.logger.error(
+              `DELETE: subcategory-assignment/remove: Error: ${error.message}`
+            );
+            throw new InternalServerErrorException("Server error occurred");
+        }
+    }
+
+    async updateSubCategoryAssignment(
+      subCategoryAssignmentId: string,
+      dto: UpdateSubCategoryAssignmentDto
+    ) {
+        this.logger.log(
+          `PATCH: subcategory-assignment/update: Updating subcategory ${subCategoryAssignmentId}`
+        );
+
+        try {
+            const existingSub = await this.prisma.subCategoryAssignment.findUnique({
+                where: { id: subCategoryAssignmentId },
+                include: {
+                    categoryAssignment: {
+                        include: {
+                            SubCategoryAssignment: true
+                        }
+                    }
+                }
+            });
+
+            if (!existingSub) {
+                throw new NotFoundException(
+                  `Subcategory assignment ${subCategoryAssignmentId} not found`
+                );
+            }
+
+            if (dto.percentage !== undefined) {
+                const otherSubsTotal = existingSub.categoryAssignment.SubCategoryAssignment
+                  .filter(sub => sub.id !== subCategoryAssignmentId)
+                  .reduce((sum, sub) => sum + sub.percentage, 0);
+
+                const newTotal = otherSubsTotal + dto.percentage;
+
+                if (newTotal > 100) {
+                    throw new BadRequestException(
+                      `Subcategory percentage would exceed 100% limit. Max allowed: ${100 - otherSubsTotal}%`
+                    );
+                }
+            }
+
+            const updatedSub = await this.prisma.subCategoryAssignment.update({
+                where: { id: subCategoryAssignmentId },
+                data: {
+                    name: dto.name,
+                    percentage: dto.percentage
+                }
+            });
+
+            this.logger.log(
+              `PATCH: subcategory-assignment/update: Subcategory ${subCategoryAssignmentId} updated successfully`
+            );
+
+            return {
+                message: "Subcategory assignment updated successfully",
+                subCategoryAssignment: updatedSub
+            };
+        } catch (error) {
+            if (error instanceof NotFoundException || error instanceof BadRequestException) {
+                throw error;
+            }
+            this.logger.error(
+              `PATCH: subcategory-assignment/update: Error: ${error.message}`
+            );
+            throw new InternalServerErrorException("Server error occurred");
+        }
+    }
+
+    async getSubCategoryAssignments(categoryAssignmentId: string) {
+        this.logger.log(
+          `GET: subcategory-assignment/list: Fetching subcategories for category assignment ${categoryAssignmentId}`
+        );
+
+        try {
+            const categoryAssignment = await this.prisma.categoryAssignment.findUnique({
+                where: { assignmentId: categoryAssignmentId },
+                include: {
+                    SubCategoryAssignment: {
+                        include: {
+                            SubCategoryScore: true
+                        }
+                    }
+                },
+            });
+
+            if (!categoryAssignment) {
+                throw new NotFoundException(
+                  `Category assignment with id ${categoryAssignmentId} not found`
+                );
+            }
+
+            this.logger.log(
+              `GET: subcategory-assignment/list: Found ${categoryAssignment.SubCategoryAssignment.length} subcategories`
+            );
+
+            const subCategoryAssignments = categoryAssignment.SubCategoryAssignment.map(subCategory => ({
+                ...subCategory,
+                hasScore: subCategory.SubCategoryScore.length > 0
+            }));
+
+            return {
+                message: "Subcategory assignments fetched successfully",
+                subCategoryAssignments,
+            };
+        } catch (error) {
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
+            this.logger.error(
+              `GET: subcategory-assignment/list: Error: ${error.message}`
+            );
+            throw new InternalServerErrorException("Server error occurred");
+        }
+    }
+
 }

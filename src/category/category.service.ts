@@ -400,6 +400,11 @@ export class CategoryService {
               category: true,
             },
           },
+          subCategoryScores: {
+            include: {
+              subCategoryAssignment: true,
+            }
+          }
         },
       });
 
@@ -455,15 +460,56 @@ export class CategoryService {
     }
   }
 
+  async updateSubCategoryScore(subCategoryScoreId: string, dto: UpdateCategoryScoreDto) {
+    this.logger.log(`PATCH: Updating sub category score with ID: ${subCategoryScoreId}`);
+
+    try {
+      const subCategoryScore = await this.prisma.subCategoryScore.findUnique({
+        where: { id: subCategoryScoreId },
+      });
+
+      if (!subCategoryScore) {
+        this.logger.warn(`Sub category score with ID ${subCategoryScoreId} not found`);
+        throw new NotFoundException(`Sub category score with ID ${subCategoryScoreId} not found`);
+      }
+
+      const updatedSubCategoryScore = await this.prisma.subCategoryScore.update({
+        where: { id: subCategoryScoreId },
+        data: {
+          score: dto.score,
+        }
+      });
+
+      return {
+        message: 'Sub category score updated successfully',
+        subCategoryScore: updatedSubCategoryScore,
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
+      this.logger.error(`PATCH: Error updating category score: ${error.message}`);
+      throw new InternalServerErrorException('Server error occurred');
+    }
+  }
+
   async calculateTotalScore(sessionId: string) {
     this.logger.log(`GET: Calculating total score for session ID: ${sessionId}`);
 
     try {
       const categoryScores = await this.prisma.categoryScore.findMany({
         where: { sessionId: sessionId },
-        select:{
-          categoryAssignment: true,
-          score: true,
+        include: {
+          categoryAssignment: {
+            select: { percentage: true }
+          },
+          subCategoryScores: {
+            include: {
+              subCategoryAssignment: {
+                select: { percentage: true }
+              }
+            }
+          }
         }
       });
 
@@ -473,23 +519,39 @@ export class CategoryService {
       }
 
       let totalScore = 0;
+
+      // Update category scores and calculate total score
       for (const categoryScore of categoryScores) {
-        const percentage = categoryScore.categoryAssignment.percentage;
-        totalScore += categoryScore.score * (percentage / 100);
+        const categoryPercentage = categoryScore.categoryAssignment.percentage;
+        let effectiveCategoryScore = categoryScore.score;
+
+        // If subcategories exist, calculate the parent category score
+        if (categoryScore.subCategoryScores.length > 0) {
+          effectiveCategoryScore = categoryScore.subCategoryScores.reduce((sum, subScore) => {
+            const subWeight = subScore.subCategoryAssignment.percentage / 100;
+            return sum + (subScore.score * subWeight);
+          }, 0);
+
+          // Update the parent category score in the database
+          await this.prisma.categoryScore.update({
+            where: { categoryScoreId: categoryScore.categoryScoreId },
+            data: { score: effectiveCategoryScore }
+          });
+        }
+
+        // Apply category weight to total score
+        totalScore += effectiveCategoryScore * (categoryPercentage / 100);
       }
 
+      // Update the session with the total score
       const session = await this.prisma.interviewSession.update({
-        where:{
-          sessionId: sessionId,
-        },
-        data: {
-          score: totalScore,
-        }
-      })
+        where: { sessionId: sessionId },
+        data: { score: this.roundToTwoDecimals(totalScore) }
+      });
 
       return {
         message: 'Total score calculated successfully',
-        totalScore,
+        totalScore: this.roundToTwoDecimals(totalScore),
         session
       };
     } catch (error) {
@@ -499,6 +561,10 @@ export class CategoryService {
       this.logger.error(`GET: Error calculating total score: ${error.message}`);
       throw new InternalServerErrorException('Server error occurred');
     }
+  }
+
+  private roundToTwoDecimals(value: number): number {
+    return Math.round(value * 100) / 100;
   }
 
   async getAssignedCategories(sessionId: string) {
