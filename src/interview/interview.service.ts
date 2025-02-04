@@ -1021,6 +1021,7 @@ export class InterviewService {
                             company: true,
                         }
                     },
+                    interviewSession: true,
                     invitation: true,
                 }
             });
