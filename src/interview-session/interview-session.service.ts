@@ -520,7 +520,18 @@ export class InterviewSessionService {
           reviewedBy: true,
           createdAt: true,
           updatedAt: true,
-          candidate: true,
+          candidate: {
+            include: {
+              user: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                 
+                }
+              },
+            },
+          },
           interview: true,
           scheduling: true,
           CategoryScore: {
