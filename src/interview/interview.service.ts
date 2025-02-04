@@ -22,6 +22,7 @@ import { UpdateQuestionDto } from "../interview-session/dto/update-question.dto"
 import { CreateQuestionDto } from "../interview-session/dto/create-question.dto";
 import { CreateInterviewQuestionsDto } from "./dto/create-interview-questions.dto";
 import { AddSubCategoryAssignmentDto } from "./dto/add-sub-categories.dto";
+import { UpdateSubCategoryAssignmentDto } from "./dto/update-sub-categories.dto";
 
 
 @Injectable()
@@ -1520,6 +1521,73 @@ export class InterviewService {
             }
             this.logger.error(
               `DELETE: subcategory-assignment/remove: Error: ${error.message}`
+            );
+            throw new InternalServerErrorException("Server error occurred");
+        }
+    }
+
+    async updateSubCategoryAssignment(
+      subCategoryAssignmentId: string,
+      dto: UpdateSubCategoryAssignmentDto
+    ) {
+        this.logger.log(
+          `PATCH: subcategory-assignment/update: Updating subcategory ${subCategoryAssignmentId}`
+        );
+
+        try {
+            const existingSub = await this.prisma.subCategoryAssignment.findUnique({
+                where: { id: subCategoryAssignmentId },
+                include: {
+                    categoryAssignment: {
+                        include: {
+                            SubCategoryAssignment: true
+                        }
+                    }
+                }
+            });
+
+            if (!existingSub) {
+                throw new NotFoundException(
+                  `Subcategory assignment ${subCategoryAssignmentId} not found`
+                );
+            }
+
+            if (dto.percentage !== undefined) {
+                const otherSubsTotal = existingSub.categoryAssignment.SubCategoryAssignment
+                  .filter(sub => sub.id !== subCategoryAssignmentId)
+                  .reduce((sum, sub) => sum + sub.percentage, 0);
+
+                const newTotal = otherSubsTotal + dto.percentage;
+
+                if (newTotal > 100) {
+                    throw new BadRequestException(
+                      `Subcategory percentage would exceed 100% limit. Max allowed: ${100 - otherSubsTotal}%`
+                    );
+                }
+            }
+
+            const updatedSub = await this.prisma.subCategoryAssignment.update({
+                where: { id: subCategoryAssignmentId },
+                data: {
+                    name: dto.name,
+                    percentage: dto.percentage
+                }
+            });
+
+            this.logger.log(
+              `PATCH: subcategory-assignment/update: Subcategory ${subCategoryAssignmentId} updated successfully`
+            );
+
+            return {
+                message: "Subcategory assignment updated successfully",
+                subCategoryAssignment: updatedSub
+            };
+        } catch (error) {
+            if (error instanceof NotFoundException || error instanceof BadRequestException) {
+                throw error;
+            }
+            this.logger.error(
+              `PATCH: subcategory-assignment/update: Error: ${error.message}`
             );
             throw new InternalServerErrorException("Server error occurred");
         }

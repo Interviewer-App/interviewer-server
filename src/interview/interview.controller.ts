@@ -12,6 +12,7 @@ import { UpdateQuestionDto } from "../interview-session/dto/update-question.dto"
 import { CreateQuestionDto } from "../interview-session/dto/create-question.dto";
 import { CreateInterviewQuestionsDto } from "./dto/create-interview-questions.dto";
 import { AddSubCategoryAssignmentDto } from "./dto/add-sub-categories.dto";
+import { UpdateSubCategoryAssignmentDto } from "./dto/update-sub-categories.dto";
 
 @ApiBearerAuth()
 @ApiTags('Interview')
@@ -356,5 +357,25 @@ export class InterviewController {
       @Param('subCategoryAssignmentId') subCategoryAssignmentId: string,
     ) {
         return this.interviewService.removeSubCategoryAssignment(subCategoryAssignmentId);
+    }
+
+    @Patch('subcategory-assignment/:subCategoryAssignmentId')
+    @ApiOperation({
+        summary: 'UPDATE SUB CATEGORIES BY ID',
+        description: 'Private endpoint to update sub categories.'
+    })
+    @ApiResponse({status: 200, description: 'Ok'})
+    @ApiResponse({status: 400, description: 'Bad request'})
+    @ApiResponse({status: 401, description: 'Unauthorized'})
+    @ApiResponse({status: 500, description: 'Server error'})             //Swagger
+    @Auth(Role.COMPANY)
+    async updateSubCategoryAssignment(
+      @Param('subCategoryAssignmentId') subCategoryAssignmentId: string,
+      @Body() dto: UpdateSubCategoryAssignmentDto,
+    ) {
+        return this.interviewService.updateSubCategoryAssignment(
+          subCategoryAssignmentId,
+          dto
+        );
     }
 }
