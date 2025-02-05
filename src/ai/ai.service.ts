@@ -619,6 +619,7 @@ export class AiService {
           "growth": str
         }
       }
+        This response should be a single JSON object. Do not include any additional text or formatting.
     `;
 
     try {
@@ -684,6 +685,7 @@ export class AiService {
               "phone": "123456789"
           }
       }
+          This response should be a single JSON object. Do not include any additional text or formatting.
       `;
 
       const result = await model.generateContent({
@@ -766,9 +768,12 @@ export class AiService {
         Respond ONLY with valid JSON containing the HTML in a 'description' field. 
 
         Example response format:
+
         {
           "description": "<h2>Position Overview</h2><p>We are seeking...</p><h2>Key Responsibilities</h2><ul><li><b>Develop</b> web applications using...</li></ul>"
         }
+
+        Not an array. This response should be a single JSON object.Do not include any additional text or formatting.
       `;
 
       const result = await model.generateContent({
@@ -778,6 +783,7 @@ export class AiService {
 
       const content = result.response.text();
       this.logger.debug('Generated content:', content);
+      this.logger.log('Generated content:', content);
 
       try {
         const parsedResponse = JSON.parse(content);
