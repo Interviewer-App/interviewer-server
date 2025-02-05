@@ -93,10 +93,7 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     const { sessionId, peerId } = data;
     
     // Join the specified session room
-    await client.join(sessionId);
-
-    console.log(`Peer ${peerId} joined session ${sessionId}  ============================================================`);
-    
+    await client.join(sessionId);    
     // Notify all clients in the room about new peer
     this.server.to(sessionId).emit('peer-joined', {
       joinedSessionId: sessionId,

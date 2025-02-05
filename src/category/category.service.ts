@@ -398,6 +398,7 @@ export class CategoryService {
           categoryAssignment: {
             include: {
               category: true,
+              SubCategoryAssignment: true,
             },
           },
           subCategoryScores: {
