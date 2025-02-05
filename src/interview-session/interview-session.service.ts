@@ -487,6 +487,12 @@ export class InterviewSessionService {
             questions: true,
             CategoryScore: {
               include: {
+                categoryAssignment:{
+                  include:{
+                    SubCategoryAssignment:true,
+                    category: true,
+                  }
+                },
                 subCategoryScores: true,
               }
             },
