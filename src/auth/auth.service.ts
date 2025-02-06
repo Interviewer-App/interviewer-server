@@ -544,16 +544,26 @@ export class AuthService {
       throw new BadRequestException('Invalid or expired verification token');
     }
 
-    await this.prisma.user.update({
+    const updatedUser = await this.prisma.user.update({
       where: { userID: user.userID },
       data: {
         isEmailVerified: true,
         verificationToken: null,
       },
+      select: {
+        userID: true,
+        role: true,
+        isEmailVerified: true,
+      }
     });
 
     this.logger.log(`POST: user/verify-email: Email verified successfully for user: ${user.email}`);
-    return { message: 'Email verified successfully' };
+    return {
+      message: 'Email verified successfully' ,
+      userId: updatedUser.userID,
+      role: updatedUser.role,
+      isEmailVerified: updatedUser.isEmailVerified,
+    };
   }
 
   private validateEmail(email: string): boolean {
