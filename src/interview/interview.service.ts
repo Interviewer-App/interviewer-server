@@ -1088,6 +1088,7 @@ export class InterviewService {
               candidate.user?.dob !== null &&
               candidate.user?.gender !== null &&
               candidate.user?.contactNo !== null &&
+              candidate.user?.contactNo.trim() !== '' &&
               candidate.skillHighlights !== null &&
               candidate.skillHighlights.trim() !== '' &&
               candidate.skillHighlights.trim() !== '<p><br></p>' &&
