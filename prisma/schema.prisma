@@ -463,8 +463,7 @@ model InterviewFeedback {
   feedbackID        String           @id @default(cuid())
   sessionId         String
   interviewSesssion InterviewSession @relation(fields: [sessionId], references: [sessionId])
-  skillScore        String
-  skillMeterStatus  String
+  feedbackText      String
   createdAt         DateTime
   updatedAt         DateTime
 }

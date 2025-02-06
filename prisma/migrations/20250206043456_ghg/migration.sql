@@ -71,6 +71,21 @@ CREATE TABLE "Candidate" (
 );
 
 -- CreateTable
+CREATE TABLE "CandidateAnalysis" (
+    "id" TEXT NOT NULL,
+    "candidateID" TEXT NOT NULL,
+    "summary" TEXT,
+    "skills" TEXT[],
+    "experience" TEXT[],
+    "education" TEXT[],
+    "contactInfo" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "CandidateAnalysis_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "CandidateServey" (
     "serveyId" TEXT NOT NULL,
     "question" TEXT NOT NULL,
@@ -159,6 +174,24 @@ CREATE TABLE "Interview" (
 );
 
 -- CreateTable
+CREATE TABLE "InterviewQuestions" (
+    "interviewQuestionID" TEXT NOT NULL,
+    "interviewID" TEXT NOT NULL,
+    "questionCategory" TEXT,
+    "questionText" TEXT NOT NULL,
+    "explanation" TEXT,
+    "estimatedTimeMinutes" INTEGER NOT NULL DEFAULT 0,
+    "aiContext" TEXT,
+    "diffcultyLevel" TEXT,
+    "type" "QuestionType" NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "usageFrequency" INTEGER,
+
+    CONSTRAINT "InterviewQuestions_pkey" PRIMARY KEY ("interviewQuestionID")
+);
+
+-- CreateTable
 CREATE TABLE "InterviewerOnInterviews" (
     "interviewerId" TEXT NOT NULL,
     "interviewId" TEXT NOT NULL,
@@ -193,6 +226,17 @@ CREATE TABLE "InterviewSession" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "InterviewSession_pkey" PRIMARY KEY ("sessionId")
+);
+
+-- CreateTable
+CREATE TABLE "InterviewFeedback" (
+    "feedbackID" TEXT NOT NULL,
+    "sessionId" TEXT NOT NULL,
+    "feedbackText" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "InterviewFeedback_pkey" PRIMARY KEY ("feedbackID")
 );
 
 -- CreateTable
@@ -288,9 +332,22 @@ CREATE TABLE "CategoryAssignment" (
 );
 
 -- CreateTable
+CREATE TABLE "SubCategoryAssignment" (
+    "id" TEXT NOT NULL,
+    "parentAssignmentId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "percentage" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "SubCategoryAssignment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "CategoryScore" (
     "categoryScoreId" TEXT NOT NULL,
     "sessionId" TEXT NOT NULL,
+    "order" INTEGER,
     "assignmentId" TEXT NOT NULL,
     "score" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "note" TEXT,
@@ -298,6 +355,19 @@ CREATE TABLE "CategoryScore" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "CategoryScore_pkey" PRIMARY KEY ("categoryScoreId")
+);
+
+-- CreateTable
+CREATE TABLE "SubCategoryScore" (
+    "id" TEXT NOT NULL,
+    "categoryScoreId" TEXT NOT NULL,
+    "subAssignmentId" TEXT NOT NULL,
+    "score" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "note" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "SubCategoryScore_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -320,6 +390,9 @@ CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Candidate_userID_key" ON "Candidate"("userID");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "CandidateAnalysis_candidateID_key" ON "CandidateAnalysis"("candidateID");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Admin_userID_key" ON "Admin"("userID");
@@ -352,6 +425,9 @@ CREATE UNIQUE INDEX "CategoryAssignment_interviewId_categoryId_key" ON "Category
 CREATE UNIQUE INDEX "CategoryScore_sessionId_assignmentId_key" ON "CategoryScore"("sessionId", "assignmentId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "SubCategoryScore_categoryScoreId_subAssignmentId_key" ON "SubCategoryScore"("categoryScoreId", "subAssignmentId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "CandidateInvitation_scheduleId_key" ON "CandidateInvitation"("scheduleId");
 
 -- CreateIndex
@@ -362,6 +438,9 @@ ALTER TABLE "User" ADD CONSTRAINT "User_companyId_fkey" FOREIGN KEY ("companyId"
 
 -- AddForeignKey
 ALTER TABLE "Candidate" ADD CONSTRAINT "Candidate_userID_fkey" FOREIGN KEY ("userID") REFERENCES "User"("userID") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CandidateAnalysis" ADD CONSTRAINT "CandidateAnalysis_candidateID_fkey" FOREIGN KEY ("candidateID") REFERENCES "Candidate"("profileID") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "CandidateServey" ADD CONSTRAINT "CandidateServey_candidateId_fkey" FOREIGN KEY ("candidateId") REFERENCES "Candidate"("profileID") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -385,6 +464,9 @@ ALTER TABLE "CompanyServey" ADD CONSTRAINT "CompanyServey_companyId_fkey" FOREIG
 ALTER TABLE "Interview" ADD CONSTRAINT "Interview_companyID_fkey" FOREIGN KEY ("companyID") REFERENCES "Company"("companyID") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "InterviewQuestions" ADD CONSTRAINT "InterviewQuestions_interviewID_fkey" FOREIGN KEY ("interviewID") REFERENCES "Interview"("interviewID") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "InterviewerOnInterviews" ADD CONSTRAINT "InterviewerOnInterviews_interviewerId_fkey" FOREIGN KEY ("interviewerId") REFERENCES "Interviewer"("interviewerID") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -401,6 +483,9 @@ ALTER TABLE "InterviewSession" ADD CONSTRAINT "InterviewSession_candidateId_fkey
 
 -- AddForeignKey
 ALTER TABLE "InterviewSession" ADD CONSTRAINT "InterviewSession_interviewId_fkey" FOREIGN KEY ("interviewId") REFERENCES "Interview"("interviewID") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "InterviewFeedback" ADD CONSTRAINT "InterviewFeedback_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "InterviewSession"("sessionId") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Scheduling" ADD CONSTRAINT "Scheduling_sessionID_fkey" FOREIGN KEY ("sessionID") REFERENCES "InterviewSession"("sessionId") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -436,10 +521,19 @@ ALTER TABLE "CategoryAssignment" ADD CONSTRAINT "CategoryAssignment_interviewId_
 ALTER TABLE "CategoryAssignment" ADD CONSTRAINT "CategoryAssignment_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "Category"("categoryId") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "SubCategoryAssignment" ADD CONSTRAINT "SubCategoryAssignment_parentAssignmentId_fkey" FOREIGN KEY ("parentAssignmentId") REFERENCES "CategoryAssignment"("assignmentId") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "CategoryScore" ADD CONSTRAINT "CategoryScore_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "InterviewSession"("sessionId") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "CategoryScore" ADD CONSTRAINT "CategoryScore_assignmentId_fkey" FOREIGN KEY ("assignmentId") REFERENCES "CategoryAssignment"("assignmentId") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SubCategoryScore" ADD CONSTRAINT "SubCategoryScore_categoryScoreId_fkey" FOREIGN KEY ("categoryScoreId") REFERENCES "CategoryScore"("categoryScoreId") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SubCategoryScore" ADD CONSTRAINT "SubCategoryScore_subAssignmentId_fkey" FOREIGN KEY ("subAssignmentId") REFERENCES "SubCategoryAssignment"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "CandidateInvitation" ADD CONSTRAINT "CandidateInvitation_candidateID_fkey" FOREIGN KEY ("candidateID") REFERENCES "Candidate"("profileID") ON DELETE RESTRICT ON UPDATE CASCADE;
