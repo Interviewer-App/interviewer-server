@@ -111,7 +111,6 @@ datasource db {
 //   ENTERPRISE
 // }
 
-
 // model User {
 //   id               String             @id @default(cuid())
 //   email            String             @unique
@@ -186,6 +185,8 @@ model User {
   provider          String?
   providerAccountId String?
   role              Role         @default(CANDIDATE)
+  isEmailVerified   Boolean      @default(false)
+  verificationToken String?
   companyId         String?
   admin             Admin?
   candidate         Candidate?

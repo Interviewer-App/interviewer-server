@@ -19,6 +19,7 @@ import { first, last } from 'rxjs';
 import { ProviderUserDto } from './dto/provider-user.dto';
 import { CreateEmailServerDto } from "../email-server/dto/create-email-server.dto";
 import { EmailServerService } from "../email-server/email-server.service";
+import { v4 as uuidv4 } from 'uuid';
 
 
 @Injectable()
@@ -59,6 +60,8 @@ export class AuthService {
     //Hash the password
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
+    const verificationToken = uuidv4();
+
     try {
       const userData = {
         firstName: dto.firstname,
@@ -66,6 +69,8 @@ export class AuthService {
         email: dto.email,
         password: hashedPassword,
         role: dto.role,
+        isEmailVerified: false,
+        verificationToken: verificationToken,
       };
       // const {passwordconf , ...newUserData} = dto
       // newUserData.password = hashedPassword;
@@ -99,8 +104,11 @@ export class AuthService {
           },
           select: {
             userID: true,
+            firstName: true,
+            lastName: true,
             email: true,
             role: true,
+            isEmailVerified: true,
             createdAt: true,
             company: {
               select: {
@@ -120,7 +128,7 @@ export class AuthService {
                 user: true,
                 isSurveyCompleted: true,
               },
-            },
+            }
           },
         });
 
@@ -134,6 +142,27 @@ export class AuthService {
           })
           this.logger.log(`Default category technical created for the company: ${technicalCategory.categoryId}`);
         }
+
+      const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
+
+      const message = `
+          Dear ${newuser.firstName} ${newuser.lastName},
+          
+          Verify your email by navigating to below link:
+          Email: ${newuser.email}
+          Verify Token: ${verificationToken}
+          Link: ${verificationLink}
+          
+          Best regards,
+          Admin Team
+        `;
+
+      const emailDto = new CreateEmailServerDto();
+      emailDto.body = message;
+      emailDto.to = newuser.email;
+      emailDto.subject = `Email Verification`;
+
+      await this.emailService.sendMailSandBox(emailDto);
 
         return {
           user: newuser,
@@ -172,6 +201,7 @@ export class AuthService {
           email: true,
           password: true,
           role: true,
+          isEmailVerified: true,
           company: {
             select: {
               companyID: true,
@@ -259,6 +289,7 @@ export class AuthService {
         userID: true,
         email: true,
         role: true,
+        isEmailVerified: true,
         company: {
           select: {
             companyID: true,
@@ -307,6 +338,7 @@ export class AuthService {
           firstName: dto.firstname,
           lastName: dto.lastname,
           email: dto.email,
+          isEmailVerified: true,
           providerAccountId: dto.providerAccountId,
           provider: dto.provider,
           ...(dto.role === Role.COMPANY && {
@@ -340,6 +372,7 @@ export class AuthService {
           userID: true,
           email: true,
           role: true,
+          isEmailVerified: true,
           createdAt: true,
           provider: true,
           company: {
@@ -497,6 +530,30 @@ export class AuthService {
         throw new InternalServerErrorException('Failed to process forgot password request');
       }
     }
+  }
+
+  async verifyEmail(token: string): Promise<any> {
+    this.logger.log(`POST: user/verify-email: Verifying email with token: ${token}`);
+
+    const user = await this.prisma.user.findFirst({
+      where: { verificationToken: token },
+    });
+
+    if (!user) {
+      this.logger.warn(`POST: user/verify-email: Invalid or expired token: ${token}`);
+      throw new BadRequestException('Invalid or expired verification token');
+    }
+
+    await this.prisma.user.update({
+      where: { userID: user.userID },
+      data: {
+        isEmailVerified: true,
+        verificationToken: null,
+      },
+    });
+
+    this.logger.log(`POST: user/verify-email: Email verified successfully for user: ${user.email}`);
+    return { message: 'Email verified successfully' };
   }
 
   private validateEmail(email: string): boolean {

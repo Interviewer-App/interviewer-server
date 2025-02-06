@@ -112,5 +112,17 @@ export class AuthController {
     return await this.authService.forgotPassword(forgotPasswordDto.email);
   }
 
+  @Get('verify-email/:token')
+  @ApiOperation({
+    summary: 'Verify email',
+    description: 'Public endpoint to verify email'
+  })
+  @ApiResponse({status: 200, description: 'Ok'})
+  @ApiResponse({status: 400, description: 'Bad request'})
+  @ApiResponse({status: 500, description: 'Server error'})
+  async verifyEmail(@Param('token') token: string) {
+    return await this.authService.verifyEmail(token);
+  }
+
 
 }
