@@ -1089,7 +1089,11 @@ export class InterviewService {
               candidate.user?.gender !== null &&
               candidate.user?.contactNo !== null &&
               candidate.skillHighlights !== null &&
+              candidate.skillHighlights.trim() !== '' &&
+              candidate.skillHighlights.trim() !== '<p><br></p>' &&
               candidate.experience !== null &&
+              candidate.experience.trim() !== '' &&
+              candidate.experience.trim() !== '<p><br></p>' &&
               candidate.linkedInUrl !== null;
 
 
