@@ -454,8 +454,19 @@ model InterviewSession {
   interviewResponses Answer[]
   CategoryScore      CategoryScore[]
 
-  // interviewFeedback  InterviewFeedback[]
+  interviewFeedback InterviewFeedback[]
+
   @@unique([interviewId, candidateId])
+}
+
+model InterviewFeedback {
+  feedbackID        String           @id @default(cuid())
+  sessionId         String
+  interviewSesssion InterviewSession @relation(fields: [sessionId], references: [sessionId])
+  skillScore        String
+  skillMeterStatus  String
+  createdAt         DateTime
+  updatedAt         DateTime
 }
 
 model Scheduling {
