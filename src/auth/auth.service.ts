@@ -143,7 +143,7 @@ export class AuthService {
           this.logger.log(`Default category technical created for the company: ${technicalCategory.categoryId}`);
         }
 
-      const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
+      const verificationLink = `${process.env.FRONTEND_BASE_URL}/verify-email?token=${verificationToken}`;
 
       const message = `
           Dear ${newuser.firstName} ${newuser.lastName},
