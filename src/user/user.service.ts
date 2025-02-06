@@ -443,6 +443,7 @@ export class UserService {
         email: dto.email,
         password: hashedPassword,
         role: Role.COMPANY,
+        isEmailVerified: true,
       };
 
 
@@ -462,6 +463,7 @@ export class UserService {
           firstName: true,
           lastName: true,
           role: true,
+          isEmailVerified: true,
           createdAt: true,
           company: {
             select: {
