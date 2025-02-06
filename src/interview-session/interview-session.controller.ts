@@ -9,6 +9,7 @@ import { Role } from "@prisma/client";
 import { InterviewSession } from './entities/interview-session.entity';
 import { UpdateQuestionDto } from "./dto/update-question.dto";
 import { CreateQuestionDto } from "./dto/create-question.dto";
+import { CreateFeedbackDto } from './dto/create-feedback.dto';
 
 @ApiBearerAuth()
 @ApiTags('Interview-Session')
@@ -234,6 +235,21 @@ export class InterviewSessionController {
   @Auth(Role.COMPANY)
   importQuestions(@Param('sessionId') sessionId: string) {
     return this.interviewSessionService.importQuestions(sessionId);
+  }
+
+
+  @Post('feedback/:sessionId')
+  @ApiOperation({
+    summary: 'ADD FEEDBACK',
+    description: 'Private endpoint to create feeback for session. It is allowed only by "company" users'
+  })
+  @ApiResponse({ status: 201, description: 'Created' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
+  @Auth(Role.COMPANY)
+  addFeedback(@Param('sessionId') sessionId: string, @Body() createFeedbackDto: CreateFeedbackDto) {
+    return this.interviewSessionService.addFeedback(sessionId, createFeedbackDto);
   }
   
   //

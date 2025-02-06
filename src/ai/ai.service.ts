@@ -583,7 +583,7 @@ export class AiService {
       ${JSON.stringify(data.session2, null, 2)}
       
       Provide response in this JSON format:
-      Return JSON:
+      Return JSON output with the following structure, This response should be a single JSON object. Do not include any additional text or formatting.
       {
         "overall": {
           "score": {c1: num, c2: num, diff: num},

@@ -13,6 +13,7 @@ import { UpdateQuestionDto } from "./dto/update-question.dto";
 import { CreateQuestionDto } from "./dto/create-question.dto";
 // import { ProducerService } from '../kafka/producer/producer.service';
 import { StreamClient } from '@stream-io/node-sdk';
+import { CreateFeedbackDto } from "./dto/create-feedback.dto";
 
 @Injectable()
 export class InterviewSessionService {
@@ -534,6 +535,7 @@ export class InterviewSessionService {
           completedDate: true,
           interviewStatus: true,
           score: true,
+          interviewFeedback: true,
           reviewedBy: true,
           createdAt: true,
           updatedAt: true,
@@ -970,6 +972,38 @@ export class InterviewSessionService {
 
       throw new InternalServerErrorException('Failed to import questions');
     }
+  }
+
+
+  async addFeedback(sessionId: string, createFeedbackDto: CreateFeedbackDto) {
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Check if session exists
+      const session = await tx.interviewSession.findUnique({
+        where: { sessionId },
+      });
+
+      if (!session) {
+        throw new NotFoundException('Interview session not found');
+      }
+
+      // 2. Create feedback
+      const feedback = await tx.interviewFeedback.create({
+        data: {
+          ...createFeedbackDto,
+          sessionId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      });
+
+      // 3. Update InterviewSession with feedbackID
+      await tx.interviewSession.update({
+        where: { sessionId },
+        data: { feedbackId: feedback.feedbackId },
+      });
+
+      return feedback;
+    });
   }
 
   private isValidQuestionType(type: string): boolean {

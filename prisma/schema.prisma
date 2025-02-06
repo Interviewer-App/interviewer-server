@@ -460,7 +460,7 @@ model InterviewSession {
 }
 
 model InterviewFeedback {
-  feedbackID        String           @id @default(cuid())
+  feedbackId        String           @id @default(cuid())
   sessionId         String
   interviewSesssion InterviewSession @relation(fields: [sessionId], references: [sessionId])
   feedbackText      String
