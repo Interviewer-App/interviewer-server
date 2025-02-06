@@ -238,7 +238,7 @@ export class InterviewSessionController {
     return this.interviewSessionService.importQuestions(sessionId);
   }
 
-  @Post('reorder-category-scores')
+  @Post('reorder-interview-flow')
   @ApiBody({ type: ReorderCategoryScoresDto })
   @ApiResponse({
     status: 200,
