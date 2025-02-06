@@ -13,6 +13,7 @@ import { UpdateQuestionDto } from "./dto/update-question.dto";
 import { CreateQuestionDto } from "./dto/create-question.dto";
 // import { ProducerService } from '../kafka/producer/producer.service';
 import { StreamClient } from '@stream-io/node-sdk';
+import { ReorderCategoryScoresDto } from "./dto/reorder-category-scores.dto";
 
 @Injectable()
 export class InterviewSessionService {
@@ -975,6 +976,57 @@ export class InterviewSessionService {
   private isValidQuestionType(type: string): boolean {
     const validTypes = ['OPEN-ENDED', 'CODING', 'OPEN_ENDED'];
     return validTypes.includes(type.toUpperCase());
+  }
+
+  async reorderCategoryScores(dto: ReorderCategoryScoresDto): Promise<void> {
+    const { sessionId, categories } = dto;
+
+    const session = await this.prisma.interviewSession.findUnique({
+      where: { sessionId },
+    });
+    if (!session) {
+      throw new NotFoundException(`Session with ID ${sessionId} not found`);
+    }
+
+    const categoryAssignments = await this.prisma.categoryAssignment.findMany({
+      where: { interviewId: session.interviewId },
+    });
+
+    const categoryIdToAssignmentIdMap = new Map(
+      categoryAssignments.map((ca) => [ca.categoryId, ca.assignmentId]),
+    );
+
+    const invalidCategoryIds = categories
+      .map((cat) => cat.categoryId)
+      .filter((categoryId) => !categoryIdToAssignmentIdMap.has(categoryId));
+    if (invalidCategoryIds.length > 0) {
+      throw new BadRequestException(
+        `Invalid category IDs provided: ${invalidCategoryIds.join(', ')}`,
+      );
+    }
+
+    const uniqueCategoryIds = new Set(categories.map((cat) => cat.categoryId));
+    if (uniqueCategoryIds.size !== categories.length) {
+      throw new BadRequestException('Duplicate category IDs are not allowed');
+    }
+
+    try {
+      await this.prisma.$transaction(
+        categories.map((cat) =>
+          this.prisma.categoryScore.update({
+            where: {
+              sessionId_assignmentId: {
+                sessionId,
+                assignmentId: categoryIdToAssignmentIdMap.get(cat.categoryId),
+              },
+            },
+            data: { order: cat.order },
+          }),
+        ),
+      );
+    } catch (error) {
+      throw new BadRequestException('Failed to update category scores order');
+    }
   }
 
 
