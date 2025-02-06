@@ -13,6 +13,7 @@ import { CreateQuestionDto } from "../interview-session/dto/create-question.dto"
 import { CreateInterviewQuestionsDto } from "./dto/create-interview-questions.dto";
 import { AddSubCategoryAssignmentDto } from "./dto/add-sub-categories.dto";
 import { UpdateSubCategoryAssignmentDto } from "./dto/update-sub-categories.dto";
+import { CandidateResponseDto, TopCandidatesRequestDto } from "./dto/top-candidate.dto";
 
 @ApiBearerAuth()
 @ApiTags('Interview')
@@ -393,5 +394,19 @@ export class InterviewController {
       @Param('categoryAssignmentId') categoryAssignmentId: string,
     ) {
         return this.interviewService.getSubCategoryAssignments(categoryAssignmentId);
+    }
+
+    @Post('top-candidates')
+    @ApiResponse({
+        status: 200,
+        description: 'List of top candidates',
+        type: [CandidateResponseDto],
+    })
+    @ApiResponse({ status: 400, description: 'Invalid input' })
+    @ApiResponse({ status: 500, description: 'Internal server error' })
+    async getTopCandidates(
+      @Body() dto: TopCandidatesRequestDto
+    ): Promise<CandidateResponseDto[]> {
+        return this.interviewService.getTopCandidates(dto);
     }
 }

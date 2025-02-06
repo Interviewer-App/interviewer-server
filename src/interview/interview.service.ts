@@ -23,6 +23,7 @@ import { CreateQuestionDto } from "../interview-session/dto/create-question.dto"
 import { CreateInterviewQuestionsDto } from "./dto/create-interview-questions.dto";
 import { AddSubCategoryAssignmentDto } from "./dto/add-sub-categories.dto";
 import { UpdateSubCategoryAssignmentDto } from "./dto/update-sub-categories.dto";
+import { CandidateResponseDto, TopCandidatesRequestDto } from "./dto/top-candidate.dto";
 
 
 @Injectable()
@@ -1638,6 +1639,142 @@ export class InterviewService {
               `GET: subcategory-assignment/list: Error: ${error.message}`
             );
             throw new InternalServerErrorException("Server error occurred");
+        }
+    }
+
+    async getTopCandidates(
+      params: TopCandidatesRequestDto,
+    ): Promise<CandidateResponseDto[]> {
+        const { interviewId, categoryId, limit = 5, type = 'overall' } = params;
+
+        if (!interviewId) {
+            throw new BadRequestException('Interview ID is required');
+        }
+
+        if (type === 'category' && !categoryId) {
+            throw new BadRequestException('Category ID is required for category-based sorting');
+        }
+
+        if (limit <= 0) {
+            throw new BadRequestException('Limit must be a positive number');
+        }
+
+        try {
+            if (type === 'overall') {
+                return await this.getTopCandidatesByOverallScore(interviewId, limit);
+            } else {
+                return await this.getTopCandidatesByCategoryScore(interviewId, categoryId, limit);
+            }
+        } catch (error) {
+            console.error('Error fetching top candidates:', error);
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
+            throw new Error('Failed to fetch top candidates');
+        }
+    }
+
+    private async getTopCandidatesByOverallScore(
+      interviewId: string,
+      limit: number,
+    ): Promise<CandidateResponseDto[]> {
+        try {
+            const sessions = await this.prisma.interviewSession.findMany({
+                where: {
+                    interviewId,
+                    interviewStatus: 'completed',
+                },
+                include: {
+                    candidate: {
+                        include: {
+                            user: true,
+                        },
+                    },
+                },
+                orderBy: {
+                    score: 'desc',
+                },
+                take: limit,
+            });
+
+            if (sessions.length === 0) {
+                throw new NotFoundException('No completed interview sessions found for the given interview');
+            }
+
+            return sessions.map((session) => ({
+                candidateId: session.candidateId,
+                name: `${session.candidate.user.firstName} ${session.candidate.user.lastName}`,
+                email: session.candidate.user.email,
+                score: session.score,
+                sessionId: session.sessionId,
+            }));
+        } catch (error) {
+            console.error('Error fetching candidates by overall score:', error);
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
+            throw new Error('Failed to fetch candidates by overall score');
+        }
+    }
+
+    private async getTopCandidatesByCategoryScore(
+      interviewId: string,
+      categoryId: string,
+      limit: number,
+    ): Promise<CandidateResponseDto[]> {
+        try {
+            const categoryAssignment = await this.prisma.categoryAssignment.findFirst({
+                where: {
+                    interviewId,
+                    categoryId,
+                },
+            });
+
+            if (!categoryAssignment) {
+                throw new NotFoundException('Category assignment not found for the given interview');
+            }
+
+            const categoryScores = await this.prisma.categoryScore.findMany({
+                where: {
+                    assignmentId: categoryAssignment.assignmentId,
+                    interviewSession: {
+                        interviewStatus: 'completed',
+                    },
+                },
+                include: {
+                    interviewSession: {
+                        include: {
+                            candidate: {
+                                include: {
+                                    user: true,
+                                },
+                            },
+                        },
+                    },
+                },
+                orderBy: {
+                    score: 'desc',
+                },
+                take: limit,
+            });
+
+            if (categoryScores.length === 0) {
+                throw new NotFoundException('No category scores found for the given interview and category');
+            }
+
+            return categoryScores.map((cs) => ({
+                candidateId: cs.interviewSession.candidateId,
+                name: `${cs.interviewSession.candidate.user.firstName} ${cs.interviewSession.candidate.user.lastName}`,
+                email: cs.interviewSession.candidate.user.email,
+                score: cs.score,
+                sessionId: cs.interviewSession.sessionId,
+            }));
+        } catch (error) {
+            console.error('Error fetching candidates by category score:', error);
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
+            throw new Error('Failed to fetch candidates by category score');
         }
     }
 
