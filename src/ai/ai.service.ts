@@ -16,6 +16,7 @@ import { GenerateDescriptionDto } from "./dto/generate-description.dto";
 import axios from 'axios';
 import * as pdfParse from 'pdf-parse';
 import { GenerateSchedulesDto } from "./dto/generate-schedules.dto";
+import * as puppeteer from 'puppeteer';
 
 @Injectable()
 export class AiService {
@@ -879,6 +880,47 @@ export class AiService {
         error.stack
       );
       throw new InternalServerErrorException('Failed to generate schedules');
+    }
+  }
+
+  async generatePdf(url: string): Promise<Buffer> {
+    let browser = null;
+    try {
+      browser = await puppeteer.launch({
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--font-render-hinting=none',
+        ],
+      });
+
+      const page = await browser.newPage();
+
+      await page.goto(url, {
+        waitUntil: ['networkidle0'],
+      });
+
+      await page.evaluateHandle('document.fonts.ready');
+
+      const pdf = await page.pdf({
+        format: 'A4',
+        scale: 0.67,
+        margin: {
+          top: '10mm',
+          left: '10mm',
+          right: '10mm',
+          bottom: '10mm',
+        },
+      });
+
+      return pdf;
+    } catch (error) {
+      throw new Error(`PDF generation failed: ${error.message}`);
+    } finally {
+      if (browser) {
+        await browser.close();
+      }
     }
   }
 }

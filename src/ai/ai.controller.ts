@@ -1,9 +1,9 @@
-import { Controller, Post, Body, Param, Get } from "@nestjs/common";
+import { Controller, Post, Body, Param, Get, Res, HttpException, HttpStatus } from "@nestjs/common";
 import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
+    ApiBearerAuth,
+    ApiOperation,
+    ApiResponse,
+    ApiTags,
 } from '@nestjs/swagger';
 import { AiService } from './ai.service';
 import { Auth } from 'src/auth/decorators';
@@ -15,6 +15,7 @@ import { ComparisonBodyDto } from "./dto/comparison-body.dto";
 import { AnalyzeCvDto } from "./dto/analyze-cv.dto";
 import { GenerateDescriptionDto } from "./dto/generate-description.dto";
 import { GenerateSchedulesDto } from "./dto/generate-schedules.dto";
+import { Response } from 'express';
 
 
 @ApiBearerAuth()
@@ -26,7 +27,7 @@ export class AiController {
 
     @Post('generate-questions/:sessionId')
     @ApiOperation({
-    summary: 'GENERATE QUESTIONS',
+        summary: 'GENERATE QUESTIONS',
         description: 'Private endpoint to generate questions.'
     })
     @ApiResponse({ status: 201, description: 'Created', isArray: true })
@@ -35,7 +36,7 @@ export class AiController {
     @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
     @Auth(Role.COMPANY)
     generateQuestions(@Param('sessionId') id: string, @Body() GenerateQuestionsDto: GenerateQuestionsDto) {
-        return this.aiService.generateQuestions(id,GenerateQuestionsDto);
+        return this.aiService.generateQuestions(id, GenerateQuestionsDto);
     }
 
     @Post('generate-questions-interview/:interviewId')
@@ -49,7 +50,7 @@ export class AiController {
     @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
     @Auth(Role.COMPANY)
     generateQuestionsForInterview(@Param('interviewId') id: string, @Body() GenerateQuestionsDto: GenerateQuestionsDto) {
-        return this.aiService.generateQuestionsForInterview(id,GenerateQuestionsDto);
+        return this.aiService.generateQuestionsForInterview(id, GenerateQuestionsDto);
     }
 
     @Post('analiyze-question')
@@ -71,13 +72,13 @@ export class AiController {
         summary: 'ANALYZE CANDIDATES RELEVENT FOR THE POSITION',
         description: 'Private endpoint to analyze candidate and get summary with relevance to the position.'
     })
-    @ApiResponse({ status: 201, description: 'Created'})
+    @ApiResponse({ status: 201, description: 'Created' })
     @ApiResponse({ status: 400, description: 'Bad request' })
     @ApiResponse({ status: 401, description: 'Unauthorized' })
     @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
     @Auth(Role.COMPANY)
     analyzeCandidate(@Body() AnalyzecandidateDto: AnalyzeCandidateDto) {
-    return this.aiService.analyzeCandidate(AnalyzecandidateDto);
+        return this.aiService.analyzeCandidate(AnalyzecandidateDto);
     }
 
     @Post('candidate-comparison')
@@ -85,7 +86,7 @@ export class AiController {
         summary: 'COMPARE TWO CANDIDATES WHO COMPLETED SESSION',
         description: 'Private endpoint to analyze and compare two candidates who completed the session'
     })
-    @ApiResponse({ status: 201, description: 'Created'})
+    @ApiResponse({ status: 201, description: 'Created' })
     @ApiResponse({ status: 400, description: 'Bad request' })
     @ApiResponse({ status: 401, description: 'Unauthorized' })
     @ApiResponse({ status: 500, description: 'Server error' })
@@ -134,6 +135,30 @@ export class AiController {
     @Auth(Role.COMPANY)
     generateSchedules(@Body() dto: GenerateSchedulesDto) {
         return this.aiService.generateSchedules(dto);
+    }
+
+    @Post('generate')
+    @ApiResponse({ status: 201, description: 'Created' })
+    @ApiResponse({ status: 400, description: 'Bad request' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 500, description: 'Server error' })
+    async generatePdf(@Body() generatePdfDto: any, @Res() res:Response) {
+        try {
+            const pdf = await this.aiService.generatePdf(generatePdfDto.url);
+            
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', 'attachment; filename=download.pdf');
+            return res.send(pdf);
+          } catch (error) {
+            throw new HttpException(
+              {
+                status: HttpStatus.INTERNAL_SERVER_ERROR,
+                error: 'PDF generation failed',
+                message: error.message,
+              },
+              HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+          }
     }
 
 }
