@@ -1074,12 +1074,24 @@ export class InterviewService {
         try {
             const candidate = await this.prisma.candidate.findUnique({
                 where: { profileID: candidateId },
+                include: {
+                    user: true,
+                },
             });
 
             if (!candidate) {
                 this.logger.warn(`Candidate with ID ${candidateId} not found`);
                 throw new NotFoundException(`Candidate with ID ${candidateId} not found`);
             }
+
+            const isProfileCompleted =
+              candidate.user?.dob !== null &&
+              candidate.user?.gender !== null &&
+              candidate.user?.contactNo !== null &&
+              candidate.skillHighlights !== null &&
+              candidate.experience !== null &&
+              candidate.linkedInUrl !== null;
+
 
             const schedules = await this.prisma.scheduling.findMany({
                 where: {
@@ -1101,12 +1113,14 @@ export class InterviewService {
                 this.logger.warn(`No schedules found for interview ID: ${candidateId}`);
                 return {
                     message: 'No schedules found for this candidate',
+                    isProfileCompleted,
                     schedules: [],
                 };
             }
 
             return {
                 message: 'Schedules fetched successfully',
+                isProfileCompleted,
                 schedules,
             };
         } catch (error) {
