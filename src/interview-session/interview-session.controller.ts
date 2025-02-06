@@ -2,13 +2,14 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestj
 import { InterviewSessionService } from './interview-session.service';
 import { CreateInterviewSessionDto } from './dto/create-interview-session.dto';
 import { UpdateInterviewSessionDto } from './dto/update-interview-session.dto';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Interview } from "../interview/entities/interview.entity";
 import { Auth } from "../auth/decorators";
 import { Role } from "@prisma/client";
 import { InterviewSession } from './entities/interview-session.entity';
 import { UpdateQuestionDto } from "./dto/update-question.dto";
 import { CreateQuestionDto } from "./dto/create-question.dto";
+import { ReorderCategoryScoresDto } from "./dto/reorder-category-scores.dto";
 import { CreateFeedbackDto } from './dto/create-feedback.dto';
 
 @ApiBearerAuth()
@@ -237,6 +238,22 @@ export class InterviewSessionController {
     return this.interviewSessionService.importQuestions(sessionId);
   }
 
+  @Post('reorder-category-scores')
+  @ApiBody({ type: ReorderCategoryScoresDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Category scores reordered successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Invalid input' })
+  @ApiResponse({ status: 404, description: 'Session not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
+  async reorderCategoryScores(
+    @Body() dto: ReorderCategoryScoresDto,
+  ): Promise<{ message: string }> {
+    await this.interviewSessionService.reorderCategoryScores(dto);
+    return { message: 'Category scores reordered successfully' };
+  }
+
 
   @Post('feedback/:sessionId')
   @ApiOperation({
@@ -251,7 +268,7 @@ export class InterviewSessionController {
   addFeedback(@Param('sessionId') sessionId: string, @Body() createFeedbackDto: CreateFeedbackDto) {
     return this.interviewSessionService.addFeedback(sessionId, createFeedbackDto);
   }
-  
+
   //
   // @Patch(':id')
   // update(@Param('id') id: string, @Body() updateInterviewSessionDto: UpdateInterviewSessionDto) {

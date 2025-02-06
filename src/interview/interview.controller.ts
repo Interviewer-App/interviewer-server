@@ -4,7 +4,7 @@ import { InterviewService } from './interview.service';
 import { Auth, GetUser } from 'src/auth/decorators';
 import { Interview } from './entities/interview.entity';
 import { CreateInterviewDto } from "./dto/create-interview.dto";
-import { InterviewStatus, Role } from "@prisma/client";
+import { status, Role } from '@prisma/client';
 import { UpdateInterviewDto } from './dto/update-interview.dto';
 import { EmailInvitationDto } from "./dto/email-invitation.dto";
 import { BookScheduleDto } from "./dto/book-schedule.dto";
@@ -111,7 +111,7 @@ export class InterviewController {
     @Get('status')
     @ApiQuery({
         name: 'status',
-        enum: InterviewStatus,
+        enum: status,
         description: 'Filter by status',
         required: true,
     })
@@ -124,7 +124,7 @@ export class InterviewController {
     @ApiResponse({ status: 401, description: 'Unauthorized' })
     @ApiResponse({ status: 500, description: 'Server error' })             //Swagger
     @Auth(Role.COMPANY)
-    findAllByStatus(@Query('status') status: InterviewStatus ) {
+    findAllByStatus(@Query('status') status: status ) {
         return this.interviewService.findAllByStatus(status);
     }
 

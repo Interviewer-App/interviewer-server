@@ -10,7 +10,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateInterviewDto } from './dto/create-interview.dto';
 import { UpdateInterviewDto } from './dto/update-interview.dto';
 import { ProducerService } from '../kafka/producer/producer.service';
-import { InterviewStatus, Role } from "@prisma/client";
+import { status, Role } from "@prisma/client";
 import { EmailInvitationDto } from "./dto/email-invitation.dto";
 import { EmailServerService } from "../email-server/email-server.service";
 import { CreateEmailServerDto } from "../email-server/dto/create-email-server.dto";
@@ -319,7 +319,7 @@ export class InterviewService {
     ) {
         try {
             const where: any = {
-                status: InterviewStatus.ACTIVE,
+                status: status.ACTIVE,
             };
 
 
@@ -625,7 +625,7 @@ export class InterviewService {
         this.logger.error(`${method}: Prisma error: ${error.message}`);
     }
 
-    async findAllByStatus(status: InterviewStatus) {
+    async findAllByStatus(status: status) {
         try {
             const interviews = await this.prisma.interview.findMany({
                 where: { status: status },
