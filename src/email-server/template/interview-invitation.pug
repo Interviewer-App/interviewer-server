@@ -1,0 +1,153 @@
+doctype html
+html(lang="en")
+    head
+        meta(charset="UTF-8")
+        meta(name="viewport" content="width=device-width, initial-scale=1.0")
+        title Interview Invitation
+        style.
+            body {
+                font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+                margin: 0;
+                padding: 0;
+                background-color: #f8f9fa;
+            }
+
+            .email-container {
+                max-width: 640px;
+                margin: 2rem auto;
+                background: white;
+                border-radius: 12px;
+                overflow: hidden;
+                box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+                border: 1px solid #e0e0e0;
+            }
+
+            .header {
+                text-align: center;
+                padding: 0;
+                position: relative;
+            }
+
+            .content {
+                padding: 2.5rem 2rem;
+                color: #374151;
+                line-height: 1.65;
+            }
+
+            .content h1 {
+                font-size: 1.75rem;
+                color: #1e293b;
+                margin: 2rem 0 1.5rem;
+                text-align: center;
+                font-weight: 600;
+            }
+
+            .credentials-box {
+                background: #f8fafc;
+                border-radius: 8px;
+                padding: 1.5rem;
+                margin: 1.5rem 0;
+                border: 1px solid #e2e8f0;
+            }
+
+            .credential-item {
+                margin: 1rem 0;
+                font-size: 0.95rem;
+            }
+
+            .credential-label {
+                color: #64748b;
+                font-weight: 500;
+                margin-bottom: 0.25rem;
+            }
+
+            .credential-value {
+                color: #1e293b;
+                font-weight: 600;
+                font-family: 'Courier New', monospace;
+                word-break: break-all;
+            }
+
+            .join-button {
+                display: block;
+                width: fit-content;
+                margin: 2rem auto 1.5rem;
+                padding: 0.875rem 2rem;
+                background: #2563eb;
+                color: white;
+                text-decoration: none;
+                border-radius: 8px;
+                font-weight: 600;
+                transition: all 0.2s ease;
+                box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+            }
+
+            .join-button:hover {
+                background: #1d4ed8;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 8px rgba(37, 99, 235, 0.25);
+            }
+
+            .footer {
+                text-align: center;
+                padding: 1.5rem;
+                background: #f8fafc;
+                color: #64748b;
+                font-size: 0.875rem;
+                border-top: 1px solid #e2e8f0;
+            }
+
+            .security-note {
+                color: #94a3b8;
+                font-size: 0.85rem;
+                text-align: center;
+                margin: 1rem 0;
+            }
+
+            @media (max-width: 640px) {
+                .email-container {
+                    margin: 0;
+                    border-radius: 0;
+                }
+
+                .content {
+                    padding: 1.5rem 1rem;
+                }
+
+                .join-button {
+                    width: 100%;
+                    text-align: center;
+                }
+            }
+    body
+        .email-container
+            .header
+                img(src=data.logo alt="Company Logo" style="width:100%; max-height:200px; object-fit:cover;")
+
+
+            .content
+                h1 Interview Invitation
+                p(style="text-align: center; color: #64748b;") Hi #{data.firstName}, you have been invited to an interview for the position of #{data.jobTitle} at #{data.companyName}.
+
+                .credentials-box
+                    .credential-item
+                        .credential-label Date
+                        .credential-value #{data.date}
+
+                    .credential-item
+                        .credential-label Time
+                        .credential-value #{data.startTime} - #{data.endTime}
+
+                    .credential-item
+                        .credential-label Meeting Link
+                        .credential-value(style="color: #2563eb;") #{data.meetingLink}
+
+                a.join-button(href=data.meetingLink style="color:white") Join Interview
+
+                p.security-note
+                    | Please ensure you join the meeting on time. If you have any issues, contact our support team.
+
+            .footer
+                p(style="margin: 0.5rem 0;") &copy; #{data.year} #{data.companyName}
+                p(style="margin: 0.5rem 0;") Need help? Contact our
+                    a(href=data.supportUrl style="color: #2563eb; text-decoration: none;") Support Team

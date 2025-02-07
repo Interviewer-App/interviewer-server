@@ -481,25 +481,8 @@ export class UserService {
       });
 
       if(newuser) {
-        const message = `
-              Dear ${newuser.firstName} ${newuser.lastName},
-              
-              You have been registered with below temporary credentials for ${newuser.companyTeam.teamRole} Company Role:
-              Email: ${newuser.email}
-              Password: ${password}
-              
-              Please use these credentials to log in and change your password later.
-              
-              Best regards,
-              Your Company Team
-              `;
 
-        const emailDto = new CreateEmailServerDto();
-        emailDto.body = message;
-        emailDto.to = newuser.email;
-        emailDto.subject = `Your Company User Account Credentials for ${newuser.companyTeam.teamRole} Role`;
-
-        await this.emailService.sendMailSandBox(emailDto);
+        await this.emailService.sendTemporaryCredentials(newuser.email,newuser.firstName,newuser.lastName,newuser.companyTeam.teamRole,newuser.email,password);
       }
 
       return {

@@ -143,26 +143,24 @@ export class AuthService {
           this.logger.log(`Default category technical created for the company: ${technicalCategory.categoryId}`);
         }
 
-      const verificationLink = `${process.env.FRONTEND_BASE_URL}/verify-email?token=${verificationToken}`;
+      const verificationLink = `${process.env.FRONTEND_BASE_URL}/email-verification?token=${verificationToken}`;
 
-      const message = `
-          Dear ${newuser.firstName} ${newuser.lastName},
-          
-          Verify your email by navigating to below link:
-          Email: ${newuser.email}
-          Verify Token: ${verificationToken}
-          Link: ${verificationLink}
-          
-          Best regards,
-          Admin Team
-        `;
+      // const message = `
+      //   Dear ${newuser.firstName} ${newuser.lastName},\n\n
+      //   Verify your email by navigating to the link below:\n
+      //   Email: ${newuser.email}\n
+      //   Verify Token: ${verificationToken}\n
+      //   Link: ${verificationLink}\n\n
+      //   Best regards,\n
+      //   Admin Team
+      //   `;
+      //
+      // const emailDto = new CreateEmailServerDto();
+      // emailDto.body = message;
+      // emailDto.to = newuser.email;
+      // emailDto.subject = `Email Verification`;
 
-      const emailDto = new CreateEmailServerDto();
-      emailDto.body = message;
-      emailDto.to = newuser.email;
-      emailDto.subject = `Email Verification`;
-
-      await this.emailService.sendMailSandBox(emailDto);
+      await this.emailService.sendVerificationEmail(newuser.email,newuser.firstName,newuser.lastName,newuser.email,verificationToken,verificationLink);
 
         return {
           user: newuser,
@@ -493,25 +491,8 @@ export class AuthService {
       });
 
       if (user) {
-        const message = `
-          Dear ${user.firstName} ${user.lastName},
-          
-          Your password has been updated due to a forgot password request:
-          Email: ${user.email}
-          Password: ${password}
-          
-          Please use these credentials to log in.
-          
-          Best regards,
-          Admin Team
-        `;
 
-        const emailDto = new CreateEmailServerDto();
-        emailDto.body = message;
-        emailDto.to = user.email;
-        emailDto.subject = `Your updated new password`;
-
-        await this.emailService.sendMailSandBox(emailDto);
+        await this.emailService.sendPasswordResetEmail(user.email,user.firstName,user.lastName,user.email,password);
 
         this.logger.log(`POST: user/forgot-password: Password reset successfully for email: ${email}`);
 

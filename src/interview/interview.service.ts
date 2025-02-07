@@ -721,6 +721,9 @@ export class InterviewService {
                       + `Email: ${dto.to}\n`
                       + `Password: ${password}\n\n`
                       + `Please use these credentials to log in and change your password later.`;
+
+                    await this.emailService.sendTemporaryCredentials(dto.to,getUser.firstName,getUser.lastName,Role.CANDIDATE,dto.to,password);
+
                 }
             }
 
@@ -782,12 +785,17 @@ export class InterviewService {
                 },
             });
 
-            const message = `Hi ${getUser.firstName},\n\n`
-              + `You have been invited to join the ${interview.jobTitle} interview at ${interview.company.companyName}.\n`
-              + `Your scheduled time slot is on ${bookSchedule.startTime.toDateString()} from ${bookSchedule.startTime.toTimeString()} to ${bookSchedule.endTime.toTimeString()}.\n`
-              + `Please use this link to join the interview: ${process.env.FRONTEND_BASE_URL}/interviews/${dto.interviewId}\n`
-              + `${temporaryCredentials}\n\n`
-              + `Best regards,\nThe Interview Team`;
+            const message = `
+            Hi ${getUser.firstName},\n\n
+            You have been invited to join the ${interview.jobTitle} interview at ${interview.company.companyName}.\n
+            Your scheduled time slot is on ${bookSchedule.startTime.toDateString()} from ${bookSchedule.startTime.toTimeString()} to ${bookSchedule.endTime.toTimeString()}.\n
+            Please use this link to join the interview: ${process.env.FRONTEND_BASE_URL}my-interviews\n
+            ${temporaryCredentials}\n\n
+            Best regards,\n
+            The Interview Team
+            `;
+
+            const link = `${process.env.FRONTEND_BASE_URL}my-interviews`
 
             const candidateInvite = await this.prisma.candidateInvitation.create({
                 data:{
@@ -797,12 +805,9 @@ export class InterviewService {
                     message: message,
                 }
             })
-            const emailDto = new CreateEmailServerDto();
-            emailDto.body = message;
-            emailDto.to = dto.to;
-            emailDto.subject = `Invitation to Join the ${interview.jobTitle} Interview at ${interview.company.companyName}`;
 
-            await this.emailService.sendMailSandBox(emailDto);
+
+            await this.emailService.sendInterviewInvitation(dto.to,getUser.firstName,interview.jobTitle,interview.company.companyName,bookSchedule.startTime.toDateString(),bookSchedule.startTime.toTimeString(),bookSchedule.endTime.toTimeString(),link)
 
             return {
                 message: `Invitation sent to candidate email ${dto.to}`,
@@ -1417,7 +1422,7 @@ export class InterviewService {
             const question = await this.prisma.interviewQuestions.create({
                 data: {
                     questionText: dto.question,
-                    type: dto.type.toUpperCase() === 'OPEN-ENDED' ? 'OPEN_ENDED' : 'CODING',
+                    type: dto.type.toUpperCase() === 'OPEN_ENDED' ? 'OPEN_ENDED' : 'CODING',
                     estimatedTimeMinutes: dto.estimatedTimeInMinutes,
                     usageFrequency: 0,
                     interviews: {
