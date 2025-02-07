@@ -518,6 +518,7 @@ export class AuthService {
 
     const user = await this.prisma.user.findFirst({
       where: { verificationToken: token },
+
     });
 
     if (!user) {
@@ -533,17 +534,60 @@ export class AuthService {
       },
       select: {
         userID: true,
+        email: true,
+        password: true,
         role: true,
         isEmailVerified: true,
+        company: {
+          select: {
+            companyID: true,
+            isSurveyCompleted: true,
+          },
+        },
+        companyTeam: {
+          select: {
+            teamRole: true,
+          }
+        },
+        candidate: {
+          select: {
+            profileID: true,
+            isSurveyCompleted: true,
+          },
+        },
+        createdAt: true,
+        provider: true,
+        providerAccountId: true,
       }
     });
+
+    const { company, candidate, ...cleanedUser } = updatedUser;
+
+    let extraInfo = {};
+    if (updatedUser.role === 'COMPANY' && updatedUser.company) {
+      extraInfo = {
+        companyID: company.companyID,
+        isSurveyCompleted: company.isSurveyCompleted,
+      };
+    } else if (updatedUser.role === 'CANDIDATE' && updatedUser.candidate) {
+      extraInfo = {
+        candidateID: candidate.profileID,
+        isSurveyCompleted: candidate.isSurveyCompleted
+      };
+    }
 
     this.logger.log(`POST: user/verify-email: Email verified successfully for user: ${user.email}`);
     return {
       message: 'Email verified successfully' ,
-      userId: updatedUser.userID,
-      role: updatedUser.role,
-      isEmailVerified: updatedUser.isEmailVerified,
+      user: {
+        ...updatedUser,
+        ...extraInfo
+      },
+
+      token: this.getJwtToken({
+        id: user.userID,
+        role: user.role
+      })
     };
   }
 
