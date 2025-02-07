@@ -412,6 +412,8 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     });
     const questions = await this.fetchQuestionsForSession(sessionId);
     this.server.to(`session-${sessionId}`).emit('questions', { questions });
+    const technicalStatus = await this.technicalTestStatus(sessionId);
+    this.server.to(`session-${sessionId}`).emit('technicalStatus', {technicalStatus});
   }
 
   @SubscribeMessage('nextQuestion')
@@ -454,6 +456,8 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     this.server.to(`session-${sessionId}`).emit('questions', { questions });
 
     this.server.to(`session-${sessionId}`).emit('navigateNextQuestion', message);
+    const technicalStatus = await this.technicalTestStatus(sessionId);
+    this.server.to(`session-${sessionId}`).emit('technicalStatus', {technicalStatus});
 
     console.log(`Emitted nextQuestion event to room session-${sessionId}:`, message);
   }
@@ -472,6 +476,9 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
 
     const questions = await this.fetchQuestionsForSession(sessionId);
     this.server.to(`session-${sessionId}`).emit('questions', { questions });
+
+    const technicalStatus = await this.technicalTestStatus(sessionId);
+    this.server.to(`session-${sessionId}`).emit('technicalStatus', {technicalStatus});
   }
 
   @SubscribeMessage('typingUpdate')
