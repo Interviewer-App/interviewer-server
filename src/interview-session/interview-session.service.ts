@@ -769,7 +769,7 @@ export class InterviewSessionService {
       const question = await this.prisma.question.create({
         data: {
           questionText: dto.question,
-          type: dto.type.toUpperCase() === 'OPEN-ENDED' ? 'OPEN_ENDED' : 'CODING',
+          type: dto.type.toUpperCase() === 'OPEN_ENDED' ? 'OPEN_ENDED' : 'CODING',
           estimatedTimeMinutes: dto.estimatedTimeInMinutes,
           usageFrequency: 0,
           interviewSession: {
