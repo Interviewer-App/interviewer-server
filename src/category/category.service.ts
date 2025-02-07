@@ -404,6 +404,11 @@ export class CategoryService {
           subCategoryScores: {
             include: {
               subCategoryAssignment: true,
+            },
+            orderBy: {
+              subCategoryAssignment: {
+                name: 'asc'
+              }
             }
           }
         },
