@@ -412,6 +412,13 @@ export class CategoryService {
             }
           }
         },
+        orderBy: {
+          categoryAssignment: {
+            category: {
+              categoryName: 'asc'
+            }
+          }
+        }
       });
 
       if (!categoryScores || categoryScores.length === 0) {
