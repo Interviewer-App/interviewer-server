@@ -59,6 +59,9 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     // Notify other participants that someone has joined
     this.server.to(`session-${sessionId}`).emit('participantJoined', { userId, role });
 
+    const technicalStatus = await this.technicalTestStatus(sessionId);
+    this.server.to(`session-${sessionId}`).emit('technicalStatus', {technicalStatus});
+
     const isStarted = await this.checkSessionStarted(sessionId);
     
     if(isStarted) {
@@ -99,6 +102,42 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
       joinedSessionId: sessionId,
       peerId: peerId, // Using userId as peerId
     });
+  }
+
+  async technicalTestStatus(sessionId: string) {
+    try {
+
+      const questions = await this.prisma.question.findMany({
+        where: {
+          sessionID: sessionId,
+        },
+        select: {
+          isAnswered: true,
+        },
+      });
+
+      if (questions.length === 0) {
+        return "toBeConducted";
+      }
+
+      // Check if all questions are answered
+      const allAnswered = questions.every((q) => q.isAnswered);
+      if (allAnswered) {
+        return "completed";
+      }
+
+      // Check if at least one question is answered
+      const atLeastOneAnswered = questions.some((q) => q.isAnswered);
+      if (atLeastOneAnswered) {
+        return "ongoing";
+      }
+
+      // If no questions are answered, return "toBeConducted"
+      return "toBeConducted";
+    } catch (error) {
+      console.error("Error fetching session status:", error);
+      throw error;
+    }
   }
 
   async notifyJoinSession(sessionId: string): Promise<void> {
