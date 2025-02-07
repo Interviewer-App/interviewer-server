@@ -107,7 +107,7 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     this.server.to(`session-${sessionId}`).emit('questions', { questions });
     const question = await this.fetchQuestionsForUser(sessionId);
     console.log(question);
-    this.server.to(`session-${sessionId}`).emit('question', { question });
+    // this.server.to(`session-${sessionId}`).emit('question', { question });
     const categoryScores = await this.fetchCategoryScores(sessionId);
     console.log(categoryScores);
     this.server.to(`session-${sessionId}`).emit('categoryScores', { categoryScores });
@@ -417,6 +417,22 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     this.server.to(`session-${sessionId}`).emit('navigateNextQuestion', message);
 
     console.log(`Emitted nextQuestion event to room session-${sessionId}:`, message);
+  }
+
+  @SubscribeMessage('startTest')
+  async handleStartTest(
+    @MessageBody() data: { sessionId: string },
+    @ConnectedSocket() client: Socket
+  ) {
+    const { sessionId } = data;
+
+    console.log(`Received nextQuestion event for session ${sessionId}`);
+    const question = await this.fetchQuestionsForUser(sessionId);
+    console.log(question);
+    this.server.to(`session-${sessionId}`).emit('question', { question });
+
+    const questions = await this.fetchQuestionsForSession(sessionId);
+    this.server.to(`session-${sessionId}`).emit('questions', { questions });
   }
 
   @SubscribeMessage('typingUpdate')
