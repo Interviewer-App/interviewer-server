@@ -96,9 +96,9 @@ export class UploadService {
       throw new NotFoundException(`Candidate with profileID ${profileID} not found`);
     }
 
-    if (!candidate.resumeURL) {
-      throw new NotFoundException(`Resume URL not found for candidate with profileID ${profileID}`);
-    }
+    // if (!candidate.resumeURL) {
+    //   throw new NotFoundException(`Resume URL not found for candidate with profileID ${profileID}`);
+    // }
 
     return {
       url: candidate.resumeURL,

@@ -471,10 +471,10 @@ export class InterviewService {
                 }
             });
 
-            if (!interviews || interviews.length === 0) {
-                this.logger.warn(`GET: No interviews found for company ID: ${companyId}`);
-                throw new NotFoundException(`No interviews found for company ID: ${companyId}`);
-            }
+            // if (!interviews || interviews.length === 0) {
+            //     this.logger.warn(`GET: No interviews found for company ID: ${companyId}`);
+            //     throw new NotFoundException(`No interviews found for company ID: ${companyId}`);
+            // }
             return interviews;
         } catch (error) {
             if (error instanceof NotFoundException) {
@@ -1039,10 +1039,10 @@ export class InterviewService {
                 },
             });
 
-            if (!invitations || invitations.length === 0) {
-                this.logger.warn(`No invitations found for interview ID: ${interviewID}`);
-                throw new NotFoundException(`No invitations found for interview ID ${interviewID}`);
-            }
+            // if (!invitations || invitations.length === 0) {
+            //     this.logger.warn(`No invitations found for interview ID: ${interviewID}`);
+            //     throw new NotFoundException(`No invitations found for interview ID ${interviewID}`);
+            // }
             const total = await this.prisma.candidateInvitation.count({
                   where: {
                       interviewID: interviewID,
@@ -1716,9 +1716,9 @@ export class InterviewService {
                 take: limit,
             });
 
-            if (sessions.length === 0) {
-                throw new NotFoundException('No completed interview sessions found for the given interview');
-            }
+            // if (sessions.length === 0) {
+            //     throw new NotFoundException('No completed interview sessions found for the given interview');
+            // }
 
             return sessions.map((session) => ({
                 candidateId: session.candidateId,

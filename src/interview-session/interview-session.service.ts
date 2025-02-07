@@ -335,10 +335,10 @@ export class InterviewSessionService {
         }
       });
 
-      if (!interviewSessions || interviewSessions.length === 0) {
-        this.logger.warn(`GET: No sessions found for candidate ID: ${candidateId}`);
-        throw new NotFoundException(`No sessions found for candidate ID: ${candidateId}`);
-      }
+      // if (!interviewSessions || interviewSessions.length === 0) {
+      //   this.logger.warn(`GET: No sessions found for candidate ID: ${candidateId}`);
+      //   throw new NotFoundException(`No sessions found for candidate ID: ${candidateId}`);
+      // }
       const total = await this.prisma.interviewSession.count({
           where: {
             candidateId: candidateId,

@@ -1,14 +1,15 @@
-import { Controller, Post, UploadedFile, UseInterceptors, Param, ParseUUIDPipe, Get } from "@nestjs/common";
+import { Controller, Post, UploadedFile, UseInterceptors, Param, ParseUUIDPipe, Get, Res, HttpException, HttpStatus } from "@nestjs/common";
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadService } from './upload.service';
 import { ApiConsumes, ApiBody, ApiParam, ApiResponse, ApiTags, ApiOperation } from "@nestjs/swagger";
+import { Response } from 'express';
 
 @ApiTags('Upload') // Add a tag for Swagger documentation
 @Controller('upload')
 export class UploadController {
   constructor(
     private readonly fileUploadService: UploadService,
-  ) {}
+  ) { }
 
   @Post('cv/:candidateId')
   @UseInterceptors(FileInterceptor('file')) // Multer interceptor for file upload
@@ -44,9 +45,21 @@ export class UploadController {
   @ApiOperation({ summary: 'Get the resume URL of a candidate by profileID' })
   @ApiResponse({ status: 200, description: 'Resume URL fetched successfully', type: String })
   @ApiResponse({ status: 404, description: 'Candidate not found' })
-  async getResumeUrl(@Param('candidateId') candidateId: string) {
+  async getResumeUrl(@Param('candidateId') candidateId: string, @Res() res: Response) {
 
-      return await this.fileUploadService.getResumeUrl(candidateId);
+    try {
+      const resumeUrl = await this.fileUploadService.getResumeUrl(candidateId);
+      return res.send(resumeUrl);
+    } catch (error) {
+      throw new HttpException(
+        {
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          error: 'PDF generation failed',
+          message: error.message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
 
   }
 }

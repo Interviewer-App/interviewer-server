@@ -107,9 +107,9 @@ export class AnswersService {
         include: { score: true },
       });
 
-      if (answers.length === 0) {
-        throw new NotFoundException(`No answers found for session ID ${sessionId}`);
-      }
+      // if (answers.length === 0) {
+      //   throw new NotFoundException(`No answers found for session ID ${sessionId}`);
+      // }
 
       let totalScore = 0;
       let numberOfAnswers = 0;
