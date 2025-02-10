@@ -56,6 +56,16 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     }
     this.activeSessions.get(sessionId).add({ userId, role });
 
+    const participants = this.activeSessions.get(sessionId);
+
+    // Check if other participants are already in the session
+    const hasOtherParticipants = participants.size > 1;
+    console.log(`######################################################## : ${participants.size}`);
+    console.log(`######################################################## : ${hasOtherParticipants}`);
+    if (hasOtherParticipants) {
+      this.server.to(`session-${sessionId}`).emit('hasOtherParticipants', { userId, role });
+    }
+
     // Notify other participants that someone has joined
     this.server.to(`session-${sessionId}`).emit('participantJoined', { userId, role });
 
@@ -146,7 +156,7 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     this.server.to(`session-${sessionId}`).emit('questions', { questions });
     const question = await this.fetchQuestionsForUser(sessionId);
     console.log(question);
-    // this.server.to(`session-${sessionId}`).emit('question', { question });
+    this.server.to(`session-${sessionId}`).emit('question', { question });
     const categoryScores = await this.fetchCategoryScores(sessionId);
     console.log(categoryScores);
     this.server.to(`session-${sessionId}`).emit('categoryScores', { categoryScores });
@@ -413,7 +423,10 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     const questions = await this.fetchQuestionsForSession(sessionId);
     this.server.to(`session-${sessionId}`).emit('questions', { questions });
     const technicalStatus = await this.technicalTestStatus(sessionId);
-    this.server.to(`session-${sessionId}`).emit('technicalStatus', {technicalStatus});
+    // this.server.to(`session-${sessionId}`).emit('technicalStatus', {technicalStatus});
+    if(technicalStatus === 'completed'){
+      this.server.to(`session-${sessionId}`).emit('technicalStatus', {technicalStatus:'testEnd'});
+    }
   }
 
   @SubscribeMessage('nextQuestion')
@@ -457,6 +470,9 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
 
     this.server.to(`session-${sessionId}`).emit('navigateNextQuestion', message);
     const technicalStatus = await this.technicalTestStatus(sessionId);
+    // if(technicalStatus === 'completed'){
+    //   this.server.to(`session-${sessionId}`).emit('technicalStatus', {technicalStatus:'testEnd'});
+    // }
     this.server.to(`session-${sessionId}`).emit('technicalStatus', {technicalStatus});
 
     console.log(`Emitted nextQuestion event to room session-${sessionId}:`, message);
@@ -476,6 +492,18 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
 
     const questions = await this.fetchQuestionsForSession(sessionId);
     this.server.to(`session-${sessionId}`).emit('questions', { questions });
+
+    const technicalStatus = await this.technicalTestStatus(sessionId);
+    this.server.to(`session-${sessionId}`).emit('technicalStatus', {technicalStatus : 'ongoing'});
+  }
+
+
+  @SubscribeMessage('endTest')
+  async handleEndTest(
+    @MessageBody() data: { sessionId: string },
+    @ConnectedSocket() client: Socket
+  ) {
+    const { sessionId } = data;
 
     const technicalStatus = await this.technicalTestStatus(sessionId);
     this.server.to(`session-${sessionId}`).emit('technicalStatus', {technicalStatus});
