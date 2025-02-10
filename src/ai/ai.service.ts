@@ -17,6 +17,7 @@ import axios from 'axios';
 import * as pdfParse from 'pdf-parse';
 import { GenerateSchedulesDto } from "./dto/generate-schedules.dto";
 import * as puppeteer from 'puppeteer';
+import { CategoryService } from '../category/category.service';
 
 @Injectable()
 export class AiService {
@@ -496,6 +497,7 @@ export class AiService {
 
       const analysis = await this.generateComparisonAnalysis(comparisonData);
 
+
       return {
         // comparison: analysis,
         // rawData: comparisonData
@@ -592,6 +594,7 @@ export class AiService {
         },
         "categories": [{
           "name": str,
+          "score": {c1: num, c2: num, diff: str}
           "metrics": [{
             "metric": str,
             "c1": str|num, 
@@ -631,7 +634,7 @@ export class AiService {
 
       let analysis;
       try {
-        analysis = JSON.parse(response);
+        analysis = this.extractJsonFromMarkdown(response);
       } catch (e) {
         this.logger.error('Failed to parse Gemini response', e);
         throw new Error('Failed to parse analysis response');
@@ -641,6 +644,23 @@ export class AiService {
     } catch (error) {
       this.logger.error('Gemini API error:', error);
       throw new Error('Failed to generate comparison analysis');
+    }
+  }
+
+  private extractJsonFromMarkdown(response: string): any {
+
+    const jsonBlockRegex = /```json\s*([\s\S]*?)\s*```/;
+    const match = response.match(jsonBlockRegex);
+
+    if (match && match[1]) {
+      const jsonResponse = match[1].trim();
+      return JSON.parse(jsonResponse);
+    }
+
+    try {
+      return JSON.parse(response);
+    } catch (e) {
+      throw new Error('Invalid response format: No JSON block found');
     }
   }
 
