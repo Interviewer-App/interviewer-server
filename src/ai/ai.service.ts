@@ -853,14 +853,14 @@ export class AiService {
             Session ${index + 1}:
             - Start time: ${session.startTime}
             - End time: ${session.endTime}
-            - One interval for break for each session: ${session.intervalMinutes} minutes
+            - Interval between slots: ${session.intervalMinutes} minutes
           `).join('\n')}
         - Slot duration: ${dto.duration} minutes
         - Non-working dates: ${dto.nonWorkingDates?.join(', ') || 'none'}
         Rules:
         1. Skip dates listed in non-working dates.
         2. Create slots within the specified daily sessions for each day.
-        3. Maintain the specified interval for each session.
+        3. Maintain the specified interval between slots for each session.
         4. Each slot should be exactly ${dto.duration} minutes long.
         5. Ensure no slot overlaps with another or exceeds the session's end time.
         6. Output in UTC timezone format.
