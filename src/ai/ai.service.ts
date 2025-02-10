@@ -1015,8 +1015,8 @@ export class AiService {
       });
 
       const content = result.response.text();
-      this.logger.debug('Generated content:', content);
-      this.logger.log('Generated content:', content);
+      // this.logger.debug('Generated content:', content);
+      // this.logger.log('Generated content:', content);
 
       try {
         const parsedResponse = JSON.parse(content);
