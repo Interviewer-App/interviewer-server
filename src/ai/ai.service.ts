@@ -17,6 +17,8 @@ import axios from 'axios';
 import * as pdfParse from 'pdf-parse';
 import { GenerateSchedulesDto } from "./dto/generate-schedules.dto";
 import * as puppeteer from 'puppeteer';
+import { CategoryService } from '../category/category.service';
+import { GenerateDurationDto } from "./dto/generate-duration.dto";
 
 @Injectable()
 export class AiService {
@@ -496,6 +498,7 @@ export class AiService {
 
       const analysis = await this.generateComparisonAnalysis(comparisonData);
 
+
       return {
         // comparison: analysis,
         // rawData: comparisonData
@@ -592,6 +595,7 @@ export class AiService {
         },
         "categories": [{
           "name": str,
+          "score": {c1: num, c2: num, diff: str}
           "metrics": [{
             "metric": str,
             "c1": str|num, 
@@ -631,7 +635,7 @@ export class AiService {
 
       let analysis;
       try {
-        analysis = JSON.parse(response);
+        analysis = this.extractJsonFromMarkdown(response);
       } catch (e) {
         this.logger.error('Failed to parse Gemini response', e);
         throw new Error('Failed to parse analysis response');
@@ -641,6 +645,23 @@ export class AiService {
     } catch (error) {
       this.logger.error('Gemini API error:', error);
       throw new Error('Failed to generate comparison analysis');
+    }
+  }
+
+  private extractJsonFromMarkdown(response: string): any {
+
+    const jsonBlockRegex = /```json\s*([\s\S]*?)\s*```/;
+    const match = response.match(jsonBlockRegex);
+
+    if (match && match[1]) {
+      const jsonResponse = match[1].trim();
+      return JSON.parse(jsonResponse);
+    }
+
+    try {
+      return JSON.parse(response);
+    } catch (e) {
+      throw new Error('Invalid response format: No JSON block found');
     }
   }
 
@@ -809,71 +830,152 @@ export class AiService {
     }
   }
 
+  // async generateSchedules(dto: GenerateSchedulesDto): Promise<any> {
+  //   this.logger.log(`POST: interview/generate-schedules: Started`);
+  //   const model = this.genAI.getGenerativeModel({
+  //     model: 'gemini-2.0-flash-exp',
+  //   });
+  //
+  //   const generationConfig = {
+  //     temperature: 0.1,
+  //     topP: 0.95,
+  //     topK: 40,
+  //     maxOutputTokens: 8192,
+  //     responseMimeType: 'application/json',
+  //   };
+  //
+  //   try {
+  //     const prompt = `
+  //       Generate interview time slots based on these parameters:
+  //         - Date range: ${dto.startDate} to ${dto.endDate}
+  //         - Daily interview conducting sessions:
+  //           ${dto.dailySessions.map((session, index) => `
+  //             Session ${index + 1}:
+  //             - Start time: ${session.startTime}
+  //             - End time: ${session.endTime}
+  //             - Interval between slots: ${session.intervalMinutes} minutes
+  //           `).join('\n')}
+  //         - Slot duration: ${dto.duration} minutes
+  //         - Non-working dates: ${dto.nonWorkingDates?.join(', ') || 'none'}
+  //
+  //         Rules:
+  //         1. Skip dates listed in non-working dates.
+  //         2. Create slots within the specified daily sessions for each day.
+  //         3. Maintain the specified interval between slots for each session.
+  //            - For example, if the interval is 10 minutes, the next slot must start exactly 10 minutes after the previous one ends.
+  //         4. Each slot should be exactly ${dto.duration} minutes long.
+  //         5. **CRITICAL: Ensure no slot overlaps with another or exceeds the session's end time.**
+  //            - Example: If a session ends at 10:00 and the slot duration is 30 minutes, the last valid slot must end at 10:00.
+  //            - Example: If a slot starts at 09:00 and ends at 10:00, the next slot in this session should start at 10:10 and end at 11:10 if the interval is 10 minutes, the duration is 60 minutes, and the session ends at 12:00.
+  //         6. Output in UTC timezone format.
+  //
+  //         Example of a valid schedule:
+  //         {
+  //           "schedules": [
+  //             {
+  //               "key": 1,
+  //               "date": "2024-12-01",
+  //               "startTime": "09:00",
+  //               "endTime": "09:30"
+  //             },
+  //             {
+  //               "key": 2,
+  //               "date": "2024-12-01",
+  //               "startTime": "09:40",
+  //               "endTime": "10:10"
+  //             }
+  //           ]
+  //         }
+  //
+  //         Return ONLY JSON format matching the structure above.
+  //     `;
+  //
+  //     const result = await model.generateContent({
+  //       contents: [{ role: 'user', parts: [{ text: prompt }] }],
+  //       generationConfig: generationConfig,
+  //     });
+  //
+  //     const content = result.response.text();
+  //
+  //     try {
+  //       const parsedResponse = JSON.parse(content);
+  //       if (!Array.isArray(parsedResponse.schedules)) {
+  //         throw new Error('Invalid response structure');
+  //       }
+  //
+  //       const correctedSchedules = await this.validateAndCorrectSchedules(
+  //         parsedResponse.schedules,
+  //         dto.dailySessions[0].intervalMinutes,
+  //         dto.duration
+  //       );
+  //
+  //       return parsedResponse;
+  //     } catch (parseError) {
+  //       this.logger.error('Failed to parse response into JSON format', parseError.message, { content });
+  //       throw new InternalServerErrorException('Invalid response format from AI service');
+  //     }
+  //   } catch (error) {
+  //     this.logger.error(`POST: interview/generate-schedules: Error occurred: ${error.message}`, error.stack);
+  //     throw new InternalServerErrorException('Failed to generate schedules');
+  //   }
+  // }
+
   async generateSchedules(dto: GenerateSchedulesDto): Promise<any> {
     this.logger.log(`POST: interview/generate-schedules: Started`);
-    const model = this.genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash-exp',
-    });
-
-    const generationConfig = {
-      temperature: 0.3,
-      topP: 0.95,
-      topK: 40,
-      maxOutputTokens: 8192,
-      responseMimeType: 'application/json',
-    };
 
     try {
-      const prompt = `
-      Generate interview time slots based on these parameters:
-      - Date range: ${dto.startDate} to ${dto.endDate}
-      - Daily working hours: ${dto.dailyStartTime} to ${dto.dailyEndTime}
-      - Slot duration: ${dto.duration} minutes
-      - One interval for meal for each day: ${dto.intervalMinutes || 'ten'} minutes
-      - Non-working dates: ${dto.nonWorkingDates?.join(', ') || 'none'}
+      const parseTime = (time: string): number => {
+        const [hours, minutes] = time.split(':').map(Number);
+        return hours * 60 + minutes;
+      };
 
-      Rules:
-      1. Skip dates listed in non-working dates
-      2. Create slots within working hours for each day
-      3. Maintain specified interval for each day
-      4. Each slot should be exactly ${dto.duration} minutes long
-      5. Output in UTC timezone format
+      const formatTime = (minutes: number): string => {
+        const hours = Math.floor(minutes / 60).toString().padStart(2, '0');
+        const mins = (minutes % 60).toString().padStart(2, '0');
+        return `${hours}:${mins}`;
+      };
 
-      Return ONLY JSON format matching this structure:
-      {
-        "schedules": [
-          {
-            key: number++ ,
-            date: ,
-            startTime: hh:mm ,
-            endTime: hh:mm,
-          }
-        ]
-      }
-    `;
+      const schedules = [];
+      let key = 1;
 
-      const result = await model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: generationConfig,
-      });
+      const currentDate = new Date(dto.startDate);
+      const endDate = new Date(dto.endDate);
 
-      const content = result.response.text();
-      // this.logger.debug('Generated content:', content);
+      while (currentDate <= endDate) {
+        const dateString = currentDate.toISOString().split('T')[0];
 
-      try {
-        const parsedResponse = JSON.parse(content);
-        if (!Array.isArray(parsedResponse.schedules)) {
-          throw new Error('Invalid response structure');
+        if (dto.nonWorkingDates?.includes(dateString)) {
+          currentDate.setDate(currentDate.getDate() + 1);
+          continue;
         }
-        return parsedResponse;
-      } catch (parseError) {
-        this.logger.error(
-          'Failed to parse response into JSON format',
-          parseError.message,
-          { content }
-        );
-        throw new InternalServerErrorException('Invalid response format from AI service');
+
+        for (const session of dto.dailySessions) {
+          const sessionStart = parseTime(session.startTime);
+          const sessionEnd = parseTime(session.endTime);
+          const interval = session.intervalMinutes;
+          const duration = dto.duration;
+
+          let currentTime = sessionStart;
+
+          while (currentTime + duration <= sessionEnd) {
+            const startTime = formatTime(currentTime);
+            const endTime = formatTime(currentTime + duration);
+
+            schedules.push({
+              key: key++,
+              date: dateString,
+              startTime,
+              endTime,
+            });
+
+            currentTime = currentTime + duration + interval;
+          }
+        }
+
+        currentDate.setDate(currentDate.getDate() + 1);
       }
+
+      return { schedules };
     } catch (error) {
       this.logger.error(
         `POST: interview/generate-schedules: Error occurred: ${error.message}`,
@@ -882,6 +984,34 @@ export class AiService {
       throw new InternalServerErrorException('Failed to generate schedules');
     }
   }
+
+  // private async validateAndCorrectSchedules(schedules: any[], intervalMinutes: number, slotDuration: number): Promise<any[]> {
+  //   const correctedSchedules: any[] = [];
+  //
+  //   schedules.forEach((schedule, index) => {
+  //     const startTime = new Date(`${schedule.date}T${schedule.startTime}Z`);
+  //     const endTime = new Date(`${schedule.date}T${schedule.endTime}Z`);
+  //
+  //     if (index > 0) {
+  //       const prevEndTime = new Date(`${correctedSchedules[index - 1].date}T${correctedSchedules[index - 1].endTime}Z`);
+  //       const requiredGap = intervalMinutes * 60 * 1000;
+  //
+  //       if (startTime.getTime() < prevEndTime.getTime() + requiredGap) {
+  //         // Adjust the start time to avoid overlap
+  //         startTime.setTime(prevEndTime.getTime() + requiredGap);
+  //         endTime.setTime(startTime.getTime() + slotDuration * 60 * 1000);
+  //       }
+  //     }
+  //
+  //     correctedSchedules.push({
+  //       ...schedule,
+  //       startTime: startTime.toISOString().split('T')[1].substring(0, 5),
+  //       endTime: endTime.toISOString().split('T')[1].substring(0, 5),
+  //     });
+  //   });
+  //
+  //   return correctedSchedules;
+  // }
 
   async generatePdf(url: string): Promise<Buffer> {
     let browser = null;
@@ -921,6 +1051,100 @@ export class AiService {
       if (browser) {
         await browser.close();
       }
+    }
+  }
+
+  async generateDuration(dto: GenerateDurationDto): Promise<any> {
+    this.logger.log(`POST: interview/generate-duration: Started`);
+
+    const model = this.genAI.getGenerativeModel({
+      model: 'gemini-2.0-flash-exp',
+    });
+
+    const generationConfig = {
+      temperature: 0.7,
+      topP: 0.95,
+      topK: 40,
+      maxOutputTokens: 8192,
+      responseMimeType: 'application/json',
+    };
+
+    try {
+      const prompt = `
+        Analyze the following interview parameters and calculate the total duration of the interview in minutesand also give how that duration distribute to each category
+        Factors to consider:
+        - Job Title: ${dto.jobTitle || 'Not specified'}
+        - Job Description: ${dto.jobDescription || 'Not specified'}
+        - Required Skills: ${dto.requiredSkills || 'Not specified'}
+        - Category Assignments: 
+          ${dto.categoryAssignments
+        .map(
+          (category) =>
+            `- ${category.name} (${category.percentage}% weight)`
+        )
+        .join('\n')}
+        - Difficulty: ${dto.difficulty}
+        - Preferred Length: ${dto.length}
+
+        Rules for calculating duration:
+        1. Base duration is determined by the difficulty:
+           - Easy: 30 minutes
+           - Medium: 60 minutes
+           - Hard: 90 minutes
+        2. Adjust duration based on category percentages:
+           - Each category adds proportional time based on its percentage.
+           - For example, a category with 50% weight contributes half of the base duration.
+        3. Adjust duration based on preferred length:
+           - Short: Reduce total duration by 20%
+           - Mid: Keep total duration unchanged
+           - Lengthy: Increase total duration by 20%
+        4. Ensure the final duration is rounded to the nearest whole number and in multiplications of 10 and 5.
+
+        Respond ONLY with valid JSON containing the calculated duration in a 'duration' field.
+        Example response format:
+        {
+          "duration": 60,
+          "category":[
+            {
+              "name":"",
+              "duration": 20
+            }
+          ]
+        }
+        Do not include any additional text or formatting.
+      `;
+
+      const result = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: generationConfig,
+      });
+
+      const content = result.response.text();
+      // this.logger.debug('Generated content:', content);
+      // this.logger.log('Generated content:', content);
+
+      try {
+        const parsedResponse = JSON.parse(content);
+
+        if (!parsedResponse.duration || typeof parsedResponse.duration !== 'number') {
+          throw new Error('Invalid response structure');
+        }
+
+        return parsedResponse;
+      } catch (parseError) {
+        this.logger.error(
+          'Failed to parse response into JSON format',
+          parseError.message,
+          { content }
+        );
+        throw new InternalServerErrorException('Invalid response format from AI service');
+      }
+    } catch (error) {
+      this.logger.error(
+        `POST: interview/generate-duration: Error occurred: ${error.message}`,
+        error.stack
+      );
+      throw new InternalServerErrorException('Failed to generate interview duration');
     }
   }
 }
