@@ -18,6 +18,7 @@ import * as pdfParse from 'pdf-parse';
 import { GenerateSchedulesDto } from "./dto/generate-schedules.dto";
 import * as puppeteer from 'puppeteer';
 import { CategoryService } from '../category/category.service';
+import { GenerateDurationDto } from "./dto/generate-duration.dto";
 
 @Injectable()
 export class AiService {
@@ -945,6 +946,100 @@ export class AiService {
       if (browser) {
         await browser.close();
       }
+    }
+  }
+
+  async generateDuration(dto: GenerateDurationDto): Promise<any> {
+    this.logger.log(`POST: interview/generate-duration: Started`);
+
+    const model = this.genAI.getGenerativeModel({
+      model: 'gemini-2.0-flash-exp',
+    });
+
+    const generationConfig = {
+      temperature: 0.7,
+      topP: 0.95,
+      topK: 40,
+      maxOutputTokens: 8192,
+      responseMimeType: 'application/json',
+    };
+
+    try {
+      const prompt = `
+        Analyze the following interview parameters and calculate the total duration of the interview in minutesand also give how that duration distribute to each category
+        Factors to consider:
+        - Job Title: ${dto.jobTitle || 'Not specified'}
+        - Job Description: ${dto.jobDescription || 'Not specified'}
+        - Required Skills: ${dto.requiredSkills || 'Not specified'}
+        - Category Assignments: 
+          ${dto.categoryAssignments
+        .map(
+          (category) =>
+            `- ${category.name} (${category.percentage}% weight)`
+        )
+        .join('\n')}
+        - Difficulty: ${dto.difficulty}
+        - Preferred Length: ${dto.length}
+
+        Rules for calculating duration:
+        1. Base duration is determined by the difficulty:
+           - Easy: 30 minutes
+           - Medium: 60 minutes
+           - Hard: 90 minutes
+        2. Adjust duration based on category percentages:
+           - Each category adds proportional time based on its percentage.
+           - For example, a category with 50% weight contributes half of the base duration.
+        3. Adjust duration based on preferred length:
+           - Short: Reduce total duration by 20%
+           - Mid: Keep total duration unchanged
+           - Lengthy: Increase total duration by 20%
+        4. Ensure the final duration is rounded to the nearest whole number and in multiplications of 10 and 5.
+
+        Respond ONLY with valid JSON containing the calculated duration in a 'duration' field.
+        Example response format:
+        {
+          "duration": 60,
+          "category":[
+            {
+              "name":"",
+              "duration": 20
+            }
+          ]
+        }
+        Do not include any additional text or formatting.
+      `;
+
+      const result = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: generationConfig,
+      });
+
+      const content = result.response.text();
+      this.logger.debug('Generated content:', content);
+      this.logger.log('Generated content:', content);
+
+      try {
+        const parsedResponse = JSON.parse(content);
+
+        if (!parsedResponse.duration || typeof parsedResponse.duration !== 'number') {
+          throw new Error('Invalid response structure');
+        }
+
+        return parsedResponse;
+      } catch (parseError) {
+        this.logger.error(
+          'Failed to parse response into JSON format',
+          parseError.message,
+          { content }
+        );
+        throw new InternalServerErrorException('Invalid response format from AI service');
+      }
+    } catch (error) {
+      this.logger.error(
+        `POST: interview/generate-duration: Error occurred: ${error.message}`,
+        error.stack
+      );
+      throw new InternalServerErrorException('Failed to generate interview duration');
     }
   }
 }

@@ -16,6 +16,7 @@ import { AnalyzeCvDto } from "./dto/analyze-cv.dto";
 import { GenerateDescriptionDto } from "./dto/generate-description.dto";
 import { GenerateSchedulesDto } from "./dto/generate-schedules.dto";
 import { Response } from 'express';
+import { GenerateDurationDto } from "./dto/generate-duration.dto";
 
 
 @ApiBearerAuth()
@@ -159,6 +160,20 @@ export class AiController {
               HttpStatus.INTERNAL_SERVER_ERROR,
             );
           }
+    }
+
+    @Post('generate-interview-duration')
+    @ApiOperation({
+        summary: 'GENERATE DURATION FOR INTERVIEW',
+        description: 'Private endpoint to generate duration for interview.'
+    })
+    @ApiResponse({ status: 201, description: 'Created' })
+    @ApiResponse({ status: 400, description: 'Bad request' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 500, description: 'Server error' })
+    @Auth(Role.COMPANY)
+    generateInterviewDuration(@Body() dto: GenerateDurationDto) {
+        return this.aiService.generateDuration(dto);
     }
 
 }
