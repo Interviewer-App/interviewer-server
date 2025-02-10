@@ -830,75 +830,152 @@ export class AiService {
     }
   }
 
+  // async generateSchedules(dto: GenerateSchedulesDto): Promise<any> {
+  //   this.logger.log(`POST: interview/generate-schedules: Started`);
+  //   const model = this.genAI.getGenerativeModel({
+  //     model: 'gemini-2.0-flash-exp',
+  //   });
+  //
+  //   const generationConfig = {
+  //     temperature: 0.1,
+  //     topP: 0.95,
+  //     topK: 40,
+  //     maxOutputTokens: 8192,
+  //     responseMimeType: 'application/json',
+  //   };
+  //
+  //   try {
+  //     const prompt = `
+  //       Generate interview time slots based on these parameters:
+  //         - Date range: ${dto.startDate} to ${dto.endDate}
+  //         - Daily interview conducting sessions:
+  //           ${dto.dailySessions.map((session, index) => `
+  //             Session ${index + 1}:
+  //             - Start time: ${session.startTime}
+  //             - End time: ${session.endTime}
+  //             - Interval between slots: ${session.intervalMinutes} minutes
+  //           `).join('\n')}
+  //         - Slot duration: ${dto.duration} minutes
+  //         - Non-working dates: ${dto.nonWorkingDates?.join(', ') || 'none'}
+  //
+  //         Rules:
+  //         1. Skip dates listed in non-working dates.
+  //         2. Create slots within the specified daily sessions for each day.
+  //         3. Maintain the specified interval between slots for each session.
+  //            - For example, if the interval is 10 minutes, the next slot must start exactly 10 minutes after the previous one ends.
+  //         4. Each slot should be exactly ${dto.duration} minutes long.
+  //         5. **CRITICAL: Ensure no slot overlaps with another or exceeds the session's end time.**
+  //            - Example: If a session ends at 10:00 and the slot duration is 30 minutes, the last valid slot must end at 10:00.
+  //            - Example: If a slot starts at 09:00 and ends at 10:00, the next slot in this session should start at 10:10 and end at 11:10 if the interval is 10 minutes, the duration is 60 minutes, and the session ends at 12:00.
+  //         6. Output in UTC timezone format.
+  //
+  //         Example of a valid schedule:
+  //         {
+  //           "schedules": [
+  //             {
+  //               "key": 1,
+  //               "date": "2024-12-01",
+  //               "startTime": "09:00",
+  //               "endTime": "09:30"
+  //             },
+  //             {
+  //               "key": 2,
+  //               "date": "2024-12-01",
+  //               "startTime": "09:40",
+  //               "endTime": "10:10"
+  //             }
+  //           ]
+  //         }
+  //
+  //         Return ONLY JSON format matching the structure above.
+  //     `;
+  //
+  //     const result = await model.generateContent({
+  //       contents: [{ role: 'user', parts: [{ text: prompt }] }],
+  //       generationConfig: generationConfig,
+  //     });
+  //
+  //     const content = result.response.text();
+  //
+  //     try {
+  //       const parsedResponse = JSON.parse(content);
+  //       if (!Array.isArray(parsedResponse.schedules)) {
+  //         throw new Error('Invalid response structure');
+  //       }
+  //
+  //       const correctedSchedules = await this.validateAndCorrectSchedules(
+  //         parsedResponse.schedules,
+  //         dto.dailySessions[0].intervalMinutes,
+  //         dto.duration
+  //       );
+  //
+  //       return parsedResponse;
+  //     } catch (parseError) {
+  //       this.logger.error('Failed to parse response into JSON format', parseError.message, { content });
+  //       throw new InternalServerErrorException('Invalid response format from AI service');
+  //     }
+  //   } catch (error) {
+  //     this.logger.error(`POST: interview/generate-schedules: Error occurred: ${error.message}`, error.stack);
+  //     throw new InternalServerErrorException('Failed to generate schedules');
+  //   }
+  // }
+
   async generateSchedules(dto: GenerateSchedulesDto): Promise<any> {
     this.logger.log(`POST: interview/generate-schedules: Started`);
-    const model = this.genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash-exp',
-    });
-
-    const generationConfig = {
-      temperature: 0.3,
-      topP: 0.95,
-      topK: 40,
-      maxOutputTokens: 8192,
-      responseMimeType: 'application/json',
-    };
 
     try {
-      const prompt = `
-        Generate interview time slots based on these parameters:
-        - Date range: ${dto.startDate} to ${dto.endDate}
-        - Daily interview conducting sessions:
-          ${dto.dailySessions.map((session, index) => `
-            Session ${index + 1}:
-            - Start time: ${session.startTime}
-            - End time: ${session.endTime}
-            - Interval between slots: ${session.intervalMinutes} minutes
-          `).join('\n')}
-        - Slot duration: ${dto.duration} minutes
-        - Non-working dates: ${dto.nonWorkingDates?.join(', ') || 'none'}
-        Rules:
-        1. Skip dates listed in non-working dates.
-        2. Create slots within the specified daily sessions for each day.
-        3. Maintain the specified interval between slots for each session.
-        4. Each slot should be exactly ${dto.duration} minutes long.
-        5. Ensure no slot overlaps with another or exceeds the session's end time.
-        6. Output in UTC timezone format.
-        Return ONLY JSON format matching this structure:
-        {
-          "schedules": [
-            {
-              key: number++,
-              date: YYYY-MM-DD,
-              startTime: hh:mm,
-              endTime: hh:mm
-            }
-          ]
+      const parseTime = (time: string): number => {
+        const [hours, minutes] = time.split(':').map(Number);
+        return hours * 60 + minutes;
+      };
+
+      const formatTime = (minutes: number): string => {
+        const hours = Math.floor(minutes / 60).toString().padStart(2, '0');
+        const mins = (minutes % 60).toString().padStart(2, '0');
+        return `${hours}:${mins}`;
+      };
+
+      const schedules = [];
+      let key = 1;
+
+      const currentDate = new Date(dto.startDate);
+      const endDate = new Date(dto.endDate);
+
+      while (currentDate <= endDate) {
+        const dateString = currentDate.toISOString().split('T')[0];
+
+        if (dto.nonWorkingDates?.includes(dateString)) {
+          currentDate.setDate(currentDate.getDate() + 1);
+          continue;
         }
-      `;
 
-      const result = await model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: generationConfig,
-      });
+        for (const session of dto.dailySessions) {
+          const sessionStart = parseTime(session.startTime);
+          const sessionEnd = parseTime(session.endTime);
+          const interval = session.intervalMinutes;
+          const duration = dto.duration;
 
-      const content = result.response.text();
-      // this.logger.debug('Generated content:', content);
+          let currentTime = sessionStart;
 
-      try {
-        const parsedResponse = JSON.parse(content);
-        if (!Array.isArray(parsedResponse.schedules)) {
-          throw new Error('Invalid response structure');
+          while (currentTime + duration <= sessionEnd) {
+            const startTime = formatTime(currentTime);
+            const endTime = formatTime(currentTime + duration);
+
+            schedules.push({
+              key: key++,
+              date: dateString,
+              startTime,
+              endTime,
+            });
+
+            currentTime = currentTime + duration + interval;
+          }
         }
-        return parsedResponse;
-      } catch (parseError) {
-        this.logger.error(
-          'Failed to parse response into JSON format',
-          parseError.message,
-          { content }
-        );
-        throw new InternalServerErrorException('Invalid response format from AI service');
+
+        currentDate.setDate(currentDate.getDate() + 1);
       }
+
+      return { schedules };
     } catch (error) {
       this.logger.error(
         `POST: interview/generate-schedules: Error occurred: ${error.message}`,
@@ -907,6 +984,34 @@ export class AiService {
       throw new InternalServerErrorException('Failed to generate schedules');
     }
   }
+
+  // private async validateAndCorrectSchedules(schedules: any[], intervalMinutes: number, slotDuration: number): Promise<any[]> {
+  //   const correctedSchedules: any[] = [];
+  //
+  //   schedules.forEach((schedule, index) => {
+  //     const startTime = new Date(`${schedule.date}T${schedule.startTime}Z`);
+  //     const endTime = new Date(`${schedule.date}T${schedule.endTime}Z`);
+  //
+  //     if (index > 0) {
+  //       const prevEndTime = new Date(`${correctedSchedules[index - 1].date}T${correctedSchedules[index - 1].endTime}Z`);
+  //       const requiredGap = intervalMinutes * 60 * 1000;
+  //
+  //       if (startTime.getTime() < prevEndTime.getTime() + requiredGap) {
+  //         // Adjust the start time to avoid overlap
+  //         startTime.setTime(prevEndTime.getTime() + requiredGap);
+  //         endTime.setTime(startTime.getTime() + slotDuration * 60 * 1000);
+  //       }
+  //     }
+  //
+  //     correctedSchedules.push({
+  //       ...schedule,
+  //       startTime: startTime.toISOString().split('T')[1].substring(0, 5),
+  //       endTime: endTime.toISOString().split('T')[1].substring(0, 5),
+  //     });
+  //   });
+  //
+  //   return correctedSchedules;
+  // }
 
   async generatePdf(url: string): Promise<Buffer> {
     let browser = null;
