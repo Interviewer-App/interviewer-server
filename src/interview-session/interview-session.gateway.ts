@@ -22,7 +22,7 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
   // Track active interview sessions
   private activeSessions: Map<string, Set<{ userId: string, role: string }>> = new Map(); // sessionId -> Set of participantIds (candidate and company)
 
-  constructor(private prisma: PrismaService, private aiService : AiService, private answerService:AnswersService, private categoryService:CategoryService) {}
+  constructor(private prisma: PrismaService, private aiService: AiService, private answerService: AnswersService, private categoryService: CategoryService) { }
 
   handleConnection(client: Socket, ...args: any[]) {
     console.log(`Client connected: ${client.id}`);
@@ -70,18 +70,18 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     this.server.to(`session-${sessionId}`).emit('participantJoined', { userId, role });
 
     const technicalStatus = await this.technicalTestStatus(sessionId);
-    this.server.to(`session-${sessionId}`).emit('technicalStatus', {technicalStatus});
+    this.server.to(`session-${sessionId}`).emit('technicalStatus', { technicalStatus });
 
     const isStarted = await this.checkSessionStarted(sessionId);
-    
-    if(isStarted) {
+
+    if (isStarted) {
       await this.notifyJoinSession(sessionId);
     } else {
       if (role == 'CANDIDATE') {
         client.broadcast.emit('joinedParticipants', { sessionId, userId });
       }
 
-      
+
       const participants = this.activeSessions.get(sessionId);
       const hasCandidate = Array.from(participants).some(
         (p) => p.role === 'CANDIDATE',
@@ -104,9 +104,9 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     @ConnectedSocket() client: Socket
   ) {
     const { sessionId, peerId } = data;
-    
+
     // Join the specified session room
-    await client.join(sessionId);    
+    await client.join(sessionId);
     // Notify all clients in the room about new peer
     this.server.to(sessionId).emit('peer-joined', {
       joinedSessionId: sessionId,
@@ -164,7 +164,7 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     console.log(totalScore);
     this.server.to(`session-${sessionId}`).emit('totalScore', { totalScore });
   }
-  
+
   async checkSessionStarted(sessionId: string) {
     const status = await this.prisma.interviewSession.findUnique({
       where: { sessionId },
@@ -174,13 +174,13 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     });
     if (!status) {
       return false;
-    }else {
+    } else {
       return status.interviewStatus != 'toBeConducted';
     }
   }
 
   async triggerDatabaseCall(sessionId: string) {
- 
+
     this.logger.log(`Both CANDIDATE and COMPANY have joined session ${sessionId}. Triggering database call...`);
 
 
@@ -311,7 +311,7 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
         isAnswered: true,
       }
     })
-    
+
     let answer = await this.prisma.answer.findUnique({
       where: { questionID: questionId },
     });
@@ -337,12 +337,12 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
       });
       console.log('Answer created:', answer);
     }
-    
+
     const metrics = await this.analyzeResponse(questionText, answerText);
-    
+
     const score = await this.upsertScore(answer.responseID, metrics.relevanceScore);
-    
-    const categoryScoreId = await this.findCategoryScoreId('Technical',sessionId);
+
+    const categoryScoreId = await this.findCategoryScoreId('Technical', sessionId);
 
     const totalScore = await this.getTotalScoreBySessionId(sessionId);
 
@@ -350,24 +350,24 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
       sessionId: sessionId,
       categoryScoreId: categoryScoreId.categoryScoreId,
       score: totalScore.score,
-    } ;
+    };
 
     this.submitCategoryScore(dataScore);
 
     await this.notifyAnswerSubmission(sessionId, questionId, candidateId, questionText, answerText, metrics, totalScore);
   }
-  
-  private async findCategoryScoreId(category:string,sessionId: string) {
+
+  private async findCategoryScoreId(category: string, sessionId: string) {
     const categoryScoreId = await this.prisma.categoryScore.findFirst({
-      where:{
+      where: {
         sessionId: sessionId,
-        categoryAssignment:{
-          category:{
+        categoryAssignment: {
+          category: {
             categoryName: category,
           }
         }
       },
-      select:{
+      select: {
         categoryScoreId: true,
       }
     })
@@ -424,8 +424,8 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     this.server.to(`session-${sessionId}`).emit('questions', { questions });
     const technicalStatus = await this.technicalTestStatus(sessionId);
     // this.server.to(`session-${sessionId}`).emit('technicalStatus', {technicalStatus});
-    if(technicalStatus === 'completed'){
-      this.server.to(`session-${sessionId}`).emit('technicalStatus', {technicalStatus:'testEnd'});
+    if (technicalStatus === 'completed') {
+      this.server.to(`session-${sessionId}`).emit('technicalStatus', { technicalStatus: 'testEnd' });
     }
   }
 
@@ -439,7 +439,7 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     console.log(`Received nextQuestion event for session ${sessionId}`);
     let question;
 
-    if(followUpQuestion){
+    if (followUpQuestion) {
       question = await this.prisma.question.create({
         data: {
           questionText: followUpQuestion,
@@ -473,9 +473,25 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     // if(technicalStatus === 'completed'){
     //   this.server.to(`session-${sessionId}`).emit('technicalStatus', {technicalStatus:'testEnd'});
     // }
-    this.server.to(`session-${sessionId}`).emit('technicalStatus', {technicalStatus});
+    this.server.to(`session-${sessionId}`).emit('technicalStatus', { technicalStatus });
 
     console.log(`Emitted nextQuestion event to room session-${sessionId}:`, message);
+  }
+
+  @SubscribeMessage('sendMessage')
+  handleMessage(
+    @MessageBody() data: { sessionId: string; message: string; senderId: string; senderRole: 'COMPANY' | 'CANDIDATE' },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const { sessionId, message, senderId, senderRole } = data;
+
+    // Broadcast the message to all participants in the chat room
+    this.server.to(`session-${sessionId}`).emit('receiveMessage', {
+      senderId,
+      senderRole,
+      message,
+      timestamp: new Date().toISOString(),
+    });
   }
 
   @SubscribeMessage('startTest')
@@ -494,7 +510,7 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     this.server.to(`session-${sessionId}`).emit('questions', { questions });
 
     const technicalStatus = await this.technicalTestStatus(sessionId);
-    this.server.to(`session-${sessionId}`).emit('technicalStatus', {technicalStatus : 'ongoing'});
+    this.server.to(`session-${sessionId}`).emit('technicalStatus', { technicalStatus: 'ongoing' });
   }
 
 
@@ -506,7 +522,7 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     const { sessionId } = data;
 
     const technicalStatus = await this.technicalTestStatus(sessionId);
-    this.server.to(`session-${sessionId}`).emit('technicalStatus', {technicalStatus});
+    this.server.to(`session-${sessionId}`).emit('technicalStatus', { technicalStatus });
   }
 
   @SubscribeMessage('typingUpdate')
@@ -556,7 +572,7 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
     // Notify other participants that someone has left
     this.server.to(`session-${sessionId}`).emit('participantLeft', { userId });
   }
-  
+
   @SubscribeMessage('endInterviewSession')
   async handleEndInterviewSession(
     @MessageBody() data: { sessionId: string, userId: string },
@@ -575,7 +591,7 @@ export class InterviewSessionGateway implements OnGatewayConnection, OnGatewayDi
 
     this.server.to(`session-${sessionId}`).emit('categoryScores', { categoryScores });
     this.server.to(`session-${sessionId}`).emit('totalScore', { totalScore });
-    
+
     this.handleLeaveInterviewSession({ sessionId, userId }, client);
 
   }
