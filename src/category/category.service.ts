@@ -179,10 +179,17 @@ export class CategoryService {
     try {
       const category = await this.prisma.category.findUnique({
         where: { categoryId: id },
+        include: {
+          CategoryAssignment: true,
+        }
       });
 
       if (!category) {
         throw new NotFoundException(`Category with ID ${id} not found`);
+      }
+
+      if (category.CategoryAssignment.length != 0 || category.CategoryAssignment.length > 0) {
+        throw new BadRequestException(`Cannot delete this Category because this is assigned to a interview`)
       }
 
       await this.prisma.category.delete({
@@ -194,7 +201,7 @@ export class CategoryService {
         message: "Category deleted successfully",
       };
     } catch (error) {
-      if (error instanceof NotFoundException) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
       }
       this.prismaErrorHandler(error, "DELETE", id);
