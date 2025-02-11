@@ -25,6 +25,17 @@ export class CreateCategoryDto {
   categoryName: string;
 
   @ApiProperty({
+    description: 'Category Color',
+    nullable: false,
+    required: true,
+    type: 'string',
+    example: '#4287f5',
+  })
+  @IsString()
+  @IsNotEmpty()
+  color: string;
+
+  @ApiProperty({
     description: 'Category Description',
     nullable: true,
     required: false,

@@ -137,7 +137,8 @@ export class AuthService {
             data:{
               companyId: newuser.company.companyID,
               categoryName: 'Technical',
-              description: 'Asseses the technical ability of the candidate'
+              description: 'Asseses the technical ability of the candidate',
+              color: '#3B82F6'
             }
           })
           this.logger.log(`Default category technical created for the company: ${technicalCategory.categoryId}`);

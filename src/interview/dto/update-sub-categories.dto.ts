@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsInt, Min, Max, IsOptional } from 'class-validator';
+import { IsString, IsInt, Min, Max, IsOptional, IsNotEmpty } from "class-validator";
 
 export class UpdateSubCategoryAssignmentDto {
   @ApiProperty({
@@ -21,4 +21,13 @@ export class UpdateSubCategoryAssignmentDto {
   @Max(100)
   @IsOptional()
   percentage?: number;
+
+  @ApiProperty({
+    description: "Color of the subcategory",
+    example: "#4287f5",
+    required: true,
+  })
+  @IsString()
+  @IsNotEmpty()
+  color: string;
 }

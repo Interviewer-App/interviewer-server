@@ -85,7 +85,8 @@ export class InterviewService {
                             SubCategoryAssignment: assignment.subAssignments ? {
                                 create: assignment.subAssignments.map(sub => ({
                                     name: sub.name,
-                                    percentage: sub.percentage
+                                    percentage: sub.percentage,
+                                    color: sub.color,
                                 }))
                             } : undefined
                         })),
@@ -218,7 +219,8 @@ export class InterviewService {
                                     SubCategoryAssignment: {
                                         create: assignment.subAssignments.map(sub => ({
                                             name: sub.name,
-                                            percentage: sub.percentage
+                                            percentage: sub.percentage,
+                                            color: sub.color,
                                         }))
                                     }
                                 })
@@ -1491,6 +1493,7 @@ export class InterviewService {
                     parentAssignmentId: categoryAssignmentId,
                     name: dto.name,
                     percentage: dto.percentage,
+                    color: dto.color,
                 },
             });
 
@@ -1596,7 +1599,8 @@ export class InterviewService {
                 where: { id: subCategoryAssignmentId },
                 data: {
                     name: dto.name,
-                    percentage: dto.percentage
+                    percentage: dto.percentage,
+                    color: dto.color,
                 }
             });
 

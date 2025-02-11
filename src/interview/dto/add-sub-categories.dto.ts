@@ -20,4 +20,13 @@ export class AddSubCategoryAssignmentDto {
   @Min(1)
   @Max(100)
   percentage: number;
+
+  @ApiProperty({
+    description: "Color of the subcategory",
+    example: "#4287f5",
+    required: true,
+  })
+  @IsString()
+  @IsNotEmpty()
+  color: string;
 }

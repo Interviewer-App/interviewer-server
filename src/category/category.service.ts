@@ -37,6 +37,7 @@ export class CategoryService {
           companyId: dto.companyId,
           categoryName: dto.categoryName,
           description: dto.description,
+          color: dto.color,
         },
       });
 
@@ -76,6 +77,7 @@ export class CategoryService {
           companyId: true,
           categoryName: true,
           description: true,
+          color: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -152,6 +154,7 @@ export class CategoryService {
         data: {
           categoryName: dto.categoryName,
           description: dto.description,
+          color: dto.color,
         },
       });
 
@@ -359,6 +362,7 @@ export class CategoryService {
           companyId: true,
           categoryName: true,
           description: true,
+          color: true,
           createdAt: true,
           updatedAt: true,
         },
